@@ -1,6 +1,8 @@
 package com.hxhmod;
 
 import com.hxhmod.item.ModItems;
+import com.hxhmod.nen.ModAttachments;
+import com.hxhmod.nen.NenEvents;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
@@ -13,6 +15,8 @@ public class HxHMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		ModItems.register();
+		ModAttachments.register();
+		NenEvents.register();
 		LOGGER.info("Hunter x Hunter Mod carregado!");
 	}
 

@@ -15,6 +15,8 @@ import java.util.function.Function;
 public final class ModItems {
 	public static final Item HUNTER_LICENSE = register("hunter_license", Item::new,
 			new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
+	public static final Item WATER_GLASS = register("water_glass", WaterGlassItem::new,
+			new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
 
 	private ModItems() {
 	}
@@ -26,6 +28,9 @@ public final class ModItems {
 
 	public static void register() {
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
-				.register(output -> output.accept(HUNTER_LICENSE));
+				.register(output -> {
+					output.accept(HUNTER_LICENSE);
+					output.accept(WATER_GLASS);
+				});
 	}
 }

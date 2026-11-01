@@ -1,3 +1,26 @@
 {
-	"item.hxh.hunter_license": "Hunter License"
+	"item.hxh.hunter_license": "Hunter License",
+	"item.hxh.water_glass": "Glass of Water with Leaf",
+
+	"nen.hxh.type.none": "None",
+	"nen.hxh.type.enhancement": "Enhancement",
+	"nen.hxh.type.transmutation": "Transmutation",
+	"nen.hxh.type.emission": "Emission",
+	"nen.hxh.type.conjuration": "Conjuration",
+	"nen.hxh.type.manipulation": "Manipulation",
+	"nen.hxh.type.specialization": "Specialization",
+
+	"nen.hxh.reaction.enhancement": "The water starts to overflow...",
+	"nen.hxh.reaction.transmutation": "You taste the water... it tastes different!",
+	"nen.hxh.reaction.emission": "The water starts changing color...",
+	"nen.hxh.reaction.conjuration": "Tiny crystals appear in the water...",
+	"nen.hxh.reaction.manipulation": "The leaf starts spinning on its own...",
+	"nen.hxh.reaction.specialization": "Something strange and unique happens to the glass...",
+
+	"nen.hxh.revealed": "Your Nen type is: %s",
+	"nen.hxh.already_known": "You already know your Nen: %s",
+	"nen.hxh.not_awakened": "Your Nen has not awakened yet. Use the Glass of Water with Leaf.",
+	"nen.hxh.status": "Nen: %s | Aura: %s/%s",
+	"nen.hxh.reset": "Your Nen was cleared. Take the glass test again.",
+	"nen.hxh.hud": "%s  %s/%s"
 }

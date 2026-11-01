@@ -1,3 +1,26 @@
 {
-	"item.hxh.hunter_license": "Licença Hunter"
+	"item.hxh.hunter_license": "Licença Hunter",
+	"item.hxh.water_glass": "Copo d'Água com Folha",
+
+	"nen.hxh.type.none": "Nenhum",
+	"nen.hxh.type.enhancement": "Intensificação",
+	"nen.hxh.type.transmutation": "Transformação",
+	"nen.hxh.type.emission": "Emissão",
+	"nen.hxh.type.conjuration": "Conjuração",
+	"nen.hxh.type.manipulation": "Manipulação",
+	"nen.hxh.type.specialization": "Especialização",
+
+	"nen.hxh.reaction.enhancement": "A água começa a transbordar do copo...",
+	"nen.hxh.reaction.transmutation": "Você prova a água... o gosto mudou!",
+	"nen.hxh.reaction.emission": "A cor da água começa a mudar...",
+	"nen.hxh.reaction.conjuration": "Pequenos cristais surgem dentro da água...",
+	"nen.hxh.reaction.manipulation": "A folha começa a girar sozinha...",
+	"nen.hxh.reaction.specialization": "Algo estranho e único acontece com o copo...",
+
+	"nen.hxh.revealed": "Seu tipo de Nen é: %s",
+	"nen.hxh.already_known": "Você já conhece seu Nen: %s",
+	"nen.hxh.not_awakened": "Seu Nen ainda não despertou. Use o Copo d'Água com Folha.",
+	"nen.hxh.status": "Nen: %s | Aura: %s/%s",
+	"nen.hxh.reset": "Seu Nen foi apagado. Faça o teste do copo de novo.",
+	"nen.hxh.hud": "%s  %s/%s"
 }
