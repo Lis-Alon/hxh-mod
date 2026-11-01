@@ -1,6 +1,6 @@
 # Hunter x Hunter Mod
 
-Fan mod de Hunter x Hunter para Minecraft **26.3** (Fabric).
+vai tomando
 
 ## Como funciona o Nen
 
