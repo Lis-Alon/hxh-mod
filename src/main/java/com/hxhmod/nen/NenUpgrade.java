@@ -1,6 +1,7 @@
 package com.hxhmod.nen;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -9,10 +10,11 @@ import net.minecraft.util.StringRepresentable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /** Funcionalidades extras de cada tecnica, compradas com pontos de Nen. */
 public enum NenUpgrade implements StringRepresentable {
-	TEN_CALM("ten_calm", Technique.TEN, 2, 5),
+	TEN_FLOW("ten_flow", Technique.TEN, 2, 5),
 	TEN_YOUTH("ten_youth", Technique.TEN, 3, 15),
 	KEN_ENDURANCE("ken_endurance", Technique.KEN, 3, 35),
 	KEN_IRON("ken_iron", Technique.KEN, 5, 50),
@@ -29,7 +31,12 @@ public enum NenUpgrade implements StringRepresentable {
 	EN_WIDE("en_wide", Technique.EN, 3, 35),
 	EN_VAST("en_vast", Technique.EN, 4, 60);
 
-	public static final Codec<NenUpgrade> CODEC = StringRepresentable.fromEnum(NenUpgrade::values);
+	// "ten_calm" era o nome antigo da Fluidez da Aura; mundos salvos antes continuam carregando
+	public static final Codec<NenUpgrade> CODEC = Codec.STRING.comapFlatMap(
+			name -> byName(name.equals("ten_calm") ? "ten_flow" : name)
+					.map(DataResult::success)
+					.orElseGet(() -> DataResult.error(() -> "Funcionalidade de Nen desconhecida: " + name)),
+			NenUpgrade::getSerializedName);
 	public static final StreamCodec<ByteBuf, NenUpgrade> STREAM_CODEC =
 			ByteBufCodecs.VAR_INT.map(i -> values()[i], NenUpgrade::ordinal);
 
@@ -43,6 +50,10 @@ public enum NenUpgrade implements StringRepresentable {
 		this.technique = technique;
 		this.cost = cost;
 		this.minLevel = minLevel;
+	}
+
+	public static Optional<NenUpgrade> byName(String name) {
+		return Arrays.stream(values()).filter(upgrade -> upgrade.name.equals(name)).findFirst();
 	}
 
 	public static List<NenUpgrade> of(Technique technique) {

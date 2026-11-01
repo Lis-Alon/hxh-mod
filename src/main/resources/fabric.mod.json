@@ -25,6 +25,7 @@
 		"fabric-api": "*"
 	},
 	"mixins": [
+		"hxh.mixins.json",
 		{
 			"config": "hxh.client.mixins.json",
 			"environment": "client"

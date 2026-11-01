@@ -39,9 +39,9 @@ Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x
 
 | Técnica | Vem de | Efeito no jogo |
 |---|---|---|
-| **Ten** (Envoltura) | princípio | Resistência I |
+| **Ten** (Envoltura) | princípio | Reduz o dano de 10% a 25% conforme o domínio |
 | **Ken** (Fortificar) | Ten + Ren | Resistência II |
-| **Zetsu** (Corte) | Ten | Invisibilidade e aura 3x mais rápida |
+| **Zetsu** (Corte) | Ten | Mobs percebem menos você, aura volta mais rápido (mais ainda parado), mas sem defesa de Nen |
 | **In** (Ocultar) | Zetsu + Ren | Invisibilidade e Força I |
 | **Ren** (Prática) | Ten | Força I |
 | **Gyo** (Coagular) | Ren | Visão noturna e revela invisíveis |

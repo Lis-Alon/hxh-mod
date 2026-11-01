@@ -4,6 +4,7 @@ import com.hxhmod.block.ModBlocks;
 import com.hxhmod.client.NenScreen;
 import com.hxhmod.item.ModItems;
 import com.hxhmod.nen.ModAttachments;
+import com.hxhmod.nen.NenCombat;
 import com.hxhmod.nen.NenData;
 import com.hxhmod.nen.NenPose;
 import com.hxhmod.nen.NenType;
@@ -91,9 +92,24 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			context.waitTicks(2);
 			context.takeScreenshot("nen_3_techniques_ten");
 
-			for (int i = 0; i < 4; i++) {
-				input.pressKey(InputConstants.KEY_DOWN);
+			input.pressKey(InputConstants.KEY_DOWN);
+			input.pressKey(InputConstants.KEY_DOWN);
+			context.waitTicks(2);
+			context.takeScreenshot("nen_3b_techniques_zetsu");
+			// Rola os detalhes com a rodinha em cima deles
+			double[] details = context.computeOnClient(client -> {
+				int scale = client.getWindow().getGuiScale();
+				return new double[] {client.getWindow().getGuiScaledWidth() * 0.7 * scale,
+						client.getWindow().getGuiScaledHeight() * 0.6 * scale};
+			});
+			input.setCursorPos(details[0], details[1]);
+			for (int i = 0; i < 6; i++) {
+				input.scroll(-1);
 			}
+			context.waitTicks(2);
+			context.takeScreenshot("nen_3c_techniques_zetsu_scrolled");
+			input.pressKey(InputConstants.KEY_DOWN);
+			input.pressKey(InputConstants.KEY_DOWN);
 			context.waitTicks(2);
 			context.takeScreenshot("nen_4_techniques_ren");
 
@@ -131,6 +147,21 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(20);
 			context.takeScreenshot("nen_9_water_glass");
+
+			// Ten reduz o dano; Zetsu deixa o jogador mais discreto e sem defesa contra golpes com aura
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.TEN));
+				float reduced = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+				check(Math.abs(reduced - 10.0F * (1 - data.tenDefense())) < 0.001F && reduced < 10.0F,
+						"o Ten deveria reduzir o dano, veio " + reduced);
+				player.setAttached(ModAttachments.NEN, data.unlock(Technique.ZETSU).withActive(Technique.ZETSU));
+				check(NenCombat.visibility(player) < 1.0, "em Zetsu o jogador deveria ficar mais discreto");
+				check(NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F) == 10.0F,
+						"em Zetsu golpes sem aura causam o dano normal");
+				player.setAttached(ModAttachments.NEN, data);
+			});
 
 			// Comandos de liberar e bloquear
 			singleplayer.getServer().runOnServer(server -> {

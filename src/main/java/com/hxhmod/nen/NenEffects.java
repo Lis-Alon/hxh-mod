@@ -20,22 +20,10 @@ public final class NenEffects {
 
 	public static void applyTechnique(ServerPlayer player, NenData data) {
 		switch (data.active()) {
-			case TEN -> {
-				effect(player, MobEffects.RESISTANCE, 0);
-				if (data.has(NenUpgrade.TEN_YOUTH)) {
-					effect(player, MobEffects.REGENERATION, 0);
-				}
+			// Ten e Zetsu nao usam efeitos de pocao: a defesa, a cura e a furtividade ficam em NenCombat e NenEvents
+			case TEN, ZETSU -> {
 			}
 			case KEN -> effect(player, MobEffects.RESISTANCE, data.has(NenUpgrade.KEN_IRON) ? 2 : 1);
-			case ZETSU -> {
-				effect(player, MobEffects.INVISIBILITY, 0);
-				if (data.has(NenUpgrade.ZETSU_REST)) {
-					effect(player, MobEffects.REGENERATION, 0);
-				}
-				if (data.has(NenUpgrade.ZETSU_STEP)) {
-					effect(player, MobEffects.SPEED, 0);
-				}
-			}
 			case IN -> {
 				effect(player, MobEffects.INVISIBILITY, 0);
 				effect(player, MobEffects.STRENGTH, data.has(NenUpgrade.IN_SHADOW) ? 1 : 0);

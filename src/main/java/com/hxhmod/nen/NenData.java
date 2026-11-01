@@ -108,16 +108,67 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 				+ (int) (statPoints(NenStat.AURA_CAPACITY) * NenStat.AURA_CAPACITY.perPoint());
 	}
 
-	/** Aura recuperada por segundo sem nenhuma tecnica que gaste aura. */
-	public int auraRegen() {
-		int regen = NenRules.REGEN + (int) (statPoints(NenStat.AURA_FLOW) * NenStat.AURA_FLOW.perPoint());
-		if (active == Technique.TEN && has(NenUpgrade.TEN_CALM)) {
-			regen += 1;
+	/** Aura recuperada por segundo sem nenhuma tecnica que gaste aura (pode ser fracionada). */
+	public double auraRegen() {
+		return auraRegen(false);
+	}
+
+	/** @param resting parado, sem andar (o Zetsu recupera mais em repouso) */
+	public double auraRegen(boolean resting) {
+		double regen = NenRules.REGEN + statPoints(NenStat.AURA_FLOW) * NenStat.AURA_FLOW.perPoint();
+		if (active == Technique.TEN && has(NenUpgrade.TEN_FLOW)) {
+			regen *= 1 + tenFlowBonus();
 		}
 		if (active == Technique.ZETSU) {
-			regen *= NenRules.ZETSU_REGEN_MULTIPLIER;
+			regen *= 1 + zetsuRegenBonus();
+			if (resting) {
+				regen *= has(NenUpgrade.ZETSU_REST) ? NenRules.ZETSU_DEEP_REST_MULTIPLIER : NenRules.ZETSU_REST_MULTIPLIER;
+			}
 		}
 		return regen;
+	}
+
+	// ---- Dominio das tecnicas ----
+
+	/** Dominio da tecnica (0 a 100), que vem do treino dela e nao do nivel geral. */
+	public int mastery(Technique technique) {
+		return Math.min(NenRules.MAX_MASTERY, (int) Math.sqrt(training(technique) / NenRules.MASTERY_SECONDS_FACTOR));
+	}
+
+	/** Porcentagem do caminho ate o proximo ponto de dominio (100 no maximo). */
+	public int masteryProgress(Technique technique) {
+		int mastery = mastery(technique);
+		if (mastery >= NenRules.MAX_MASTERY) {
+			return 100;
+		}
+		double from = mastery * mastery * NenRules.MASTERY_SECONDS_FACTOR;
+		double to = (mastery + 1) * (mastery + 1) * NenRules.MASTERY_SECONDS_FACTOR;
+		return (int) ((training(technique) - from) * 100 / (to - from));
+	}
+
+	/** Reducao de dano do Ten (fracao do golpe). */
+	public double tenDefense() {
+		return NenRules.TEN_DEFENSE_BASE + NenRules.TEN_DEFENSE_PER_MASTERY * mastery(Technique.TEN);
+	}
+
+	/** Bonus da Fluidez da Aura na recuperacao (fracao). */
+	public double tenFlowBonus() {
+		return NenRules.TEN_FLOW_BASE + NenRules.TEN_FLOW_PER_MASTERY * mastery(Technique.TEN);
+	}
+
+	/** Cura do Corpo Jovem por segundo, em fracao da vida maxima. */
+	public double tenYouthHeal() {
+		return NenRules.TEN_YOUTH_BASE + NenRules.TEN_YOUTH_PER_MASTERY * mastery(Technique.TEN);
+	}
+
+	/** Bonus do Zetsu na recuperacao de aura (fracao), antes do bonus de repouso. */
+	public double zetsuRegenBonus() {
+		return NenRules.ZETSU_REGEN_BASE + NenRules.ZETSU_REGEN_PER_MASTERY * mastery(Technique.ZETSU);
+	}
+
+	/** Multiplicador de quao visivel o jogador fica para os mobs em Zetsu. */
+	public double zetsuVisibility() {
+		return NenRules.ZETSU_VISIBILITY_BASE - NenRules.ZETSU_VISIBILITY_PER_MASTERY * mastery(Technique.ZETSU);
 	}
 
 	/** Aura gasta por segundo pela tecnica, ja com os descontos das funcionalidades. */

@@ -17,6 +17,8 @@ public final class NenEvents {
 
 	// Posicao de cada jogador no ultimo segundo, para saber se ele ficou parado meditando
 	private static final Map<ServerPlayer, Vec3> LAST_POSITIONS = new WeakHashMap<>();
+	// Parte fracionada da aura recuperada, para os bonus em porcentagem nao se perderem no arredondamento
+	private static final Map<ServerPlayer, Double> AURA_REMAINDER = new WeakHashMap<>();
 
 	private NenEvents() {
 	}
@@ -38,7 +40,7 @@ public final class NenEvents {
 		NenData before = player.getAttachedOrCreate(ModAttachments.NEN);
 		Vec3 lastPosition = LAST_POSITIONS.put(player, player.position());
 		boolean still = lastPosition != null && lastPosition.distanceToSqr(player.position()) < STILL_DISTANCE_SQR;
-		NenData after = before.awakened() ? tickTraining(player, before) : tickMeditation(player, before, still);
+		NenData after = before.awakened() ? tickTraining(player, before, still) : tickMeditation(player, before, still);
 		if (!after.equals(before)) {
 			player.setAttached(ModAttachments.NEN, after);
 			announceLevelUp(player, before, after);
@@ -67,7 +69,7 @@ public final class NenEvents {
 		return data.withMeditation(meditation).awaken(NenType.roll(player.getRandom()));
 	}
 
-	private static NenData tickTraining(ServerPlayer player, NenData data) {
+	private static NenData tickTraining(ServerPlayer player, NenData data, boolean still) {
 		Technique active = data.isUnlocked(data.active()) && data.active().activatable() ? data.active() : Technique.NONE;
 		NenData result = data.withActive(active);
 
@@ -79,14 +81,43 @@ public final class NenEvents {
 			}
 			result = result.withAura(result.aura() - drain);
 		} else {
-			result = result.withAura(result.aura() + result.auraRegen());
+			double regen = result.auraRegen(still) + AURA_REMAINDER.getOrDefault(player, 0.0);
+			int whole = (int) regen;
+			AURA_REMAINDER.put(player, regen - whole);
+			result = result.withAura(result.aura() + whole);
 		}
 
 		if (active != Technique.NONE) {
 			NenEffects.applyTechnique(player, result);
-			result = result.addTraining(active, 1).addXp(active.xpPerSecond());
+			heal(player, result, still);
+			result = result.addTraining(active, 1 + pertinentBonus(player, active, still)).addXp(active.xpPerSecond());
 		}
 		return result;
+	}
+
+	/** Cura feita pelo proprio mod (sem o efeito de Regeneracao), que continua durante o combate. */
+	private static void heal(ServerPlayer player, NenData data, boolean still) {
+		double fraction = 0;
+		if (data.active() == Technique.TEN && data.has(NenUpgrade.TEN_YOUTH)) {
+			fraction = data.tenYouthHeal();
+		} else if (data.active() == Technique.ZETSU && still && data.has(NenUpgrade.ZETSU_REST)) {
+			fraction = NenRules.ZETSU_DEEP_REST_HEAL;
+		}
+		if (fraction > 0 && player.getHealth() < player.getMaxHealth()) {
+			player.heal((float) (player.getMaxHealth() * fraction));
+		}
+	}
+
+	/**
+	 * Segundo extra de dominio quando a tecnica e usada do jeito certo:
+	 * Ten aguentando golpes, Zetsu descansando parado.
+	 */
+	private static int pertinentBonus(ServerPlayer player, Technique active, boolean still) {
+		return switch (active) {
+			case TEN -> NenCombat.hurtRecently(player) ? 1 : 0;
+			case ZETSU -> still ? 1 : 0;
+			default -> 0;
+		};
 	}
 
 	static void announceLevelUp(ServerPlayer player, NenData before, NenData after) {

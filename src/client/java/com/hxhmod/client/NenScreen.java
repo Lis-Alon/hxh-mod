@@ -43,6 +43,7 @@ public class NenScreen extends Screen {
 	private static final int TECH_LIST_WIDTH = 112;
 	private static final int SHIFT_STEP = 5;
 	private static final int PREVIEW_WIDTH = 84;
+	private static final int DETAIL_SCROLL_STEP = 12;
 
 	private static final int BACKDROP = 0x99000000;
 	private static final int PANEL_TOP = 0xF4101219;
@@ -94,6 +95,13 @@ public class NenScreen extends Screen {
 	// Linha embaixo do mouse neste quadro (-1 se nenhuma), usada pela rodinha
 	private int hoveredStat = -1;
 	private int hoveredTechnique = -1;
+	// Rolagem dos detalhes da tecnica e area visivel (o que fica fora nao recebe clique)
+	private int detailScroll;
+	private int maxDetailScroll;
+	private int scrolledTechnique = -1;
+	private int detailsLeft = Integer.MAX_VALUE;
+	private int clipTop = Integer.MIN_VALUE;
+	private int clipBottom = Integer.MAX_VALUE;
 	private int left;
 	private int top;
 	private int panelWidth;
@@ -309,10 +317,10 @@ public class NenScreen extends Screen {
 		int capacityBonus = (int) (pending.getOrDefault(NenStat.AURA_CAPACITY, 0) * NenStat.AURA_CAPACITY.perPoint());
 		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.max_aura"),
 				String.valueOf(data.maxAura()), String.valueOf(data.maxAura() + capacityBonus), x, y, width);
-		int regen = data.withActive(Technique.NONE).auraRegen();
-		int flowBonus = (int) (pending.getOrDefault(NenStat.AURA_FLOW, 0) * NenStat.AURA_FLOW.perPoint());
+		double regen = data.withActive(Technique.NONE).auraRegen();
+		double flowBonus = pending.getOrDefault(NenStat.AURA_FLOW, 0) * NenStat.AURA_FLOW.perPoint();
 		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.aura_regen"),
-				regen + "/s", (regen + flowBonus) + "/s", x, y, width);
+				number(regen) + "/s", number(regen + flowBonus) + "/s", x, y, width);
 
 		// Explicacao do atributo selecionado
 		NenStat stat = NenStat.values()[selectedStat];
@@ -369,9 +377,35 @@ public class NenScreen extends Screen {
 			graphics.text(font, mark, x + TECH_LIST_WIDTH - 12, rowY + 3, markColor, false);
 		}
 
+		// Detalhes com rolagem (rodinha em cima deles), cortados acima do rodape
 		int detailX = x + TECH_LIST_WIDTH + MARGIN;
-		renderTechniqueDetails(graphics, data, tabs.get(selectedTechnique), detailX, y,
-				left + panelWidth - MARGIN - detailX, mouseX, mouseY);
+		int detailRight = left + panelWidth - MARGIN;
+		int viewBottom = top + panelHeight - 20;
+		detailsLeft = detailX;
+		if (selectedTechnique != scrolledTechnique) {
+			scrolledTechnique = selectedTechnique;
+			detailScroll = 0;
+		}
+		clipTop = y - 2;
+		clipBottom = viewBottom;
+		graphics.enableScissor(detailX - 2, clipTop, detailRight + 2, clipBottom);
+		int end = renderTechniqueDetails(graphics, data, tabs.get(selectedTechnique), detailX, y - detailScroll,
+				detailRight - detailX, mouseX, mouseY);
+		graphics.disableScissor();
+		clipTop = Integer.MIN_VALUE;
+		clipBottom = Integer.MAX_VALUE;
+
+		int contentHeight = end + detailScroll - y;
+		maxDetailScroll = Math.max(0, contentHeight - (viewBottom - y));
+		detailScroll = Math.min(detailScroll, maxDetailScroll);
+		if (maxDetailScroll > 0) {
+			// Barrinha mostrando onde esta a rolagem
+			int trackHeight = viewBottom - y;
+			int thumbHeight = Math.max(12, trackHeight * trackHeight / contentHeight);
+			int thumbY = y + (trackHeight - thumbHeight) * detailScroll / maxDetailScroll;
+			graphics.fill(detailRight + 3, y, detailRight + 5, viewBottom, BAR_BACK);
+			graphics.fill(detailRight + 3, thumbY, detailRight + 5, thumbY + thumbHeight, GOLD_DIM);
+		}
 		footer(graphics, Component.translatable("screen.hxh.nen.hint.techniques"));
 	}
 
@@ -382,7 +416,8 @@ public class NenScreen extends Screen {
 		};
 	}
 
-	private void renderTechniqueDetails(GuiGraphicsExtractor graphics, NenData data, Technique technique,
+	/** Desenha os detalhes da tecnica e devolve o y logo abaixo do conteudo. */
+	private int renderTechniqueDetails(GuiGraphicsExtractor graphics, NenData data, Technique technique,
 			int x, int y, int width, int mouseX, int mouseY) {
 		boolean unlocked = data.isUnlocked(technique);
 
@@ -396,8 +431,8 @@ public class NenScreen extends Screen {
 		graphics.text(font, Component.literal("— ").append(technique.meaning()), x + nameWidth + 6, y + 3, DIM, false);
 		graphics.text(font, technique.origin(), x, y + 15, DIM, false);
 
-		y = wrapped(graphics, technique.lore(), x, y + 28, width, TEXT, 3);
-		y = wrapped(graphics, Component.translatable("screen.hxh.nen.effect", technique.effect()), x, y + 3, width, GOOD, 3);
+		y = wrapped(graphics, technique.lore(), x, y + 28, width, TEXT, 4);
+		y = wrapped(graphics, Component.translatable("screen.hxh.nen.effect", technique.effect()), x, y + 3, width, GOOD, 5);
 
 		// Estado: requisitos para desbloquear, ou treino e botao de ativar
 		y += 5;
@@ -412,7 +447,8 @@ public class NenScreen extends Screen {
 		} else {
 			Component info = technique == Technique.HATSU
 					? hatsuInfo(data)
-					: Component.translatable("screen.hxh.nen.training_info", duration(data.training(technique)),
+					: Component.translatable("screen.hxh.nen.training_info", data.mastery(technique),
+								data.masteryProgress(technique),
 							data.auraDrain(technique) > 0
 									? Component.translatable("screen.hxh.nen.drain", data.auraDrain(technique))
 									: Component.translatable("screen.hxh.nen.no_drain"));
@@ -430,13 +466,14 @@ public class NenScreen extends Screen {
 		// Funcionalidades
 		List<NenUpgrade> upgrades = NenUpgrade.of(technique);
 		if (upgrades.isEmpty()) {
-			return;
+			return y;
 		}
 		sectionTitle(graphics, Component.translatable("screen.hxh.nen.features"), x, y, width);
 		y += 13;
 		for (NenUpgrade upgrade : upgrades) {
 			y = renderUpgrade(graphics, data, upgrade, x, y, width, mouseX, mouseY);
 		}
+		return y;
 	}
 
 	private int renderUpgrade(GuiGraphicsExtractor graphics, NenData data, NenUpgrade upgrade, int x, int y, int width,
@@ -514,7 +551,8 @@ public class NenScreen extends Screen {
 		List<Technique> trained = Technique.TABS.stream().filter(data::isUnlocked).filter(Technique::activatable)
 				.collect(Collectors.toList());
 		for (Technique technique : trained) {
-			rightY = infoLine(graphics, technique.displayName(), Component.literal(duration(data.training(technique))),
+			rightY = infoLine(graphics, technique.displayName(), Component.translatable("screen.hxh.nen.mastery_short", data.mastery(technique),
+						duration(data.training(technique))),
 					rightX, rightY, columnWidth);
 		}
 		footer(graphics, Component.translatable("screen.hxh.nen.hint.status"));
@@ -610,6 +648,14 @@ public class NenScreen extends Screen {
 	}
 
 	private void addClickable(int x, int y, int width, int height, boolean enabled, Runnable action, Runnable rightAction) {
+		// Corta a parte que ficou fora da area rolavel
+		int clippedTop = Math.max(y, clipTop);
+		int clippedBottom = Math.min(y + height, clipBottom);
+		if (clippedBottom <= clippedTop) {
+			return;
+		}
+		y = clippedTop;
+		height = clippedBottom - clippedTop;
 		clickables.add(new Clickable(x, y, width, height, enabled, action, rightAction));
 	}
 
@@ -713,7 +759,11 @@ public class NenScreen extends Screen {
 			return true;
 		}
 		if (page == Page.TECHNIQUES) {
-			handleTechniqueKey(direction > 0 ? InputConstants.KEY_UP : InputConstants.KEY_DOWN);
+			if (mouseX >= detailsLeft) {
+				detailScroll = Math.clamp(detailScroll - direction * DETAIL_SCROLL_STEP, 0, maxDetailScroll);
+			} else {
+				handleTechniqueKey(direction > 0 ? InputConstants.KEY_UP : InputConstants.KEY_DOWN);
+			}
 			return true;
 		}
 		return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
