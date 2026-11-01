@@ -1,0 +1,15 @@
+{
+	"schemaVersion": 1,
+	"id": "hxh-gametest",
+	"version": "1.0.0",
+	"name": "Hunter x Hunter Mod - testes",
+	"environment": "*",
+	"entrypoints": {
+		"fabric-client-gametest": [
+			"com.hxhmod.gametest.NenPanelGameTest"
+		]
+	},
+	"depends": {
+		"hxh": "*"
+	}
+}

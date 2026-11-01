@@ -85,3 +85,15 @@ tasks.register('installMod', Copy) {
 	from tasks.named('jar')
 	into layout.projectDirectory.dir('../mods')
 }
+
+// Testes automaticos do cliente: abrem um mundo, testam o painel do Nen e tiram prints
+// Rodar com: ./gradlew runClientGameTest  (as imagens ficam em build/run/clientGameTest/screenshots)
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "hxh-gametest"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}

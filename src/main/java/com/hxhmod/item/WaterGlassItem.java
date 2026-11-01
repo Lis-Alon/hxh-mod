@@ -48,7 +48,7 @@ public class WaterGlassItem extends Item {
 		if (data.revealed()) {
 			return Component.translatable("nen.hxh.already_known", data.type().displayName());
 		}
-		if (!Technique.REN.isUnlocked(data)) {
+		if (!data.isUnlocked(Technique.REN)) {
 			return Component.translatable("nen.hxh.divination.need_ren");
 		}
 		if (data.aura() < NenRules.DIVINATION_AURA_COST) {
@@ -82,7 +82,7 @@ public class WaterGlassItem extends Item {
 		int gain = NenRules.DIVINATION_MIN_GAIN
 				+ player.getRandom().nextInt(NenRules.DIVINATION_MAX_GAIN - NenRules.DIVINATION_MIN_GAIN + 1);
 		NenData result = data.withAura(data.aura() - NenRules.DIVINATION_AURA_COST)
-				.addXp(Technique.REN, NenRules.DIVINATION_REN_XP)
+				.addXp(NenRules.DIVINATION_XP)
 				.withDivination(data.divination() + gain);
 		player.setAttached(ModAttachments.NEN, result);
 
