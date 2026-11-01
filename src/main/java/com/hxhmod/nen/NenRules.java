@@ -28,6 +28,8 @@ public final class NenRules {
 	public static final int DIVINATION_MAX_GAIN = 12;
 	public static final int DIVINATION_HINT_AT = 35;
 	public static final int DIVINATION_XP = 20;
+	// Segundos meditando na frente do copo colocado no chao
+	public static final int DIVINATION_SECONDS = 5;
 
 	// Raio do En (blocos)
 	public static final int EN_RADIUS = 16;

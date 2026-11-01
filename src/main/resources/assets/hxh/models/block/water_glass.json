@@ -1,0 +1,47 @@
+{
+	"textures": {
+		"particle": "hxh:block/water_glass_glass",
+		"glass": {
+			"sprite": "hxh:block/water_glass_glass",
+			"force_translucent": true
+		},
+		"water": {
+			"sprite": "hxh:block/water_glass_water",
+			"force_translucent": true
+		},
+		"leaf": "hxh:block/water_glass_leaf"
+	},
+	"elements": [
+		{
+			"from": [5.5, 0.5, 5.5],
+			"to": [10.5, 6, 10.5],
+			"faces": {
+				"up": {"uv": [5.5, 5.5, 10.5, 10.5], "texture": "#water"},
+				"north": {"uv": [5.5, 10, 10.5, 15.5], "texture": "#water"},
+				"south": {"uv": [5.5, 10, 10.5, 15.5], "texture": "#water"},
+				"east": {"uv": [5.5, 10, 10.5, 15.5], "texture": "#water"},
+				"west": {"uv": [5.5, 10, 10.5, 15.5], "texture": "#water"}
+			}
+		},
+		{
+			"from": [6.25, 6.05, 6.25],
+			"to": [9.75, 6.05, 9.75],
+			"rotation": {"origin": [8, 6, 8], "axis": "y", "angle": 22.5},
+			"faces": {
+				"up": {"uv": [0, 0, 16, 16], "texture": "#leaf"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#leaf"}
+			}
+		},
+		{
+			"from": [5, 0, 5],
+			"to": [11, 8, 11],
+			"faces": {
+				"down": {"uv": [5, 5, 11, 11], "texture": "#glass", "cullface": "down"},
+				"north": {"uv": [0, 8, 6, 16], "texture": "#glass"},
+				"south": {"uv": [0, 8, 6, 16], "texture": "#glass"},
+				"east": {"uv": [0, 8, 6, 16], "texture": "#glass"},
+				"west": {"uv": [0, 8, 6, 16], "texture": "#glass"}
+			}
+		}
+	]
+}

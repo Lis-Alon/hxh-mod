@@ -12,6 +12,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
  * Painel do Nen (tecla N), com tres abas:
  * Nivel (proficiencia e pontos de atributo), Tecnicas (uma aba por tecnica) e Status (registro do treino).
  * Tudo e desenhado a mao; os botoes sao recriados a cada quadro e conferidos no clique.
+ * Mouse: clique seleciona e aperta botoes, botao direito tira ponto, a rodinha ajusta ou troca a selecao.
+ * Enquanto o painel esta aberto o personagem fica sentado meditando.
  */
 public class NenScreen extends Screen {
 	private static final int MAX_WIDTH = 440;
@@ -39,6 +42,7 @@ public class NenScreen extends Screen {
 	private static final int TECH_ROW_HEIGHT = 16;
 	private static final int TECH_LIST_WIDTH = 112;
 	private static final int SHIFT_STEP = 5;
+	private static final int PREVIEW_WIDTH = 84;
 
 	private static final int BACKDROP = 0x99000000;
 	private static final int PANEL_TOP = 0xF4101219;
@@ -54,6 +58,8 @@ public class NenScreen extends Screen {
 	private static final int ROW_BOTTOM = 0xFF131726;
 	private static final int ROW_SELECTED_TOP = 0xFF6B5B3C;
 	private static final int ROW_SELECTED_BOTTOM = 0xFF3A3326;
+	private static final int ROW_HOVER_TOP = 0xFF2B3349;
+	private static final int ROW_HOVER_BOTTOM = 0xFF1D2236;
 	private static final int BAR_BACK = 0xFF262A36;
 	private static final int XP_COLOR = 0xFFD8B46A;
 
@@ -73,8 +79,8 @@ public class NenScreen extends Screen {
 		}
 	}
 
-	/** Area clicavel desenhada neste quadro. */
-	private record Clickable(int x, int y, int width, int height, boolean enabled, Runnable action) {
+	/** Area clicavel desenhada neste quadro; {@code rightAction} roda com o botao direito (pode ser null). */
+	private record Clickable(int x, int y, int width, int height, boolean enabled, Runnable action, Runnable rightAction) {
 		boolean contains(double mouseX, double mouseY) {
 			return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
 		}
@@ -85,6 +91,9 @@ public class NenScreen extends Screen {
 	private Page page = Page.LEVEL;
 	private int selectedStat;
 	private int selectedTechnique;
+	// Linha embaixo do mouse neste quadro (-1 se nenhuma), usada pela rodinha
+	private int hoveredStat = -1;
+	private int hoveredTechnique = -1;
 	private int left;
 	private int top;
 	private int panelWidth;
@@ -100,6 +109,20 @@ public class NenScreen extends Screen {
 		panelHeight = Math.min(MAX_HEIGHT, height - 8);
 		left = (width - panelWidth) / 2;
 		top = (height - panelHeight) / 2;
+		sendPanelOpen(true);
+	}
+
+	@Override
+	public void removed() {
+		sendPanelOpen(false);
+		super.removed();
+	}
+
+	/** Avisa o servidor para sentar (ou levantar) o personagem. */
+	private static void sendPanelOpen(boolean open) {
+		if (ClientPlayNetworking.canSend(NenPayloads.PanelOpen.TYPE)) {
+			ClientPlayNetworking.send(new NenPayloads.PanelOpen(open));
+		}
 	}
 
 	private NenData data() {
@@ -133,17 +156,19 @@ public class NenScreen extends Screen {
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 		clickables.clear();
+		hoveredStat = -1;
+		hoveredTechnique = -1;
 		NenData data = data();
 
 		renderHeader(graphics, mouseX, mouseY);
 		if (!data.awakened()) {
-			renderDormant(graphics, data);
+			renderDormant(graphics, data, mouseX, mouseY);
 			return;
 		}
 		switch (page) {
 			case LEVEL -> renderLevelPage(graphics, data, mouseX, mouseY);
 			case TECHNIQUES -> renderTechniquesPage(graphics, data, mouseX, mouseY);
-			case STATUS -> renderStatusPage(graphics, data);
+			case STATUS -> renderStatusPage(graphics, data, mouseX, mouseY);
 		}
 	}
 
@@ -182,10 +207,12 @@ public class NenScreen extends Screen {
 		graphics.fill(left + MARGIN, top + HEADER_HEIGHT, left + panelWidth - MARGIN, top + HEADER_HEIGHT + 1, GOLD_DIM);
 	}
 
-	private void renderDormant(GuiGraphicsExtractor graphics, NenData data) {
+	private void renderDormant(GuiGraphicsExtractor graphics, NenData data, int mouseX, int mouseY) {
 		int x = left + MARGIN + 6;
 		int y = top + HEADER_HEIGHT + 20;
-		int width = panelWidth - 2 * MARGIN - 12;
+		int width = panelWidth - 3 * MARGIN - 12 - PREVIEW_WIDTH;
+		renderPreview(graphics, left + panelWidth - MARGIN - PREVIEW_WIDTH, top + HEADER_HEIGHT + 8, PREVIEW_WIDTH,
+				panelHeight - HEADER_HEIGHT - 16, mouseX, mouseY);
 		sectionTitle(graphics, Component.translatable("screen.hxh.nen.dormant"), left + MARGIN, y - 10, width);
 		y = wrapped(graphics, Component.translatable("screen.hxh.nen.dormant_hint"), x, y + 6, width, DIM, 4);
 		graphics.text(font, Component.translatable("screen.hxh.nen.meditation", data.meditation(), NenRules.MEDITATION_SECONDS),
@@ -240,8 +267,15 @@ public class NenScreen extends Screen {
 	private void renderStatRow(GuiGraphicsExtractor graphics, NenData data, NenStat stat, int index, int x, int y,
 			int width, int mouseX, int mouseY) {
 		boolean selected = index == selectedStat;
-		row(graphics, x, y, width, ROW_HEIGHT - 2, selected);
-		addClickable(x, y, width, ROW_HEIGHT - 2, true, () -> selectedStat = index);
+		boolean hover = hovered(x, y, width, ROW_HEIGHT - 2, mouseX, mouseY);
+		if (hover) {
+			hoveredStat = index;
+		}
+		row(graphics, x, y, width, ROW_HEIGHT - 2, selected, hover);
+		addClickable(x, y, width, ROW_HEIGHT - 2, true, () -> selectedStat = index, () -> {
+			selectedStat = index;
+			adjust(stat, -1);
+		});
 
 		int current = data.statPoints(stat);
 		int next = current + pending.getOrDefault(stat, 0);
@@ -254,7 +288,7 @@ public class NenScreen extends Screen {
 		Component nextText = Component.literal(next >= stat.maxPoints() ? next + "★" : String.valueOf(next));
 		graphics.centeredText(font, nextText, nextX, y + 4, next > current ? GOOD : TEXT);
 
-		if (selected) {
+		if (selected || hover) {
 			arrow(graphics, "‹", nextX - 22, y, mouseX, mouseY, () -> adjust(stat, -1));
 			arrow(graphics, "›", nextX + 12, y, mouseX, mouseY, () -> adjust(stat, 1));
 		}
@@ -316,7 +350,11 @@ public class NenScreen extends Screen {
 			Technique technique = tabs.get(i);
 			int rowY = y + i * TECH_ROW_HEIGHT;
 			boolean selected = i == selectedTechnique;
-			row(graphics, x, rowY, TECH_LIST_WIDTH, TECH_ROW_HEIGHT - 2, selected);
+			boolean hover = hovered(x, rowY, TECH_LIST_WIDTH, TECH_ROW_HEIGHT - 2, mouseX, mouseY);
+			if (hover) {
+				hoveredTechnique = i;
+			}
+			row(graphics, x, rowY, TECH_LIST_WIDTH, TECH_ROW_HEIGHT - 2, selected, hover);
 			int index = i;
 			addClickable(x, rowY, TECH_LIST_WIDTH, TECH_ROW_HEIGHT - 2, true, () -> selectedTechnique = index);
 
@@ -445,8 +483,10 @@ public class NenScreen extends Screen {
 
 	// --------------------------------------------------------------- Status
 
-	private void renderStatusPage(GuiGraphicsExtractor graphics, NenData data) {
-		int columnWidth = (panelWidth - 3 * MARGIN) / 2;
+	private void renderStatusPage(GuiGraphicsExtractor graphics, NenData data, int mouseX, int mouseY) {
+		int columnWidth = (panelWidth - 4 * MARGIN - PREVIEW_WIDTH) / 2;
+		renderPreview(graphics, left + panelWidth - MARGIN - PREVIEW_WIDTH, top + HEADER_HEIGHT + 8, PREVIEW_WIDTH,
+				panelHeight - HEADER_HEIGHT - 30, mouseX, mouseY);
 		int x = left + MARGIN;
 		int y = top + HEADER_HEIGHT + 8;
 
@@ -491,6 +531,17 @@ public class NenScreen extends Screen {
 		return y + ROW_HEIGHT - 1;
 	}
 
+	/** O proprio personagem, sentado em meditacao, olhando para o mouse. */
+	private void renderPreview(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int mouseX, int mouseY) {
+		graphics.fillGradient(x, y, x + width, y + height, ROW_TOP, ROW_BOTTOM);
+		graphics.fill(x, y + height - 1, x + width, y + height, GOLD_DIM);
+		if (minecraft.player != null) {
+			int size = Math.min(width * 3 / 5, height * 2 / 5);
+			InventoryScreen.extractEntityInInventoryFollowsMouse(graphics, x, y, x + width, y + height, size, 0.0625F,
+					mouseX, mouseY, minecraft.player);
+		}
+	}
+
 	// ------------------------------------------------------------- Pecas
 
 	private void sectionTitle(GuiGraphicsExtractor graphics, Component title, int x, int y, int width) {
@@ -499,8 +550,13 @@ public class NenScreen extends Screen {
 	}
 
 	private void row(GuiGraphicsExtractor graphics, int x, int y, int width, int height, boolean selected) {
-		graphics.fillGradient(x, y, x + width, y + height,
-				selected ? ROW_SELECTED_TOP : ROW_TOP, selected ? ROW_SELECTED_BOTTOM : ROW_BOTTOM);
+		row(graphics, x, y, width, height, selected, false);
+	}
+
+	private void row(GuiGraphicsExtractor graphics, int x, int y, int width, int height, boolean selected, boolean hover) {
+		int topColor = selected ? ROW_SELECTED_TOP : hover ? ROW_HOVER_TOP : ROW_TOP;
+		int bottomColor = selected ? ROW_SELECTED_BOTTOM : hover ? ROW_HOVER_BOTTOM : ROW_BOTTOM;
+		graphics.fillGradient(x, y, x + width, y + height, topColor, bottomColor);
 		if (selected) {
 			graphics.fill(x, y, x + 2, y + height, GOLD);
 		}
@@ -550,7 +606,11 @@ public class NenScreen extends Screen {
 	}
 
 	private void addClickable(int x, int y, int width, int height, boolean enabled, Runnable action) {
-		clickables.add(new Clickable(x, y, width, height, enabled, action));
+		addClickable(x, y, width, height, enabled, action, null);
+	}
+
+	private void addClickable(int x, int y, int width, int height, boolean enabled, Runnable action, Runnable rightAction) {
+		clickables.add(new Clickable(x, y, width, height, enabled, action, rightAction));
 	}
 
 	private static boolean hovered(int x, int y, int width, int height, int mouseX, int mouseY) {
@@ -613,19 +673,50 @@ public class NenScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (event.button() == 0) {
+		boolean right = event.button() == InputConstants.MOUSE_BUTTON_RIGHT;
+		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT || right) {
 			// Percorre de tras para frente: o que foi desenhado por ultimo fica por cima
 			for (int i = clickables.size() - 1; i >= 0; i--) {
 				Clickable clickable = clickables.get(i);
-				if (clickable.contains(event.x(), event.y())) {
-					if (clickable.enabled()) {
-						clickable.action().run();
-					}
-					return true;
+				Runnable action = right ? clickable.rightAction() : clickable.action();
+				if (action == null || !clickable.contains(event.x(), event.y())) {
+					continue;
 				}
+				if (clickable.enabled()) {
+					action.run();
+				}
+				// Clique duplo numa tecnica da lista: desbloqueia ou liga/desliga
+				if (doubleClick && !right && page == Page.TECHNIQUES && hoveredTechnique >= 0) {
+					handleTechniqueKey(InputConstants.KEY_RETURN);
+				}
+				return true;
 			}
 		}
 		return super.mouseClicked(event, doubleClick);
+	}
+
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+		if (scrollY == 0 || !data().awakened()) {
+			return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+		}
+		int direction = scrollY > 0 ? 1 : -1;
+		if (page == Page.LEVEL) {
+			// Em cima de um atributo: a rodinha poe ou tira pontos (Shift = 5). Fora: troca a selecao.
+			if (hoveredStat >= 0) {
+				selectedStat = hoveredStat;
+				int step = minecraft.hasShiftDown() ? SHIFT_STEP : 1;
+				adjust(NenStat.values()[hoveredStat], direction * step);
+			} else {
+				handleLevelKey(direction > 0 ? InputConstants.KEY_UP : InputConstants.KEY_DOWN, false);
+			}
+			return true;
+		}
+		if (page == Page.TECHNIQUES) {
+			handleTechniqueKey(direction > 0 ? InputConstants.KEY_UP : InputConstants.KEY_DOWN);
+			return true;
+		}
+		return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
 	}
 
 	@Override

@@ -2,6 +2,7 @@ package com.hxhmod.network;
 
 import com.hxhmod.HxHMod;
 import com.hxhmod.nen.NenActions;
+import com.hxhmod.nen.NenPose;
 import com.hxhmod.nen.NenStat;
 import com.hxhmod.nen.NenUpgrade;
 import com.hxhmod.nen.Technique;
@@ -67,11 +68,23 @@ public final class NenPayloads {
 		}
 	}
 
+	/** Painel aberto ou fechado: com ele aberto o personagem senta em posicao de meditacao. */
+	public record PanelOpen(boolean open) implements CustomPacketPayload {
+		public static final Type<PanelOpen> TYPE = new Type<>(HxHMod.id("panel_open"));
+		public static final StreamCodec<ByteBuf, PanelOpen> CODEC = ByteBufCodecs.BOOL.map(PanelOpen::new, PanelOpen::open);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	public static void register() {
 		PayloadTypeRegistry.serverboundPlay().register(ToggleTechnique.TYPE, ToggleTechnique.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(UnlockTechnique.TYPE, UnlockTechnique.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(BuyUpgrade.TYPE, BuyUpgrade.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(AllocateStats.TYPE, AllocateStats.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(PanelOpen.TYPE, PanelOpen.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(ToggleTechnique.TYPE,
 				(payload, context) -> NenActions.toggle(context.player(), payload.technique()));
@@ -81,5 +94,7 @@ public final class NenPayloads {
 				(payload, context) -> NenActions.buy(context.player(), payload.upgrade()));
 		ServerPlayNetworking.registerGlobalReceiver(AllocateStats.TYPE,
 				(payload, context) -> NenActions.allocate(context.player(), payload.points()));
+		ServerPlayNetworking.registerGlobalReceiver(PanelOpen.TYPE,
+				(payload, context) -> NenPose.setPanelOpen(context.player(), payload.open()));
 	}
 }

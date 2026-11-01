@@ -1,5 +1,6 @@
 package com.hxhmod;
 
+import com.hxhmod.block.ModBlocks;
 import com.hxhmod.item.ModItems;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenEvents;
@@ -15,6 +16,7 @@ public class HxHMod implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		ModBlocks.register();
 		ModItems.register();
 		ModAttachments.register();
 		NenEvents.register();
