@@ -1,7 +1,7 @@
 package com.hxhmod.item;
 
 import com.hxhmod.HxHMod;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -25,7 +25,7 @@ public final class ModItems {
 	}
 
 	public static void register() {
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
-				.register(entries -> entries.accept(HUNTER_LICENSE));
+		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
+				.register(output -> output.accept(HUNTER_LICENSE));
 	}
 }
