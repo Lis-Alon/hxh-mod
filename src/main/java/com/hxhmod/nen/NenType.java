@@ -3,6 +3,7 @@ package com.hxhmod.nen;
 import com.mojang.serialization.Codec;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 
 public enum NenType implements StringRepresentable {
@@ -44,8 +45,23 @@ public enum NenType implements StringRepresentable {
 		return Component.translatable("nen.hxh.type." + name).withStyle(color);
 	}
 
-	/** O que acontece com o copo de agua no teste de Nen. */
+	/** O que acontece com o copo de agua quando a videncia termina. */
 	public Component waterReaction() {
 		return Component.translatable("nen.hxh.reaction." + name);
+	}
+
+	/** Um sinal fraco da reacao, mostrado no meio do treino com a folha. */
+	public Component waterHint() {
+		return Component.translatable("nen.hxh.hint." + name);
+	}
+
+	private static final int SPECIALIZATION_CHANCE = 20; // 1 em 20
+	private static final NenType[] COMMON_TYPES = {ENHANCEMENT, TRANSMUTATION, EMISSION, CONJURATION, MANIPULATION};
+
+	public static NenType roll(RandomSource random) {
+		if (random.nextInt(SPECIALIZATION_CHANCE) == 0) {
+			return SPECIALIZATION;
+		}
+		return COMMON_TYPES[random.nextInt(COMMON_TYPES.length)];
 	}
 }
