@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "hxh",
+	"version": "${version}",
+	"name": "Hunter x Hunter Mod",
+	"description": "Um fan mod de Hunter x Hunter: Nen, Hunters e muito mais.",
+	"authors": [
+		"allis"
+	],
+	"license": "CC0-1.0",
+	"icon": "assets/hxh/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.hxhmod.HxHMod"
+		],
+		"client": [
+			"com.hxhmod.client.HxHModClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
