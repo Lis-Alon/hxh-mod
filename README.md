@@ -1,6 +1,6 @@
 # Hunter x Hunter Mod
 
-vai tomando
+Fan mod de Hunter x Hunter para Minecraft **26.3** (Fabric).
 
 ![Painel do Nen - aba Nível](docs/painel-nivel.png)
 
