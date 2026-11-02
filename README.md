@@ -6,11 +6,11 @@ Fan mod de Hunter x Hunter para Minecraft **26.3** (Fabric).
 
 ## Como funciona o Nen
 
-1. **Despertar:** fique parado no chão agachado (ou com o painel do Nen aberto) para meditar. Depois de 60 segundos sua aura desperta e o Ten é liberado.
+1. **Despertar:** fique parado no chão agachado (ou com o painel do Nen aberto) para meditar. Depois de 60 segundos sua aura desperta e você aprende os quatro princípios: **Ten, Zetsu, Ren e Hatsu**.
 2. **Painel do Nen:** aperte **N** (dá para trocar em Opções > Controles > Hunter x Hunter).
-3. **Proficiência (nível 1 a 100):** cada segundo com uma técnica ativa dá XP de Nen. Cada nível dá 2 pontos, e a cada 10 níveis você ganha +3 de bônus.
-4. **Pontos:** gaste em **atributos** (vida, dano, velocidade de ataque, proteção, agilidade, capacidade e fluxo de aura) ou para **desbloquear técnicas** e as **funcionalidades** de cada uma. Os atributos e os bônus das técnicas são **status internos do personagem**: não mexem na armadura, na vida máxima nem em outros atributos do Minecraft (os corações extras aparecem normalmente na barra de vida).
-5. **Vidência (Copo d'Água com Folha):** com o Ren liberado, coloque o copo no chão e clique nele com a mão vazia: o personagem senta e se concentra por 5 segundos (não ande nem se afaste). Também dá para segurar o botão direito com o copo na mão. Cada sessão gasta aura e avança a leitura até revelar seu tipo de Nen.
+3. **Nível de Nen (1 a 100):** cada segundo com uma técnica ativa dá XP de Nen. Cada nível dá 2 pontos, e a cada 10 níveis você ganha +3 de bônus.
+4. **Pontos:** gaste em **atributos** (vida, dano, velocidade de ataque, proteção, agilidade, capacidade e fluxo de aura) ou nas **funcionalidades** de cada técnica. As técnicas não custam pontos: são aprendidas pela proficiência (veja abaixo). Os atributos e os bônus das técnicas são **status internos do personagem**: não mexem na armadura, na vida máxima nem em outros atributos do Minecraft (os corações extras aparecem normalmente na barra de vida).
+5. **Vidência (Copo d'Água com Folha):** com o Ren, coloque o copo no chão e clique nele com a mão vazia: o personagem senta e se concentra por 5 segundos (não ande nem se afaste). Também dá para segurar o botão direito com o copo na mão. Cada sessão gasta aura e avança a leitura até revelar seu tipo de Nen.
 6. **Meditação:** com o painel aberto, meditando para despertar ou concentrado no copo, o personagem senta de pernas cruzadas.
 
 Todos os itens do mod ficam na aba **Hunter x Hunter** do inventário do criativo.
@@ -24,14 +24,17 @@ Todos os itens do mod ficam na aba **Hunter x Hunter** do inventário do criativ
 | Aba | O que tem |
 |---|---|
 | **Nível** | Nível, pontos, XP para o próximo nível, distribuição de atributos (atual → novo) e status base |
-| **Técnicas** | Uma aba para cada técnica, com o que ela é, o que faz no jogo, requisitos, botão de ativar e funcionalidades para desbloquear |
+| **Técnicas** | Uma aba para cada técnica, com o que ela é, o que faz no jogo, proficiência ou requisitos, botão de ativar e funcionalidades para desbloquear |
+| **Árvore** | Como as técnicas se ligam, a proficiência de cada uma e quanto falta para aprender as próximas. Passe o mouse para ver os requisitos e clique para abrir a técnica |
 | **Status** | Registro do treino: tipo, vidência, XP total, pontos e tempo treinado em cada técnica |
 
-Mouse: clique seleciona e aperta os botões, a rodinha em cima de um atributo põe pontos (Shift = 5), o botão direito tira 1 ponto e clique duplo numa técnica desbloqueia ou liga/desliga.
+Mouse: clique seleciona e aperta os botões, a rodinha em cima de um atributo põe pontos (Shift = 5), o botão direito tira 1 ponto e clique duplo numa técnica liga/desliga.
 
 Teclado: ↑↓ seleciona, ←→ ajusta (Shift = 5 por vez), Enter confirma, Tab troca de aba.
 
 ![Painel do Nen - aba Técnicas](docs/painel-tecnicas.png)
+
+![Painel do Nen - aba Árvore](docs/painel-arvore.png)
 
 ### Técnicas
 
@@ -39,25 +42,29 @@ Várias técnicas podem ficar ligadas ao mesmo tempo (o gasto de aura soma). A e
 
 Cada técnica tem sua tecla de atalho (dá para trocar em Opções > Controles > Hunter x Hunter):
 
-| Ten | Zetsu | Ren | Ken | Gyo | In | Ko | Ryu | Shu | En |
-|---|---|---|---|---|---|---|---|---|---|
-| Z | V | R | K | G | I | B | Y | H | J |
+| Ten | Zetsu | Ren | Hatsu | Ken | Gyo | In | Ko | Ryu | Shu | En |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Z | V | R | U | K | G | I | B | Y | H | J |
+
+**Proficiência (0% a 100%):** cada técnica tem a sua, que sobe com o tempo em que ela fica ligada (mais rápido usando do jeito certo: Ten levando golpes, Zetsu parado). Os quatro princípios vêm ao despertar; as outras técnicas são aprendidas **sozinhas e de graça** quando a proficiência nas técnicas base chega no mínimo pedido.
 
 Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x Hunter](https://hunter-x-hunter.fandom.com/pt/wiki/Nen):
 
-| Técnica | Vem de | Efeito no jogo |
+| Técnica | Aprende com | Efeito no jogo |
 |---|---|---|
-| **Ten** (Envoltura) | princípio | Reduz o dano de 10% a 25% conforme o domínio |
-| **Ken** (Fortificar) | Ten + Ren | -30% de dano recebido (-45% com Couraça de Ferro) |
-| **Zetsu** (Corte) | Ten | Mobs percebem menos você, aura volta mais rápido (mais ainda parado), mas sem defesa de Nen |
-| **In** (Ocultar) | Zetsu + Ren | Invisibilidade e +15% de dano corpo a corpo |
-| **Ren** (Prática) | Ten | +25% de dano corpo a corpo |
-| **Gyo** (Coagular) | Ren | Visão noturna e revela invisíveis |
-| **Ko** (Endurecimento) | Gyo + Zetsu | +80% de dano, mas recebe +50% de dano e fica 15% mais lento |
-| **Ryu** (Fluxo) | Ko + Ken | +35% de dano, -25% de dano recebido e +10% de velocidade |
-| **Shu** (Ciclo) | Ren | Quebra blocos 60% mais rápido |
-| **En** (Território) | Ten + Ren | Revela criaturas ao redor |
-| **Hatsu** (Liberação) | Ren + tipo revelado | Habilidade do seu tipo (em breve) |
+| **Ten** (Envoltura) | despertar | Reduz o dano de 10% a 25% conforme a proficiência |
+| **Zetsu** (Corte) | despertar | Mobs percebem menos você, aura volta mais rápido (mais ainda parado), mas sem defesa de Nen |
+| **Ren** (Prática) | despertar | +25% de dano corpo a corpo |
+| **Hatsu** (Liberação) | despertar | Treina a aura do seu tipo (a habilidade especial vem em breve) |
+| **Gyo** (Coagular) | Ten 20% | Visão noturna e revela invisíveis |
+| **In** (Ocultar) | Zetsu 50% | Invisibilidade e +15% de dano corpo a corpo |
+| **En** (Território) | Ten 40% + Ren 40% | Detecta toda criatura numa área de 5x5 (1%) até 20x20 (100%), mesmo invisível; só você vê o contorno |
+| **Shu** (Ciclo) | Ten 50% | Quebra blocos 60% mais rápido |
+| **Ken** (Fortificar) | Ten 60% + Ren 60% | -30% de dano recebido (-45% com Couraça de Ferro) |
+| **Ko** (Endurecimento) | Gyo, Ten, Zetsu, Ren e Hatsu 70% | +80% de dano, mas recebe +50% de dano e fica 15% mais lento |
+| **Ryu** (Fluxo) | Gyo 40% + Ken 40% | +35% de dano, -25% de dano recebido e +10% de velocidade |
+
+![En detectando um porco invisível](docs/en-invisivel.png)
 
 ### Comandos
 
@@ -65,8 +72,8 @@ Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x
 
 | Comando | O que faz |
 |---|---|
-| `/nen unlock <técnica\|funcionalidade\|all>` | Libera de graça (junto com o que vem antes) |
-| `/nen lock <técnica\|funcionalidade\|all>` | Bloqueia de novo; se você tinha pago, os pontos voltam |
+| `/nen unlock <técnica\|funcionalidade\|all>` | Libera na hora, mesmo sem a proficiência (junto com as técnicas base) |
+| `/nen lock <técnica\|funcionalidade\|all>` | Bloqueia de novo e não deixa ser aprendida sozinha até usar o unlock; funcionalidades pagas devolvem os pontos |
 | `/nen level <1-100>` | Vai direto para o nível |
 | `/nen xp <quantidade>` | Dá XP de Nen |
 | `/nen points add <quantidade>` | Pontos extras para gastar no painel (negativo tira) |

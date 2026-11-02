@@ -82,10 +82,14 @@ public final class NenRules {
 	// Segundos meditando na frente do copo colocado no chao
 	public static final int DIVINATION_SECONDS = 5;
 
-	// Raio do En (blocos)
-	public static final int EN_RADIUS = 16;
-	public static final int EN_WIDE_RADIUS = 32;
-	public static final int EN_VAST_RADIUS = 50;
+	// Raio em que o Gyo revela quem esta invisivel (blocos)
+	public static final int GYO_REVEAL_RADIUS = 16;
+	// En: area quadrada de deteccao, de 5x5 (1% de proficiencia) ate 20x20 (100%)
+	public static final double EN_MIN_SIZE = 5;
+	public static final double EN_MAX_SIZE = 20;
+	// Funcionalidades do En aumentam a area
+	public static final double EN_WIDE_MULTIPLIER = 1.5;
+	public static final double EN_VAST_MULTIPLIER = 2.0;
 
 	private NenRules() {
 	}

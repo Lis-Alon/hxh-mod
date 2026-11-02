@@ -33,17 +33,6 @@ public final class NenPayloads {
 		}
 	}
 
-	public record UnlockTechnique(Technique technique) implements CustomPacketPayload {
-		public static final Type<UnlockTechnique> TYPE = new Type<>(HxHMod.id("unlock_technique"));
-		public static final StreamCodec<ByteBuf, UnlockTechnique> CODEC =
-				Technique.STREAM_CODEC.map(UnlockTechnique::new, UnlockTechnique::technique);
-
-		@Override
-		public Type<? extends CustomPacketPayload> type() {
-			return TYPE;
-		}
-	}
-
 	public record BuyUpgrade(NenUpgrade upgrade) implements CustomPacketPayload {
 		public static final Type<BuyUpgrade> TYPE = new Type<>(HxHMod.id("buy_upgrade"));
 		public static final StreamCodec<ByteBuf, BuyUpgrade> CODEC =
@@ -81,15 +70,12 @@ public final class NenPayloads {
 
 	public static void register() {
 		PayloadTypeRegistry.serverboundPlay().register(ToggleTechnique.TYPE, ToggleTechnique.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(UnlockTechnique.TYPE, UnlockTechnique.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(BuyUpgrade.TYPE, BuyUpgrade.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(AllocateStats.TYPE, AllocateStats.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PanelOpen.TYPE, PanelOpen.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(ToggleTechnique.TYPE,
 				(payload, context) -> NenActions.toggle(context.player(), payload.technique()));
-		ServerPlayNetworking.registerGlobalReceiver(UnlockTechnique.TYPE,
-				(payload, context) -> NenActions.unlock(context.player(), payload.technique()));
 		ServerPlayNetworking.registerGlobalReceiver(BuyUpgrade.TYPE,
 				(payload, context) -> NenActions.buy(context.player(), payload.upgrade()));
 		ServerPlayNetworking.registerGlobalReceiver(AllocateStats.TYPE,

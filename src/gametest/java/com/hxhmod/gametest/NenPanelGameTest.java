@@ -1,6 +1,7 @@
 package com.hxhmod.gametest;
 
 import com.hxhmod.block.ModBlocks;
+import com.hxhmod.client.EnSense;
 import com.hxhmod.client.NenScreen;
 import com.hxhmod.item.ModItems;
 import com.hxhmod.nen.ModAttachments;
@@ -21,6 +22,13 @@ import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.animal.pig.Pig;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.GameType;
 
@@ -53,19 +61,28 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			context.waitTicks(25);
 			context.takeScreenshot("nen_1_dormant");
 
-			// Desperta o Nen e adianta o treino para ter pontos e algumas tecnicas liberadas
+			// Desperta o Nen e adianta o treino: Ten com 20% de proficiencia ja ensina o Gyo
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				NenData data = NenData.DEFAULT.awaken(NenType.ENHANCEMENT)
 						.addXp(TEST_XP)
-						.unlock(Technique.ZETSU)
-						.unlock(Technique.REN)
-						.addTraining(Technique.TEN, 754)
-						.addTraining(Technique.REN, 121)
+						.addTraining(Technique.TEN, 2420)
+						.addTraining(Technique.REN, 1500)
+						.addTraining(Technique.ZETSU, 9000)
 						.withActive(Technique.TEN);
+				check(Technique.BASE.stream().allMatch(data::isUnlocked) && !data.isUnlocked(Technique.GYO),
+						"ao despertar deveria vir so Ten, Zetsu, Ren e Hatsu");
 				player.setAttached(ModAttachments.NEN, data.withAura(80));
 			});
 			context.waitTicks(30);
+			singleplayer.getServer().runOnServer(server -> {
+				NenData data = server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.NEN);
+				check(data.mastery(Technique.TEN) >= 20 && data.isUnlocked(Technique.GYO),
+						"Ten com 20% deveria ensinar o Gyo, Ten ficou em " + data.mastery(Technique.TEN));
+				check(!data.isUnlocked(Technique.SHU) && !data.isUnlocked(Technique.IN) && !data.isUnlocked(Technique.KEN),
+						"Shu, In e Ken ainda nao deveriam ter sido aprendidos");
+				check(data.pointsSpent() == 0, "aprender tecnicas nao deveria gastar pontos");
+			});
 
 			TestInput input = context.getInput();
 			context.setScreen(NenScreen::new);
@@ -122,6 +139,29 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			context.waitTicks(2);
 			context.takeScreenshot("nen_5_techniques_gyo");
 
+			// Arvore de tecnicas, com o mouse em cima do Ken para mostrar os requisitos no rodape
+			input.pressKey(InputConstants.KEY_TAB);
+			context.waitTicks(2);
+			context.takeScreenshot("nen_5b_tree");
+			double[] ken = context.computeOnClient(client -> {
+				int scale = client.getWindow().getGuiScale();
+				int guiWidth = client.getWindow().getGuiScaledWidth();
+				int guiHeight = client.getWindow().getGuiScaledHeight();
+				int panelWidth = Math.min(PANEL_WIDTH, guiWidth - 8);
+				int panelHeight = Math.min(PANEL_HEIGHT, guiHeight - 8);
+				int left = (guiWidth - panelWidth) / 2;
+				int top = (guiHeight - panelHeight) / 2;
+				int areaTop = top + 30 + 10;
+				int areaHeight = top + panelHeight - 24 - areaTop;
+				float treeScale = Math.min(1.0F, Math.min((panelWidth - 20) / 416.0F, areaHeight / 174.0F));
+				float originX = left + (panelWidth - 416 * treeScale) / 2;
+				float originY = areaTop + Math.max(0, (areaHeight - 174 * treeScale) / 2);
+				return new double[] {(originX + 208 * treeScale) * scale, (originY + 87 * treeScale) * scale};
+			});
+			input.setCursorPos(ken[0], ken[1]);
+			context.waitTicks(2);
+			context.takeScreenshot("nen_5c_tree_ken");
+
 			input.pressKey(InputConstants.KEY_TAB);
 			context.waitTicks(10);
 			context.takeScreenshot("nen_6_status");
@@ -161,7 +201,7 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				float reduced = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
 				check(Math.abs(reduced - 10.0F * (1 - data.tenDefense())) < 0.001F && reduced < 10.0F,
 						"o Ten deveria reduzir o dano, veio " + reduced);
-				player.setAttached(ModAttachments.NEN, data.unlock(Technique.ZETSU).withActive(Technique.ZETSU));
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.ZETSU));
 				check(NenCombat.visibility(player) < 1.0, "em Zetsu o jogador deveria ficar mais discreto");
 				check(NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F) == 10.0F,
 						"em Zetsu golpes sem aura causam o dano normal");
@@ -171,7 +211,7 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			// Varias tecnicas juntas; o Zetsu so funciona sozinho
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
-				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).unlock(Technique.ZETSU).withActive(Technique.NONE);
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.NONE);
 				NenData tenRen = data.toggled(Technique.TEN).toggled(Technique.REN);
 				check(tenRen.isActive(Technique.TEN) && tenRen.isActive(Technique.REN), "Ten e Ren deveriam ficar ligados juntos");
 				NenData zetsu = tenRen.toggled(Technique.ZETSU);
@@ -218,11 +258,18 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				int pointsBefore = player.getAttachedOrCreate(ModAttachments.NEN).pointsAvailable();
 				server.getCommands().performPrefixedCommand(source, "nen unlock ryu");
 				NenData unlocked = player.getAttachedOrCreate(ModAttachments.NEN);
-				check(unlocked.isUnlocked(Technique.RYU) && unlocked.isUnlocked(Technique.KO) && unlocked.isUnlocked(Technique.GYO),
-						"/nen unlock ryu deveria liberar Ryu e o que vem antes");
+				check(unlocked.isUnlocked(Technique.RYU) && unlocked.isUnlocked(Technique.KEN) && unlocked.isUnlocked(Technique.GYO),
+						"/nen unlock ryu deveria liberar Ryu e as tecnicas base dele");
 				check(unlocked.pointsAvailable() == pointsBefore, "liberar por comando nao deveria gastar pontos");
 				server.getCommands().performPrefixedCommand(source, "nen lock ren");
 				check(!player.getAttachedOrCreate(ModAttachments.NEN).isUnlocked(Technique.REN), "/nen lock ren deveria bloquear");
+			});
+			// Bloqueada por comando nao volta sozinha, mesmo sendo um principio
+			context.waitTicks(30);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				CommandSourceStack source = server.createCommandSourceStack().withEntity(player);
+				check(!player.getAttachedOrCreate(ModAttachments.NEN).isUnlocked(Technique.REN), "o Ren bloqueado nao deveria voltar sozinho");
 				server.getCommands().performPrefixedCommand(source, "nen lock all");
 				NenData locked = player.getAttachedOrCreate(ModAttachments.NEN);
 				check(Technique.TABS.stream().noneMatch(locked::isUnlocked) && locked.upgrades().isEmpty(),
@@ -233,6 +280,49 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				server.getCommands().performPrefixedCommand(source, "nen level 30");
 				check(player.getAttachedOrCreate(ModAttachments.NEN).level() == 30, "/nen level 30 deveria ir para o nivel 30");
 			});
+
+			// En: area de 5x5 com 1% de proficiencia ate 20x20 com 100%; um porco invisivel ao lado aparece com contorno
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				NenData fresh = data.lock(Technique.EN).grant(Technique.EN);
+				check(Math.abs(NenData.DEFAULT.enSize() - 5.0) < 0.001, "En com 1% deveria cobrir 5x5");
+				check(Math.abs(NenData.DEFAULT.addTraining(Technique.EN, 60000).enSize() - 20.0) < 0.001,
+						"En com 100% deveria cobrir 20x20");
+				player.setAttached(ModAttachments.NEN, NenData.DEFAULT.awaken(NenType.ENHANCEMENT).grant(Technique.EN)
+						.addTraining(Technique.EN, 6).withActive(Technique.EN).withAura(100));
+				Pig pig = EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
+				Vec3 front = player.position().add(player.getLookAngle().multiply(1, 0, 1).normalize().scale(2));
+				pig.setPos(front.x, player.getY(), front.z);
+				pig.setNoAi(true);
+				pig.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 2000, 0, false, false));
+				player.level().addFreshEntity(pig);
+				Pig far = EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
+				Vec3 farPos = player.position().add(player.getLookAngle().multiply(1, 0, 1).normalize().scale(8));
+				far.setPos(farPos.x, player.getY(), farPos.z);
+				far.setNoAi(true);
+				player.level().addFreshEntity(far);
+				check(fresh.isUnlocked(Technique.EN), "liberar o En por comando deveria tirar o bloqueio");
+			});
+			context.runOnClient(client -> client.player.setXRot(15.0F));
+			context.waitTicks(20);
+			boolean[] sensed = context.computeOnClient(client -> {
+				boolean near = false;
+				boolean far = false;
+				for (Entity entity : client.level.entitiesForRendering()) {
+					if (entity instanceof Pig pig) {
+						boolean close = pig.distanceTo(client.player) < 4;
+						if (close) {
+							near = EnSense.senses(pig);
+						} else {
+							far = EnSense.senses(pig);
+						}
+					}
+				}
+				return new boolean[] {near, far};
+			});
+			check(sensed[0] && !sensed[1], "o En de 5x5 deveria sentir o porco a 2 blocos e nao o de 8");
+			context.takeScreenshot("nen_11_en_invisible_pig");
 
 			// Aba do mod no criativo
 			singleplayer.getServer().runOnServer(server ->

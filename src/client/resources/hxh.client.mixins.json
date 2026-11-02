@@ -5,6 +5,7 @@
 	"client": [
 		"AvatarRendererMixin",
 		"HudMixin",
+		"MinecraftMixin",
 		"PlayerModelMixin"
 	],
 	"injectors": {

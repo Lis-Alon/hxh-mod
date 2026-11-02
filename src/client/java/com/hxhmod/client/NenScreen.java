@@ -27,8 +27,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Painel do Nen (tecla N), com tres abas:
- * Nivel (proficiencia e pontos de atributo), Tecnicas (uma aba por tecnica) e Status (registro do treino).
+ * Painel do Nen (tecla N), com quatro abas: Nivel (proficiencia e pontos de atributo),
+ * Tecnicas (uma aba por tecnica), Arvore (como as tecnicas se ligam e a proficiencia de cada uma)
+ * e Status (registro do treino).
  * Tudo e desenhado a mao; os botoes sao recriados a cada quadro e conferidos no clique.
  * Mouse: clique seleciona e aperta botoes, botao direito tira ponto, a rodinha ajusta ou troca a selecao.
  * Enquanto o painel esta aberto o personagem fica sentado meditando.
@@ -64,10 +65,62 @@ public class NenScreen extends Screen {
 	private static final int ROW_HOVER_BOTTOM = 0xFF1D2236;
 	private static final int BAR_BACK = 0xFF262A36;
 	private static final int XP_COLOR = 0xFFD8B46A;
+	private static final int EDGE_OFF = 0xFF3A3F4E;
+
+	// Arvore: coordenadas num espaco fixo, escalado para caber no painel
+	private static final int TREE_WIDTH = 416;
+	private static final int TREE_HEIGHT = 174;
+	private static final int NODE_WIDTH = 68;
+	private static final int NODE_HEIGHT = 34;
+	private static final int[] TREE_ROWS = {0, 70, 140};
+
+	/** Posicao de cada tecnica na arvore: principios em cima, depois o que sai deles. */
+	private record TreeNode(int x, int row) {
+		int top() {
+			return TREE_ROWS[row];
+		}
+
+		int bottom() {
+			return top() + NODE_HEIGHT;
+		}
+	}
+
+	/**
+	 * Linha da tecnica base ate a que depende dela: desce no {@code trunkX} ate {@code laneY},
+	 * anda na horizontal ate {@code portX} e desce ate a tecnica. As linhas que pulam uma fileira
+	 * passam pelos vaos entre os quadros.
+	 */
+	private record TreeEdge(Technique child, Technique parent, int trunkX, int laneY, int portX) {
+	}
+
+	private static final Map<Technique, TreeNode> TREE_NODES = new EnumMap<>(Map.ofEntries(
+			Map.entry(Technique.TEN, new TreeNode(47, 0)), Map.entry(Technique.REN, new TreeNode(134, 0)),
+			Map.entry(Technique.ZETSU, new TreeNode(221, 0)), Map.entry(Technique.HATSU, new TreeNode(308, 0)),
+			Map.entry(Technique.SHU, new TreeNode(0, 1)), Map.entry(Technique.GYO, new TreeNode(87, 1)),
+			Map.entry(Technique.KEN, new TreeNode(174, 1)), Map.entry(Technique.EN, new TreeNode(261, 1)),
+			Map.entry(Technique.IN, new TreeNode(348, 1)),
+			Map.entry(Technique.KO, new TreeNode(110, 2)), Map.entry(Technique.RYU, new TreeNode(230, 2))));
+
+	private static final List<TreeEdge> TREE_EDGES = List.of(
+			new TreeEdge(Technique.SHU, Technique.TEN, 77, 44, 34),
+			new TreeEdge(Technique.GYO, Technique.TEN, 77, 44, 121),
+			new TreeEdge(Technique.KEN, Technique.TEN, 77, 44, 190),
+			new TreeEdge(Technique.EN, Technique.TEN, 77, 44, 280),
+			new TreeEdge(Technique.KEN, Technique.REN, 164, 52, 226),
+			new TreeEdge(Technique.EN, Technique.REN, 164, 52, 310),
+			new TreeEdge(Technique.IN, Technique.ZETSU, 251, 60, 382),
+			new TreeEdge(Technique.KO, Technique.TEN, 77, 112, 144),
+			new TreeEdge(Technique.KO, Technique.REN, 164, 112, 144),
+			new TreeEdge(Technique.KO, Technique.ZETSU, 251, 112, 144),
+			new TreeEdge(Technique.KO, Technique.HATSU, 338, 112, 144),
+			new TreeEdge(Technique.KO, Technique.GYO, 121, 112, 144),
+			new TreeEdge(Technique.RYU, Technique.GYO, 121, 124, 254),
+			new TreeEdge(Technique.RYU, Technique.KEN, 208, 124, 274));
 
 	private enum Page {
 		LEVEL("screen.hxh.nen.page.level"),
 		TECHNIQUES("screen.hxh.nen.page.techniques"),
+		TREE("screen.hxh.nen.page.tree"),
 		STATUS("screen.hxh.nen.page.status");
 
 		private final String key;
@@ -177,6 +230,7 @@ public class NenScreen extends Screen {
 		switch (page) {
 			case LEVEL -> renderLevelPage(graphics, data, mouseX, mouseY);
 			case TECHNIQUES -> renderTechniquesPage(graphics, data, mouseX, mouseY);
+			case TREE -> renderTreePage(graphics, data, mouseX, mouseY);
 			case STATUS -> renderStatusPage(graphics, data, mouseX, mouseY);
 		}
 	}
@@ -385,9 +439,8 @@ public class NenScreen extends Screen {
 			// Aplicacoes avancadas ficam recuadas, embaixo do principio
 			int indent = isAdvanced(technique) ? 14 : 6;
 			graphics.text(font, technique.displayName(), x + indent, rowY + 3, active ? GOLD : unlocked ? TEXT : LOCKED, false);
-			Component mark = active ? Component.literal("●") : unlocked ? Component.literal("✔")
-					: data.unlockProblem(technique) == null ? Component.literal("!") : Component.literal("✖");
-			int markColor = active ? GOLD : unlocked ? GOOD : data.unlockProblem(technique) == null ? GOLD : LOCKED;
+			Component mark = active ? Component.literal("●") : unlocked ? Component.literal("✔") : Component.literal("✖");
+			int markColor = active ? GOLD : unlocked ? GOOD : LOCKED;
 			graphics.text(font, mark, x + TECH_LIST_WIDTH - 12, rowY + 3, markColor, false);
 		}
 
@@ -448,24 +501,16 @@ public class NenScreen extends Screen {
 		y = wrapped(graphics, technique.lore(), x, y + 28, width, TEXT, 4);
 		y = wrapped(graphics, Component.translatable("screen.hxh.nen.effect", technique.effect()), x, y + 3, width, GOOD, 5);
 
-		// Estado: requisitos para desbloquear, ou treino e botao de ativar
+		// Estado: proficiencia que falta para aprender, ou treino e botao de ativar
 		y += 5;
 		if (!unlocked) {
-			NenData.UnlockProblem problem = data.unlockProblem(technique);
-			Component label = Component.translatable("screen.hxh.nen.unlock", technique.unlockCost());
-			int buttonWidth = buttonWidth(label);
-			wrapped(graphics, requirements(data, technique), x, y + 1, width - buttonWidth - 6, TEXT, 2);
-			button(graphics, label, x + width - buttonWidth, y, buttonWidth, 16, problem == null, mouseX, mouseY,
-					() -> ClientPlayNetworking.send(new NenPayloads.UnlockTechnique(technique)));
-			y += 24;
+			y = wrapped(graphics, requirements(data, technique), x, y + 1, width, TEXT, 3) + 8;
 		} else {
-			Component info = technique == Technique.HATSU
-					? hatsuInfo(data)
-					: Component.translatable("screen.hxh.nen.training_info", data.mastery(technique),
-								data.masteryProgress(technique),
-							data.auraDrain(technique) > 0
-									? Component.translatable("screen.hxh.nen.drain", data.auraDrain(technique))
-									: Component.translatable("screen.hxh.nen.no_drain"));
+			Component info = Component.translatable("screen.hxh.nen.training_info", data.mastery(technique),
+					data.masteryProgress(technique),
+					data.auraDrain(technique) > 0
+							? Component.translatable("screen.hxh.nen.drain", data.auraDrain(technique))
+							: Component.translatable("screen.hxh.nen.no_drain"));
 			Component label = Component.translatable(data.isActive(technique)
 					? "screen.hxh.nen.deactivate" : "screen.hxh.nen.activate");
 			int buttonWidth = technique.activatable() ? buttonWidth(label) : 0;
@@ -509,27 +554,121 @@ public class NenScreen extends Screen {
 		return wrapped(graphics, upgrade.description(), x, y + 13, width, DIM, 2) + 3;
 	}
 
-	/** "Requisitos: Nivel 20 · Ten, Ren · 4 pontos", com o que falta em vermelho. */
+	/**
+	 * "Requisitos: Ten 12/20% · Ren 45/40%", com o que falta em vermelho.
+	 * A tecnica e aprendida sozinha quando todos ficam verdes.
+	 */
 	private Component requirements(NenData data, Technique technique) {
+		if (technique.requirements().isEmpty()) {
+			return Component.translatable("screen.hxh.nen.base_technique").withColor(DIM);
+		}
 		MutableComponent text = Component.translatable("screen.hxh.nen.requirements").copy();
-		text.append(Component.translatable("screen.hxh.nen.level", technique.minLevel())
-				.withColor(data.level() >= technique.minLevel() ? GOOD : BAD));
-		for (Technique prerequisite : technique.prerequisites()) {
-			text.append(Component.literal(" · "));
-			text.append(prerequisite.displayName().copy().withColor(data.isUnlocked(prerequisite) ? GOOD : BAD));
+		boolean first = true;
+		for (Technique.Requirement requirement : technique.requirements()) {
+			if (!first) {
+				text.append(Component.literal(" · "));
+			}
+			first = false;
+			int mastery = data.mastery(requirement.technique());
+			text.append(Component.translatable("screen.hxh.nen.requirement", requirement.technique().displayName(),
+					mastery, requirement.mastery()).withColor(mastery >= requirement.mastery() ? GOOD : BAD));
 		}
-		if (technique == Technique.HATSU) {
+		if (data.blocked().contains(technique)) {
 			text.append(Component.literal(" · "));
-			text.append(Component.translatable("screen.hxh.nen.requires_type").withColor(data.revealed() ? GOOD : BAD));
+			text.append(Component.translatable("screen.hxh.nen.blocked").withColor(BAD));
 		}
-		text.append(Component.literal(" · "));
-		text.append(Component.translatable("screen.hxh.nen.cost", technique.unlockCost())
-				.withColor(data.pointsAvailable() >= technique.unlockCost() ? GOOD : BAD));
 		return text;
 	}
 
-	private Component hatsuInfo(NenData data) {
-		return Component.translatable("screen.hxh.nen.hatsu_info", data.type().displayName());
+	// ---------------------------------------------------------------- Arvore
+
+	private void renderTreePage(GuiGraphicsExtractor graphics, NenData data, int mouseX, int mouseY) {
+		int areaTop = top + HEADER_HEIGHT + 10;
+		int areaWidth = panelWidth - 2 * MARGIN;
+		int areaHeight = top + panelHeight - 24 - areaTop;
+		float scale = Math.min(1.0F, Math.min(areaWidth / (float) TREE_WIDTH, areaHeight / (float) TREE_HEIGHT));
+		float originX = left + (panelWidth - TREE_WIDTH * scale) / 2;
+		float originY = areaTop + Math.max(0, (areaHeight - TREE_HEIGHT * scale) / 2);
+		// Mouse no espaco da arvore
+		float treeMouseX = (mouseX - originX) / scale;
+		float treeMouseY = (mouseY - originY) / scale;
+
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(originX, originY);
+		graphics.pose().scale(scale, scale);
+		// Primeiro as ligacoes apagadas, depois as cumpridas por cima
+		for (boolean met : new boolean[] {false, true}) {
+			for (TreeEdge edge : TREE_EDGES) {
+				if (requirementMet(data, edge) == met) {
+					drawEdge(graphics, edge, met ? GOLD : EDGE_OFF);
+				}
+			}
+		}
+		Technique hoveredNode = null;
+		for (Map.Entry<Technique, TreeNode> entry : TREE_NODES.entrySet()) {
+			TreeNode node = entry.getValue();
+			boolean hover = treeMouseX >= node.x() && treeMouseX < node.x() + NODE_WIDTH
+					&& treeMouseY >= node.top() && treeMouseY < node.bottom();
+			if (hover) {
+				hoveredNode = entry.getKey();
+			}
+			drawNode(graphics, data, entry.getKey(), node, hover);
+		}
+		graphics.pose().popMatrix();
+
+		// Clique abre a tecnica na aba Tecnicas
+		for (Map.Entry<Technique, TreeNode> entry : TREE_NODES.entrySet()) {
+			TreeNode node = entry.getValue();
+			int index = Technique.TABS.indexOf(entry.getKey());
+			addClickable((int) (originX + node.x() * scale), (int) (originY + node.top() * scale),
+					(int) (NODE_WIDTH * scale), (int) (NODE_HEIGHT * scale), true, () -> {
+						selectedTechnique = index;
+						page = Page.TECHNIQUES;
+					});
+		}
+
+		// Rodape: requisitos da tecnica embaixo do mouse
+		Component hint = hoveredNode == null ? Component.translatable("screen.hxh.nen.hint.tree")
+				: hoveredNode.displayName().copy().withColor(GOLD).append(Component.literal(" — "))
+						.append(requirements(data, hoveredNode));
+		footer(graphics, hint);
+	}
+
+	private static boolean requirementMet(NenData data, TreeEdge edge) {
+		return edge.child().requirements().stream()
+				.anyMatch(requirement -> requirement.technique() == edge.parent()
+						&& data.mastery(edge.parent()) >= requirement.mastery());
+	}
+
+	private static void drawEdge(GuiGraphicsExtractor graphics, TreeEdge edge, int color) {
+		int from = TREE_NODES.get(edge.parent()).bottom();
+		int to = TREE_NODES.get(edge.child()).top();
+		graphics.fill(edge.trunkX() - 1, from, edge.trunkX() + 1, edge.laneY() + 1, color);
+		graphics.fill(Math.min(edge.trunkX(), edge.portX()) - 1, edge.laneY() - 1,
+				Math.max(edge.trunkX(), edge.portX()) + 1, edge.laneY() + 1, color);
+		graphics.fill(edge.portX() - 1, edge.laneY() - 1, edge.portX() + 1, to, color);
+	}
+
+	/** Quadro da tecnica: nome, proficiencia (ou quanto falta para aprender) e barra. */
+	private void drawNode(GuiGraphicsExtractor graphics, NenData data, Technique technique, TreeNode node, boolean hover) {
+		boolean unlocked = data.isUnlocked(technique);
+		boolean active = data.isActive(technique);
+		int x = node.x();
+		int y = node.top();
+		int border = active ? GOLD : unlocked ? GOOD : hover ? GOLD_DIM : EDGE_OFF;
+		graphics.fill(x, y, x + NODE_WIDTH, y + NODE_HEIGHT, border);
+		graphics.fillGradient(x + 1, y + 1, x + NODE_WIDTH - 1, y + NODE_HEIGHT - 1,
+				hover ? ROW_HOVER_TOP : ROW_TOP, hover ? ROW_HOVER_BOTTOM : ROW_BOTTOM);
+
+		graphics.text(font, technique.displayName(), x + 5, y + 4, active ? GOLD : unlocked ? TEXT : LOCKED, false);
+		int value = unlocked ? data.mastery(technique) : data.requirementProgress(technique);
+		Component percent = Component.literal(value + "%");
+		graphics.text(font, percent, x + NODE_WIDTH - 5 - font.width(percent), y + 4, unlocked ? GOLD : DIM, false);
+		bar(graphics, x + 5, y + 15, NODE_WIDTH - 10, 3, value, 100, unlocked ? GOLD : LOCKED);
+		Component status = Component.translatable(active ? "screen.hxh.nen.tree.active"
+				: unlocked ? "screen.hxh.nen.tree.learned"
+				: data.blocked().contains(technique) ? "screen.hxh.nen.tree.blocked" : "screen.hxh.nen.tree.locked");
+		graphics.text(font, status, x + 5, y + 22, active ? GOLD : unlocked ? GOOD : DIM, false);
 	}
 
 	// --------------------------------------------------------------- Status
@@ -760,7 +899,7 @@ public class NenScreen extends Screen {
 				if (clickable.enabled()) {
 					action.run();
 				}
-				// Clique duplo numa tecnica da lista: desbloqueia ou liga/desliga
+				// Clique duplo numa tecnica da lista: liga/desliga
 				if (doubleClick && !right && page == Page.TECHNIQUES && hoveredTechnique >= 0) {
 					handleTechniqueKey(InputConstants.KEY_RETURN);
 				}
@@ -842,10 +981,7 @@ public class NenScreen extends Screen {
 			case InputConstants.KEY_UP -> selectedTechnique = (selectedTechnique + count - 1) % count;
 			case InputConstants.KEY_DOWN -> selectedTechnique = (selectedTechnique + 1) % count;
 			case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> {
-				NenData data = data();
-				if (!data.isUnlocked(technique)) {
-					ClientPlayNetworking.send(new NenPayloads.UnlockTechnique(technique));
-				} else if (technique.activatable()) {
+				if (data().isUnlocked(technique) && technique.activatable()) {
 					ClientPlayNetworking.send(new NenPayloads.ToggleTechnique(technique));
 				}
 			}

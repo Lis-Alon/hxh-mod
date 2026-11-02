@@ -7,42 +7,47 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.StringRepresentable;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
- * As tecnicas de Nen, na ordem das abas do painel: os quatro principios (Ten, Zetsu, Ren, Hatsu)
- * e as aplicacoes avancadas de cada um.
+ * As tecnicas de Nen, na ordem das abas do painel: os quatro principios (Ten, Zetsu, Ren e Hatsu)
+ * e as aplicacoes avancadas de cada um. Os principios vem ao despertar; as avancadas sao aprendidas
+ * quando a proficiencia nas tecnicas base chega no minimo pedido.
  */
 public enum Technique implements StringRepresentable {
-	NONE("none", 0, 0, 0, 0),
-	TEN("ten", 0, 1, 1, 0),
-	KEN("ken", 4, 20, 3, 3),
-	ZETSU("zetsu", 1, 2, 1, 0),
-	IN("in", 3, 25, 3, 2),
-	REN("ren", 2, 5, 2, 3),
-	GYO("gyo", 2, 10, 2, 1),
-	KO("ko", 4, 30, 4, 5),
-	RYU("ryu", 5, 40, 5, 4),
-	SHU("shu", 2, 15, 2, 1),
-	EN("en", 3, 18, 3, 2),
-	HATSU("hatsu", 5, 20, 0, 0);
+	NONE("none", 0, 0),
+	TEN("ten", 1, 0),
+	KEN("ken", 3, 3),
+	ZETSU("zetsu", 1, 0),
+	IN("in", 3, 2),
+	REN("ren", 2, 3),
+	GYO("gyo", 2, 1),
+	KO("ko", 4, 5),
+	RYU("ryu", 5, 4),
+	SHU("shu", 2, 1),
+	EN("en", 3, 2),
+	HATSU("hatsu", 2, 2);
 
 	public static final Codec<Technique> CODEC = StringRepresentable.fromEnum(Technique::values);
 	public static final StreamCodec<ByteBuf, Technique> STREAM_CODEC =
 			ByteBufCodecs.VAR_INT.map(i -> values()[i], Technique::ordinal);
 	/** Ordem das abas no painel. */
 	public static final List<Technique> TABS = List.of(TEN, KEN, ZETSU, IN, REN, GYO, KO, RYU, SHU, EN, HATSU);
+	/** Os quatro principios, aprendidos ao despertar. */
+	public static final Set<Technique> BASE = EnumSet.of(TEN, ZETSU, REN, HATSU);
+
+	/** Proficiencia minima (0 a 100) numa tecnica base. */
+	public record Requirement(Technique technique, int mastery) {
+	}
 
 	private final String name;
-	private final int unlockCost;
-	private final int minLevel;
 	private final int xpPerSecond;
 	private final int auraDrain;
 
-	Technique(String name, int unlockCost, int minLevel, int xpPerSecond, int auraDrain) {
+	Technique(String name, int xpPerSecond, int auraDrain) {
 		this.name = name;
-		this.unlockCost = unlockCost;
-		this.minLevel = minLevel;
 		this.xpPerSecond = xpPerSecond;
 		this.auraDrain = auraDrain;
 	}
@@ -50,14 +55,6 @@ public enum Technique implements StringRepresentable {
 	@Override
 	public String getSerializedName() {
 		return name;
-	}
-
-	public int unlockCost() {
-		return unlockCost;
-	}
-
-	public int minLevel() {
-		return minLevel;
 	}
 
 	public int xpPerSecond() {
@@ -69,23 +66,28 @@ public enum Technique implements StringRepresentable {
 		return auraDrain;
 	}
 
-	/** O Hatsu e a habilidade unica do tipo: ainda nao se ativa pelo painel. */
 	public boolean activatable() {
-		return this != NONE && this != HATSU;
+		return this != NONE;
 	}
 
-	/** Tecnicas que precisam estar desbloqueadas antes desta. */
-	public List<Technique> prerequisites() {
+	/** Proficiencia minima nas tecnicas base para aprender esta (vazio nos principios). */
+	public List<Requirement> requirements() {
 		return switch (this) {
-			case NONE, TEN -> List.of();
-			case ZETSU, REN -> List.of(TEN);
-			case KEN, EN -> List.of(TEN, REN);
-			case IN -> List.of(ZETSU, REN);
-			case GYO, SHU -> List.of(REN);
-			case KO -> List.of(GYO, ZETSU);
-			case RYU -> List.of(KO, KEN);
-			case HATSU -> List.of(REN);
+			case NONE, TEN, ZETSU, REN, HATSU -> List.of();
+			case GYO -> List.of(new Requirement(TEN, 20));
+			case IN -> List.of(new Requirement(ZETSU, 50));
+			case EN -> List.of(new Requirement(TEN, 40), new Requirement(REN, 40));
+			case SHU -> List.of(new Requirement(TEN, 50));
+			case KEN -> List.of(new Requirement(TEN, 60), new Requirement(REN, 60));
+			case KO -> List.of(new Requirement(GYO, 70), new Requirement(TEN, 70), new Requirement(ZETSU, 70),
+					new Requirement(REN, 70), new Requirement(HATSU, 70));
+			case RYU -> List.of(new Requirement(GYO, 40), new Requirement(KEN, 40));
 		};
+	}
+
+	/** As tecnicas base desta, na ordem dos requisitos. */
+	public List<Technique> prerequisites() {
+		return requirements().stream().map(Requirement::technique).toList();
 	}
 
 	public Component displayName() {

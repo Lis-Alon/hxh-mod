@@ -29,16 +29,6 @@ public final class NenActions {
 		player.setAttached(ModAttachments.NEN, next);
 	}
 
-	public static void unlock(ServerPlayer player, Technique technique) {
-		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-		if (data.unlockProblem(technique) != null) {
-			return;
-		}
-		player.setAttached(ModAttachments.NEN, data.unlock(technique));
-		player.sendSystemMessage(Component.translatable("nen.hxh.unlocked", technique.displayName()));
-		celebrate(player);
-	}
-
 	public static void buy(ServerPlayer player, NenUpgrade upgrade) {
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
 		if (data.upgradeProblem(upgrade) != null) {

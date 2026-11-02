@@ -24,22 +24,17 @@ public final class NenEffects {
 	private NenEffects() {
 	}
 
-	/** Ver no escuro e revelar invisiveis (Gyo), invisibilidade (In) e brilho de quem esta no En. */
+	/**
+	 * Ver no escuro e revelar invisiveis (Gyo) e invisibilidade (In).
+	 * O En e so do lado do cliente: contorno nas criaturas dentro da area, visto apenas por quem usa.
+	 */
 	public static void applyTechniques(ServerPlayer player, NenData data) {
 		if (data.isActive(Technique.GYO)) {
 			effect(player, MobEffects.NIGHT_VISION, 0);
-			revealInvisible(player, NenRules.EN_RADIUS);
+			revealInvisible(player, NenRules.GYO_REVEAL_RADIUS);
 		}
 		if (data.isActive(Technique.IN)) {
 			effect(player, MobEffects.INVISIBILITY, 0);
-		}
-		if (data.isActive(Technique.EN)) {
-			int radius = data.has(NenUpgrade.EN_VAST) ? NenRules.EN_VAST_RADIUS
-					: data.has(NenUpgrade.EN_WIDE) ? NenRules.EN_WIDE_RADIUS : NenRules.EN_RADIUS;
-			for (LivingEntity entity : player.level().getEntitiesOfClass(LivingEntity.class,
-					player.getBoundingBox().inflate(radius), entity -> entity != player)) {
-				entity.addEffect(new MobEffectInstance(MobEffects.GLOWING, EFFECT_DURATION_TICKS, 0, true, false));
-			}
 		}
 	}
 

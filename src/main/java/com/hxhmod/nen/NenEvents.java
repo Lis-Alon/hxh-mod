@@ -43,6 +43,7 @@ public final class NenEvents {
 		Vec3 lastPosition = LAST_POSITIONS.put(player, player.position());
 		boolean still = lastPosition != null && lastPosition.distanceToSqr(player.position()) < STILL_DISTANCE_SQR;
 		NenData after = before.awakened() ? tickTraining(player, before, still) : tickMeditation(player, before, still);
+		after = learnTechniques(player, after);
 		if (!after.equals(before)) {
 			player.setAttached(ModAttachments.NEN, after);
 			announceLevelUp(player, before, after);
@@ -102,6 +103,25 @@ public final class NenEvents {
 			}
 		}
 		return updated;
+	}
+
+	/**
+	 * Aprende sozinho o que ja pode: os principios que faltarem (mundos de antes) e as tecnicas avancadas
+	 * cuja proficiencia nas tecnicas base chegou no minimo pedido.
+	 */
+	private static NenData learnTechniques(ServerPlayer player, NenData data) {
+		NenData result = data;
+		for (Technique technique : Technique.TABS) {
+			if (result.canLearn(technique)) {
+				result = result.unlock(technique);
+				if (!Technique.BASE.contains(technique)) {
+					player.sendSystemMessage(Component.translatable("nen.hxh.learned", technique.displayName()));
+					player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+							SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1.0F, 1.4F);
+				}
+			}
+		}
+		return result;
 	}
 
 	/** Cura feita pelo proprio mod (sem o efeito de Regeneracao), que continua durante o combate. */
