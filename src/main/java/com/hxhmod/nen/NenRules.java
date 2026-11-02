@@ -35,6 +35,27 @@ public final class NenRules {
 	public static final double TEN_YOUTH_BASE = 0.005;
 	public static final double TEN_YOUTH_PER_MASTERY = 0.00015;
 
+	// Bonus internos das tecnicas (porcentagens), no lugar dos efeitos de pocao do Minecraft
+	public static final double KEN_DEFENSE = 0.30;
+	public static final double KEN_IRON_DEFENSE = 0.45;
+	public static final double REN_DAMAGE = 0.25;
+	public static final double REN_SURGE_DAMAGE = 0.45;
+	public static final double IN_DAMAGE = 0.15;
+	public static final double IN_SHADOW_DAMAGE = 0.30;
+	// Ko: toda a aura num ponto; o resto do corpo fica sem protecao
+	public static final double KO_DAMAGE = 0.80;
+	public static final double KO_DAMAGE_TAKEN = 0.50;
+	public static final double KO_SLOWNESS = 0.15;
+	public static final double RYU_DAMAGE = 0.35;
+	public static final double RYU_DEFENSE = 0.25;
+	public static final double RYU_MASTER_DAMAGE = 0.50;
+	public static final double RYU_MASTER_DEFENSE = 0.35;
+	public static final double RYU_SPEED = 0.10;
+	public static final double SHU_MINING = 0.60;
+	public static final double SHU_EDGE_DAMAGE = 0.15;
+	// Somando tudo, o dano recebido nunca cai abaixo desta fracao
+	public static final double MIN_DAMAGE_TAKEN = 0.20;
+
 	// Zetsu: bonus na recuperacao de aura, maior parado
 	public static final double ZETSU_REGEN_BASE = 0.50;
 	public static final double ZETSU_REGEN_PER_MASTERY = 0.01;

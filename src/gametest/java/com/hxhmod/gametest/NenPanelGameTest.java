@@ -6,6 +6,7 @@ import com.hxhmod.item.ModItems;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenCombat;
 import com.hxhmod.nen.NenData;
+import com.hxhmod.nen.NenStat;
 import com.hxhmod.nen.NenPose;
 import com.hxhmod.nen.NenType;
 import com.hxhmod.nen.Technique;
@@ -20,7 +21,11 @@ import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.GameType;
+
+import java.util.Map;
+import java.util.Set;
 
 /** Abre o painel do Nen em varios estados e tira prints de cada aba, para conferir o visual. */
 public class NenPanelGameTest implements FabricClientGameTest {
@@ -162,6 +167,49 @@ public class NenPanelGameTest implements FabricClientGameTest {
 						"em Zetsu golpes sem aura causam o dano normal");
 				player.setAttached(ModAttachments.NEN, data);
 			});
+
+			// Varias tecnicas juntas; o Zetsu so funciona sozinho
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).unlock(Technique.ZETSU).withActive(Technique.NONE);
+				NenData tenRen = data.toggled(Technique.TEN).toggled(Technique.REN);
+				check(tenRen.isActive(Technique.TEN) && tenRen.isActive(Technique.REN), "Ten e Ren deveriam ficar ligados juntos");
+				NenData zetsu = tenRen.toggled(Technique.ZETSU);
+				check(zetsu.active().equals(Set.of(Technique.ZETSU)), "o Zetsu deveria desligar as outras");
+				NenData renAgain = zetsu.toggled(Technique.REN);
+				check(renAgain.active().equals(Set.of(Technique.REN)), "ligar o Ren deveria encerrar o Zetsu");
+
+				// Status internos: nada de modificador nos atributos do Minecraft
+				NenData strong = data.addStats(Map.of(NenStat.VITALITY, 5, NenStat.PROTECTION, 20));
+				player.setAttached(ModAttachments.NEN, strong);
+				check(player.getMaxHealth() == 30.0F, "Vitalidade 5 deveria dar 30 de vida maxima, veio " + player.getMaxHealth());
+				check(player.getAttributeValue(Attributes.ARMOR) == 0.0, "Protecao nao deveria mexer na armadura do Minecraft");
+				check(player.getAttributeValue(Attributes.MAX_HEALTH) == 20.0, "Vitalidade nao deveria mexer no atributo de vida");
+				float protectedDamage = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+				check(Math.abs(protectedDamage - 8.5F) < 0.001F, "Protecao 20 deveria tirar 15% do dano, veio " + protectedDamage);
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.TEN).withAura(80));
+			});
+			context.waitTicks(5);
+
+			// Teclas de atalho: Z liga/desliga o Ten, R o Ren
+			input.pressKey(InputConstants.KEY_Z);
+			input.pressKey(InputConstants.KEY_R);
+			context.waitTicks(5);
+			singleplayer.getServer().runOnServer(server -> {
+				NenData data = server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.NEN);
+				check(!data.isActive(Technique.TEN) && data.isActive(Technique.REN),
+						"Z deveria desligar o Ten e R ligar o Ren, ficou " + data.active());
+			});
+			input.pressKey(InputConstants.KEY_Z);
+			// Vitalidade 10 = +10 coracoes de vida, que a barra precisa mostrar
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				player.setAttached(ModAttachments.NEN, data.addStats(Map.of(NenStat.VITALITY, 10)));
+				player.setHealth(player.getMaxHealth());
+			});
+			context.waitTicks(25);
+			context.takeScreenshot("nen_7b_hud_ten_ren");
 
 			// Comandos de liberar e bloquear
 			singleplayer.getServer().runOnServer(server -> {

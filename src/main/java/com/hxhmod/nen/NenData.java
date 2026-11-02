@@ -17,6 +17,7 @@ import java.util.Set;
  * O tipo e sorteado ao despertar, mas so aparece para o jogador quando {@code revealed} for verdadeiro.
  *
  * @param xp        experiencia total de Nen (define o nivel de proficiencia)
+ * @param active    tecnicas ligadas agora (varias juntas; o Zetsu so funciona sozinho)
  * @param training  segundos que cada tecnica ficou ativa
  * @param stats     pontos gastos em cada atributo
  * @param unlocked  tecnicas desbloqueadas
@@ -26,10 +27,10 @@ import java.util.Set;
  * @param grantedUpgrades funcionalidades liberadas por comando, que nao custaram pontos
  */
 public record NenData(boolean awakened, NenType type, boolean revealed, int aura, int meditation, int divination,
-		Technique active, int xp, Map<Technique, Integer> training, Map<NenStat, Integer> stats,
+		Set<Technique> active, int xp, Map<Technique, Integer> training, Map<NenStat, Integer> stats,
 		Set<Technique> unlocked, Set<NenUpgrade> upgrades, int bonusPoints, Set<Technique> granted,
 		Set<NenUpgrade> grantedUpgrades) {
-	public static final NenData DEFAULT = new NenData(false, NenType.NONE, false, 0, 0, 0, Technique.NONE, 0,
+	public static final NenData DEFAULT = new NenData(false, NenType.NONE, false, 0, 0, 0, Set.of(), 0,
 			Map.of(), Map.of(), Set.of(), Set.of(), 0, Set.of(), Set.of());
 
 	public static final Codec<NenData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -39,7 +40,10 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 			Codec.INT.optionalFieldOf("aura", 0).forGetter(NenData::aura),
 			Codec.INT.optionalFieldOf("meditation", 0).forGetter(NenData::meditation),
 			Codec.INT.optionalFieldOf("divination", 0).forGetter(NenData::divination),
-			Technique.CODEC.optionalFieldOf("active", Technique.NONE).forGetter(NenData::active),
+			// Antes era uma tecnica so; mundos antigos ainda carregam
+			Codec.withAlternative(Technique.CODEC.listOf().<Set<Technique>>xmap(Set::copyOf, List::copyOf),
+							Technique.CODEC, technique -> technique == Technique.NONE ? Set.of() : Set.of(technique))
+					.optionalFieldOf("active", Set.of()).forGetter(NenData::active),
 			Codec.INT.optionalFieldOf("xp", 0).forGetter(NenData::xp),
 			Codec.unboundedMap(Technique.CODEC, Codec.INT).optionalFieldOf("training", Map.of()).forGetter(NenData::training),
 			Codec.unboundedMap(NenStat.CODEC, Codec.INT).optionalFieldOf("stats", Map.of()).forGetter(NenData::stats),
@@ -116,10 +120,10 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	/** @param resting parado, sem andar (o Zetsu recupera mais em repouso) */
 	public double auraRegen(boolean resting) {
 		double regen = NenRules.REGEN + statPoints(NenStat.AURA_FLOW) * NenStat.AURA_FLOW.perPoint();
-		if (active == Technique.TEN && has(NenUpgrade.TEN_FLOW)) {
+		if (active.contains(Technique.TEN) && has(NenUpgrade.TEN_FLOW)) {
 			regen *= 1 + tenFlowBonus();
 		}
-		if (active == Technique.ZETSU) {
+		if (active.contains(Technique.ZETSU)) {
 			regen *= 1 + zetsuRegenBonus();
 			if (resting) {
 				regen *= has(NenUpgrade.ZETSU_REST) ? NenRules.ZETSU_DEEP_REST_MULTIPLIER : NenRules.ZETSU_REST_MULTIPLIER;
@@ -192,6 +196,15 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		return Math.max(drain, 0);
 	}
 
+	public boolean isActive(Technique technique) {
+		return active.contains(technique);
+	}
+
+	/** Aura gasta por segundo somando todas as tecnicas ligadas. */
+	public int totalDrain() {
+		return active.stream().mapToInt(this::auraDrain).sum();
+	}
+
 	public int training(Technique technique) {
 		return training.getOrDefault(technique, 0);
 	}
@@ -253,7 +266,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	// ---- Copias modificadas ----
 
 	public NenData awaken(NenType rolledType) {
-		return new NenData(true, rolledType, false, NenRules.BASE_MAX_AURA, meditation, divination, Technique.NONE, xp,
+		return new NenData(true, rolledType, false, NenRules.BASE_MAX_AURA, meditation, divination, Set.of(), xp,
 				training, stats, Set.of(Technique.TEN), upgrades, bonusPoints, granted, grantedUpgrades);
 	}
 
@@ -266,8 +279,28 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 				training, stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades);
 	}
 
-	public NenData withActive(Technique newActive) {
-		return new NenData(awakened, type, revealed, aura, meditation, divination, newActive, xp, training, stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades);
+	public NenData withActive(Set<Technique> newActive) {
+		return new NenData(awakened, type, revealed, aura, meditation, divination, Set.copyOf(newActive), xp, training,
+				stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades);
+	}
+
+	/** Deixa so esta tecnica ligada (NONE desliga tudo). */
+	public NenData withActive(Technique only) {
+		return withActive(only == Technique.NONE ? Set.of() : Set.of(only));
+	}
+
+	/**
+	 * Liga ou desliga a tecnica. O Zetsu fecha os nos de aura, entao desliga todas as outras;
+	 * ligar qualquer outra (que libera aura) encerra o Zetsu.
+	 */
+	public NenData toggled(Technique technique) {
+		if (active.contains(technique)) {
+			return withActive(without(active, technique, Technique.class));
+		}
+		if (technique == Technique.ZETSU) {
+			return withActive(Technique.ZETSU);
+		}
+		return withActive(with(without(active, Technique.ZETSU, Technique.class), technique, Technique.class));
 	}
 
 	public NenData addXp(int amount) {
@@ -368,7 +401,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 			result = result.lock(upgrade);
 		}
 		return new NenData(awakened, type, revealed, aura, meditation, divination,
-				active == technique ? Technique.NONE : active, xp, training, stats,
+				without(active, technique, Technique.class), xp, training, stats,
 				without(unlocked, technique, Technique.class), result.upgrades, bonusPoints,
 				without(granted, technique, Technique.class), result.grantedUpgrades);
 	}

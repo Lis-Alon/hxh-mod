@@ -9,7 +9,7 @@ Fan mod de Hunter x Hunter para Minecraft **26.3** (Fabric).
 1. **Despertar:** fique parado no chão agachado (ou com o painel do Nen aberto) para meditar. Depois de 60 segundos sua aura desperta e o Ten é liberado.
 2. **Painel do Nen:** aperte **N** (dá para trocar em Opções > Controles > Hunter x Hunter).
 3. **Proficiência (nível 1 a 100):** cada segundo com uma técnica ativa dá XP de Nen. Cada nível dá 2 pontos, e a cada 10 níveis você ganha +3 de bônus.
-4. **Pontos:** gaste em **atributos** (vida, dano, velocidade de ataque, proteção, agilidade, capacidade e fluxo de aura) ou para **desbloquear técnicas** e as **funcionalidades** de cada uma.
+4. **Pontos:** gaste em **atributos** (vida, dano, velocidade de ataque, proteção, agilidade, capacidade e fluxo de aura) ou para **desbloquear técnicas** e as **funcionalidades** de cada uma. Os atributos e os bônus das técnicas são **status internos do personagem**: não mexem na armadura, na vida máxima nem em outros atributos do Minecraft (os corações extras aparecem normalmente na barra de vida).
 5. **Vidência (Copo d'Água com Folha):** com o Ren liberado, coloque o copo no chão e clique nele com a mão vazia: o personagem senta e se concentra por 5 segundos (não ande nem se afaste). Também dá para segurar o botão direito com o copo na mão. Cada sessão gasta aura e avança a leitura até revelar seu tipo de Nen.
 6. **Meditação:** com o painel aberto, meditando para despertar ou concentrado no copo, o personagem senta de pernas cruzadas.
 
@@ -35,19 +35,27 @@ Teclado: ↑↓ seleciona, ←→ ajusta (Shift = 5 por vez), Enter confirma, Ta
 
 ### Técnicas
 
+Várias técnicas podem ficar ligadas ao mesmo tempo (o gasto de aura soma). A exceção é o **Zetsu**: ligar o Zetsu desliga as outras, e ligar qualquer outra encerra o Zetsu.
+
+Cada técnica tem sua tecla de atalho (dá para trocar em Opções > Controles > Hunter x Hunter):
+
+| Ten | Zetsu | Ren | Ken | Gyo | In | Ko | Ryu | Shu | En |
+|---|---|---|---|---|---|---|---|---|---|
+| Z | V | R | K | G | I | B | Y | H | J |
+
 Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x Hunter](https://hunter-x-hunter.fandom.com/pt/wiki/Nen):
 
 | Técnica | Vem de | Efeito no jogo |
 |---|---|---|
 | **Ten** (Envoltura) | princípio | Reduz o dano de 10% a 25% conforme o domínio |
-| **Ken** (Fortificar) | Ten + Ren | Resistência II |
+| **Ken** (Fortificar) | Ten + Ren | -30% de dano recebido (-45% com Couraça de Ferro) |
 | **Zetsu** (Corte) | Ten | Mobs percebem menos você, aura volta mais rápido (mais ainda parado), mas sem defesa de Nen |
-| **In** (Ocultar) | Zetsu + Ren | Invisibilidade e Força I |
-| **Ren** (Prática) | Ten | Força I |
+| **In** (Ocultar) | Zetsu + Ren | Invisibilidade e +15% de dano corpo a corpo |
+| **Ren** (Prática) | Ten | +25% de dano corpo a corpo |
 | **Gyo** (Coagular) | Ren | Visão noturna e revela invisíveis |
-| **Ko** (Endurecimento) | Gyo + Zetsu | Força III, mas fica lento |
-| **Ryu** (Fluxo) | Ko + Ken | Força II, Resistência II e Velocidade I |
-| **Shu** (Ciclo) | Ren | Pressa II |
+| **Ko** (Endurecimento) | Gyo + Zetsu | +80% de dano, mas recebe +50% de dano e fica 15% mais lento |
+| **Ryu** (Fluxo) | Ko + Ken | +35% de dano, -25% de dano recebido e +10% de velocidade |
+| **Shu** (Ciclo) | Ren | Quebra blocos 60% mais rápido |
 | **En** (Território) | Ten + Ren | Revela criaturas ao redor |
 | **Hatsu** (Liberação) | Ren + tipo revelado | Habilidade do seu tipo (em breve) |
 

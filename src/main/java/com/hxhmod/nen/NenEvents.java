@@ -8,7 +8,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 public final class NenEvents {
@@ -47,7 +49,7 @@ public final class NenEvents {
 		}
 		Divination.tick(player, still);
 		NenPose.update(player);
-		NenEffects.applyStats(player, after);
+		NenEffects.removeLegacyModifiers(player);
 	}
 
 	private static NenData tickMeditation(ServerPlayer player, NenData data, boolean still) {
@@ -70,37 +72,44 @@ public final class NenEvents {
 	}
 
 	private static NenData tickTraining(ServerPlayer player, NenData data, boolean still) {
-		Technique active = data.isUnlocked(data.active()) && data.active().activatable() ? data.active() : Technique.NONE;
+		// So o que esta liberado e pode ser ligado; o Zetsu nunca fica junto com outra tecnica
+		Set<Technique> active = EnumSet.noneOf(Technique.class);
+		data.active().stream().filter(technique -> data.isUnlocked(technique) && technique.activatable()).forEach(active::add);
+		if (active.contains(Technique.ZETSU) && active.size() > 1) {
+			active.retainAll(Set.of(Technique.ZETSU));
+		}
 		NenData result = data.withActive(active);
 
-		int drain = result.auraDrain(active);
-		if (drain > 0) {
-			if (result.aura() < drain) {
-				player.sendOverlayMessage(Component.translatable("nen.hxh.aura_depleted"));
-				return result.withActive(Technique.NONE);
-			}
-			result = result.withAura(result.aura() - drain);
-		} else {
-			double regen = result.auraRegen(still) + AURA_REMAINDER.getOrDefault(player, 0.0);
-			int whole = (int) regen;
-			AURA_REMAINDER.put(player, regen - whole);
-			result = result.withAura(result.aura() + whole);
+		// A aura volta sempre e as tecnicas ligadas gastam juntas
+		double regen = result.auraRegen(still) + AURA_REMAINDER.getOrDefault(player, 0.0);
+		int whole = (int) regen;
+		AURA_REMAINDER.put(player, regen - whole);
+		int drain = result.totalDrain();
+		if (result.aura() + whole < drain) {
+			// Sem aura para manter: desliga o que gasta e fica so com o que nao gasta (Ten)
+			active.removeIf(technique -> result.auraDrain(technique) > 0);
+			player.sendOverlayMessage(Component.translatable("nen.hxh.aura_depleted"));
+			return result.withActive(active).withAura(result.aura() + whole);
 		}
+		NenData updated = result.withAura(result.aura() + whole - drain);
 
-		if (active != Technique.NONE) {
-			NenEffects.applyTechnique(player, result);
-			heal(player, result, still);
-			result = result.addTraining(active, 1 + pertinentBonus(player, active, still)).addXp(active.xpPerSecond());
+		if (!active.isEmpty()) {
+			NenEffects.applyTechniques(player, updated);
+			heal(player, updated, still);
+			for (Technique technique : active) {
+				updated = updated.addTraining(technique, 1 + pertinentBonus(player, technique, still))
+						.addXp(technique.xpPerSecond());
+			}
 		}
-		return result;
+		return updated;
 	}
 
 	/** Cura feita pelo proprio mod (sem o efeito de Regeneracao), que continua durante o combate. */
 	private static void heal(ServerPlayer player, NenData data, boolean still) {
 		double fraction = 0;
-		if (data.active() == Technique.TEN && data.has(NenUpgrade.TEN_YOUTH)) {
+		if (data.isActive(Technique.TEN) && data.has(NenUpgrade.TEN_YOUTH)) {
 			fraction = data.tenYouthHeal();
-		} else if (data.active() == Technique.ZETSU && still && data.has(NenUpgrade.ZETSU_REST)) {
+		} else if (data.isActive(Technique.ZETSU) && still && data.has(NenUpgrade.ZETSU_REST)) {
 			fraction = NenRules.ZETSU_DEEP_REST_HEAL;
 		}
 		if (fraction > 0 && player.getHealth() < player.getMaxHealth()) {

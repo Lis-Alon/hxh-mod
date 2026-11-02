@@ -9,6 +9,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
+import java.util.stream.Collectors;
+
 /** Barras de aura e de XP de Nen no canto superior esquerdo, so aparecem depois do despertar. */
 public final class NenHud {
 	private static final int X = 6;
@@ -33,10 +35,11 @@ public final class NenHud {
 		}
 
 		Component type = data.revealed() ? data.type().displayName() : Component.literal("???");
-		Component line = data.active() == Technique.NONE
+		Component line = data.active().isEmpty()
 				? Component.translatable("nen.hxh.hud", data.level(), type, data.aura(), data.maxAura())
 				: Component.translatable("nen.hxh.hud_active", data.level(), type, data.aura(), data.maxAura(),
-						data.active().displayName());
+						Technique.TABS.stream().filter(data::isActive).map(technique -> technique.displayName().getString())
+								.collect(Collectors.joining(" + ")));
 		graphics.text(minecraft.font, line, X, Y, 0xFFFFFFFF, true);
 
 		int barColor = 0xFF000000 | (data.revealed() ? data.type().barColor() : UNKNOWN_TYPE_COLOR);

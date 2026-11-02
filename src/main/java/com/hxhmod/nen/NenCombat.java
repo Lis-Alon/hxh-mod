@@ -20,25 +20,35 @@ public final class NenCombat {
 	private NenCombat() {
 	}
 
-	/** Ajusta o dano antes da armadura: o Ten reduz, o Zetsu fica sem defesa contra golpes com aura. */
+	/**
+	 * Ajusta o dano antes da armadura com os status internos: forca de quem bate (corpo a corpo)
+	 * e defesa de quem apanha (Protecao, Ten, Ken...). Em Zetsu nao ha defesa de Nen.
+	 */
 	public static float incomingDamage(LivingEntity victim, DamageSource source, float amount) {
+		if (amount <= 0) {
+			return amount;
+		}
 		if (source.getEntity() instanceof ServerPlayer attacker && attacker != victim) {
 			NenData attackerData = attacker.getAttachedOrCreate(ModAttachments.NEN);
-			if (attackerData.active() == Technique.ZETSU) {
+			if (attackerData.isActive(Technique.ZETSU)) {
 				// Atacar denuncia a posicao
 				EXPOSED_UNTIL.put(attacker, attacker.tickCount + NenRules.ZETSU_EXPOSED_SECONDS * 20);
 			}
+			if (source.getDirectEntity() == attacker) {
+				NenBonuses bonuses = NenBonuses.of(attackerData);
+				amount = (float) ((amount + bonuses.flatDamage()) * (1 + bonuses.damageBonus()));
+			}
 		}
-		if (!(victim instanceof ServerPlayer player) || amount <= 0) {
+		if (!(victim instanceof ServerPlayer player)) {
 			return amount;
 		}
 		LAST_HURT.put(player, player.tickCount);
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-		return switch (data.active()) {
-			case TEN -> (float) (amount * (1 - data.tenDefense()));
-			case ZETSU -> releasingAura(source) ? (float) (amount * NenRules.ZETSU_NEN_DAMAGE_MULTIPLIER) : amount;
-			default -> amount;
-		};
+		amount = (float) (amount * NenBonuses.of(data).damageTaken());
+		if (data.isActive(Technique.ZETSU) && releasingAura(source)) {
+			amount = (float) (amount * NenRules.ZETSU_NEN_DAMAGE_MULTIPLIER);
+		}
+		return amount;
 	}
 
 	/** O golpe vem de alguem com aura liberada (qualquer tecnica alem de Ten e Zetsu). */
@@ -46,8 +56,8 @@ public final class NenCombat {
 		if (!(source.getEntity() instanceof ServerPlayer attacker)) {
 			return false;
 		}
-		Technique active = attacker.getAttachedOrCreate(ModAttachments.NEN).active();
-		return active != Technique.NONE && active != Technique.TEN && active != Technique.ZETSU;
+		return attacker.getAttachedOrCreate(ModAttachments.NEN).active().stream()
+				.anyMatch(technique -> technique != Technique.TEN && technique != Technique.ZETSU);
 	}
 
 	/** Multiplica a chance dos mobs perceberem o jogador. Em Zetsu ele continua visivel, so mais discreto. */
@@ -56,7 +66,7 @@ public final class NenCombat {
 			return 1.0;
 		}
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-		if (data.active() != Technique.ZETSU || exposed(player)) {
+		if (!data.isActive(Technique.ZETSU) || exposed(player)) {
 			return 1.0;
 		}
 		double visibility = data.zetsuVisibility();

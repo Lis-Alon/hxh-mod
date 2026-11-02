@@ -1,32 +1,37 @@
 package com.hxhmod.nen;
 
 import com.mojang.serialization.Codec;
-import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.StringRepresentable;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 
-/** Atributos do personagem que recebem pontos de Nen (1 ponto por clique). */
+/**
+ * Atributos do personagem que recebem pontos de Nen (1 ponto por clique).
+ * Sao status internos do mod, calculados em {@link NenBonuses}: nao mexem nos atributos do Minecraft.
+ */
 public enum NenStat implements StringRepresentable {
-	VITALITY("vitality", Attributes.MAX_HEALTH, 2.0, 40),
-	ATTACK_POWER("attack_power", Attributes.ATTACK_DAMAGE, 0.5, 40),
-	ATTACK_SPEED("attack_speed", Attributes.ATTACK_SPEED, 0.04, 25),
-	PROTECTION("protection", Attributes.ARMOR, 0.5, 40),
-	AGILITY("agility", Attributes.MOVEMENT_SPEED, 0.0015, 30),
-	AURA_CAPACITY("aura_capacity", null, 10.0, 50),
-	AURA_FLOW("aura_flow", null, 1.0, 20);
+	// +2 de vida maxima por ponto
+	VITALITY("vitality", 2.0, 40),
+	// +0,5 de dano corpo a corpo por ponto
+	ATTACK_POWER("attack_power", 0.5, 40),
+	// +1% de velocidade de ataque por ponto
+	ATTACK_SPEED("attack_speed", 0.01, 25),
+	// -0,75% do dano recebido por ponto
+	PROTECTION("protection", 0.0075, 40),
+	// +1,5% de velocidade de movimento por ponto
+	AGILITY("agility", 0.015, 30),
+	// +10 de aura maxima por ponto
+	AURA_CAPACITY("aura_capacity", 10.0, 50),
+	// +1 de aura por segundo por ponto
+	AURA_FLOW("aura_flow", 1.0, 20);
 
 	public static final Codec<NenStat> CODEC = StringRepresentable.fromEnum(NenStat::values);
 
 	private final String name;
-	private final Holder<Attribute> attribute;
 	private final double perPoint;
 	private final int maxPoints;
 
-	NenStat(String name, Holder<Attribute> attribute, double perPoint, int maxPoints) {
+	NenStat(String name, double perPoint, int maxPoints) {
 		this.name = name;
-		this.attribute = attribute;
 		this.perPoint = perPoint;
 		this.maxPoints = maxPoints;
 	}
@@ -34,11 +39,6 @@ public enum NenStat implements StringRepresentable {
 	@Override
 	public String getSerializedName() {
 		return name;
-	}
-
-	/** Atributo vanilla que este status altera, ou null para os de aura (calculados pelo mod). */
-	public Holder<Attribute> attribute() {
-		return attribute;
 	}
 
 	public double perPoint() {

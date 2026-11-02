@@ -12,18 +12,21 @@ public final class NenActions {
 	private NenActions() {
 	}
 
-	/** Liga a tecnica pedida, ou desliga se ela ja estiver ativa. */
+	/**
+	 * Liga a tecnica pedida, ou desliga se ela ja estiver ativa.
+	 * Varias ficam ligadas juntas; o Zetsu desliga as outras e e desligado por qualquer outra.
+	 */
 	public static void toggle(ServerPlayer player, Technique technique) {
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
 		if (!technique.activatable() || !data.isUnlocked(technique)) {
 			return;
 		}
-		Technique next = data.active() == technique ? Technique.NONE : technique;
-		if (next != Technique.NONE && data.aura() < data.auraDrain(next)) {
+		NenData next = data.toggled(technique);
+		if (next.isActive(technique) && data.aura() < next.totalDrain()) {
 			player.sendOverlayMessage(Component.translatable("nen.hxh.aura_depleted"));
 			return;
 		}
-		player.setAttached(ModAttachments.NEN, data.withActive(next));
+		player.setAttached(ModAttachments.NEN, next);
 	}
 
 	public static void unlock(ServerPlayer player, Technique technique) {
@@ -61,7 +64,6 @@ public final class NenActions {
 			return;
 		}
 		player.setAttached(ModAttachments.NEN, data.addStats(points));
-		NenEffects.applyStats(player, player.getAttachedOrCreate(ModAttachments.NEN));
 		celebrate(player);
 	}
 

@@ -1,6 +1,7 @@
 package com.hxhmod.client;
 
 import com.hxhmod.nen.ModAttachments;
+import com.hxhmod.nen.NenBonuses;
 import com.hxhmod.nen.NenData;
 import com.hxhmod.nen.NenRules;
 import com.hxhmod.nen.NenStat;
@@ -305,11 +306,19 @@ public class NenScreen extends Screen {
 	private void renderBaseStats(GuiGraphicsExtractor graphics, NenData data, int x, int y, int width) {
 		sectionTitle(graphics, Component.translatable("screen.hxh.nen.base_stats"), x, y, width);
 		y += 14;
-		y = statLine(graphics, "screen.hxh.nen.stat.health", 20, NenStat.VITALITY, data, x, y, width, "");
-		y = statLine(graphics, "screen.hxh.nen.stat.damage", 1, NenStat.ATTACK_POWER, data, x, y, width, "");
-		y = statLine(graphics, "screen.hxh.nen.stat.attack_speed", 4, NenStat.ATTACK_SPEED, data, x, y, width, "");
-		y = statLine(graphics, "screen.hxh.nen.stat.armor", 0, NenStat.PROTECTION, data, x, y, width, "");
-		y = statLine(graphics, "screen.hxh.nen.stat.speed", 100, NenStat.AGILITY, data, x, y, width, "%");
+		// Status internos do Nen, ja com as tecnicas ligadas; a direita fica como ficaria com os pontos pendentes
+		NenBonuses now = NenBonuses.of(data);
+		NenBonuses next = NenBonuses.of(data.addStats(pending));
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.health"),
+				number(20 + now.maxHealth()), number(20 + next.maxHealth()), x, y, width);
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.damage"),
+				damage(now), damage(next), x, y, width);
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.attack_speed"),
+				signedPercent(now.attackSpeed()), signedPercent(next.attackSpeed()), x, y, width);
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.defense"),
+				percent(1 - now.damageTaken()), percent(1 - next.damageTaken()), x, y, width);
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.speed"),
+				percent(1 + now.moveSpeed()), percent(1 + next.moveSpeed()), x, y, width);
 
 		y += 6;
 		sectionTitle(graphics, Component.translatable("screen.hxh.nen.aura_stats"), x, y, width);
@@ -329,13 +338,18 @@ public class NenScreen extends Screen {
 		wrapped(graphics, stat.description(), x, y + 11, width, DIM, 4);
 	}
 
-	/** Linha "nome  atual → novo" de um status base que soma o bonus do atributo. */
-	private int statLine(GuiGraphicsExtractor graphics, String key, double base, NenStat stat, NenData data,
-			int x, int y, int width, String suffix) {
-		double perPoint = stat == NenStat.AGILITY ? stat.perPoint() * 1000 : stat.perPoint();
-		double current = base + data.statPoints(stat) * perPoint;
-		double next = current + pending.getOrDefault(stat, 0) * perPoint;
-		return valueLine(graphics, Component.translatable(key), number(current) + suffix, number(next) + suffix, x, y, width);
+	/** "+1,5 +25%": dano fixo dos pontos e bonus em porcentagem das tecnicas. */
+	private static String damage(NenBonuses bonuses) {
+		String flat = "+" + number(bonuses.flatDamage());
+		return bonuses.damageBonus() > 0 ? flat + " " + signedPercent(bonuses.damageBonus()) : flat;
+	}
+
+	private static String percent(double fraction) {
+		return Math.round(fraction * 100) + "%";
+	}
+
+	private static String signedPercent(double fraction) {
+		return (fraction >= 0 ? "+" : "") + percent(fraction);
 	}
 
 	private int valueLine(GuiGraphicsExtractor graphics, Component name, String current, String next, int x, int y, int width) {
@@ -367,7 +381,7 @@ public class NenScreen extends Screen {
 			addClickable(x, rowY, TECH_LIST_WIDTH, TECH_ROW_HEIGHT - 2, true, () -> selectedTechnique = index);
 
 			boolean unlocked = data.isUnlocked(technique);
-			boolean active = data.active() == technique;
+			boolean active = data.isActive(technique);
 			// Aplicacoes avancadas ficam recuadas, embaixo do principio
 			int indent = isAdvanced(technique) ? 14 : 6;
 			graphics.text(font, technique.displayName(), x + indent, rowY + 3, active ? GOLD : unlocked ? TEXT : LOCKED, false);
@@ -452,7 +466,7 @@ public class NenScreen extends Screen {
 							data.auraDrain(technique) > 0
 									? Component.translatable("screen.hxh.nen.drain", data.auraDrain(technique))
 									: Component.translatable("screen.hxh.nen.no_drain"));
-			Component label = Component.translatable(data.active() == technique
+			Component label = Component.translatable(data.isActive(technique)
 					? "screen.hxh.nen.deactivate" : "screen.hxh.nen.activate");
 			int buttonWidth = technique.activatable() ? buttonWidth(label) : 0;
 			wrapped(graphics, info, x, y + 1, width - buttonWidth - 6, TEXT, 2);
@@ -538,7 +552,7 @@ public class NenScreen extends Screen {
 				Component.literal(data.pointsAvailable() + " / " + NenRules.pointsEarned(data.level())), x, y, columnWidth);
 		y = infoLine(graphics, "screen.hxh.nen.info.aura", Component.literal(data.aura() + " / " + data.maxAura()), x, y, columnWidth);
 		y = infoLine(graphics, "screen.hxh.nen.info.active",
-				data.active() == Technique.NONE ? Component.translatable("nen.hxh.technique.none") : data.active().displayName(),
+				activeNames(data),
 				x, y, columnWidth);
 		int unlockedCount = (int) Technique.TABS.stream().filter(data::isUnlocked).count();
 		infoLine(graphics, "screen.hxh.nen.info.techniques", Component.literal(unlockedCount + " / " + Technique.TABS.size()),
@@ -556,6 +570,21 @@ public class NenScreen extends Screen {
 					rightX, rightY, columnWidth);
 		}
 		footer(graphics, Component.translatable("screen.hxh.nen.hint.status"));
+	}
+
+	/** Tecnicas ligadas separadas por virgula, ou "Nenhuma". */
+	private static Component activeNames(NenData data) {
+		if (data.active().isEmpty()) {
+			return Component.translatable("nen.hxh.technique.none");
+		}
+		MutableComponent names = Component.empty();
+		Technique.TABS.stream().filter(data::isActive).forEach(technique -> {
+			if (!names.getSiblings().isEmpty()) {
+				names.append(", ");
+			}
+			names.append(technique.displayName());
+		});
+		return names;
 	}
 
 	private int infoLine(GuiGraphicsExtractor graphics, String key, Component value, int x, int y, int width) {

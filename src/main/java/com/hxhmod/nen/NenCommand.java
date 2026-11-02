@@ -42,7 +42,6 @@ final class NenCommand {
 						.executes(context -> {
 							ServerPlayer player = context.getSource().getPlayerOrException();
 							player.setAttached(ModAttachments.NEN, NenData.DEFAULT);
-							NenEffects.applyStats(player, NenData.DEFAULT);
 							context.getSource().sendSuccess(() -> Component.translatable("nen.hxh.reset"), false);
 							return 1;
 						}))
@@ -254,7 +253,6 @@ final class NenCommand {
 		NenData before = player.getAttachedOrCreate(ModAttachments.NEN);
 		NenData after = change.apply(before);
 		player.setAttached(ModAttachments.NEN, after);
-		NenEffects.applyStats(player, after);
 		NenEvents.announceLevelUp(player, before, after);
 		if (message != null) {
 			context.getSource().sendSuccess(() -> message, false);

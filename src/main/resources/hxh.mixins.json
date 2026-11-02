@@ -3,7 +3,8 @@
 	"package": "com.hxhmod.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"LivingEntityMixin"
+		"LivingEntityMixin",
+		"PlayerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
