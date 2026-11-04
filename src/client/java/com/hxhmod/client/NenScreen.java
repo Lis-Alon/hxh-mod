@@ -1,5 +1,6 @@
 package com.hxhmod.client;
 
+import com.hxhmod.HxHMod;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenBonuses;
 import com.hxhmod.nen.NenData;
@@ -17,6 +18,7 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Util;
@@ -67,6 +69,7 @@ public class NenScreen extends Screen {
 	private static final int ROW_HOVER_BOTTOM = 0xFF1D2236;
 	private static final int BAR_BACK = 0xFF262A36;
 	private static final int XP_COLOR = 0xFFD8B46A;
+	private static final FontDescription SERIF = new FontDescription.Resource(HxHMod.id("serif"));
 	private static final int SKY_ROW = 0x6014161C;
 	private static final int SKY_ROW_HOVER = 0x90262830;
 	private static final int SKY_ROW_LINE = 0x28FFFFFF;
@@ -232,10 +235,10 @@ public class NenScreen extends Screen {
 		graphics.pose().translate(iconX + 26, iconY + (starry() ? 2 : 3));
 		if (starry()) {
 			graphics.pose().scale(1.75F, 1.75F);
-			graphics.text(font, upper(page.title()), 0, 0, TEXT, false);
+			graphics.text(font, serif(upper(page.title())), 0, 0, TEXT, false);
 		} else {
 			graphics.pose().scale(1.5F, 1.5F);
-			graphics.text(font, page.title().copy().withStyle(ChatFormatting.BOLD), 0, 0, TEXT, false);
+			graphics.text(font, serif(page.title()), 0, 0, TEXT, false);
 		}
 		graphics.pose().popMatrix();
 
@@ -245,7 +248,7 @@ public class NenScreen extends Screen {
 		graphics.text(font, Component.literal("×"), x + 2, top + 11, hovered(x - 2, top + 8, 14, 14, mouseX, mouseY) ? GOLD : TEXT, false);
 		for (int i = Page.values().length - 1; i >= 0; i--) {
 			Page tab = Page.values()[i];
-			Component label = tab.title();
+			Component label = serif(tab.title());
 			int labelWidth = font.width(label);
 			x -= labelWidth + 16;
 			boolean current = tab == page;
@@ -662,13 +665,18 @@ public class NenScreen extends Screen {
 
 	// ------------------------------------------------------------- Pecas
 
+	/** Fonte dos titulos e botoes. Os textos pequenos ficam na fonte do jogo: na Cinzel o numero 1 parece um I. */
+	private static Component serif(Component text) {
+		return text.copy().withStyle(style -> style.withFont(SERIF));
+	}
+
 	private static Component upper(Component text) {
 		return Component.literal(text.getString().toUpperCase(Locale.ROOT));
 	}
 
 	private void sectionTitle(GuiGraphicsExtractor graphics, Component title, int x, int y, int width) {
 		if (starry()) {
-			graphics.text(font, Component.literal("✦ ").append(upper(title)), x, y, GOLD, false);
+			graphics.text(font, serif(Component.literal("✦ ").append(upper(title))), x, y, GOLD, false);
 			graphics.fill(x, y + 10, x + width, y + 11, GOLD_DIM);
 			return;
 		}
@@ -704,7 +712,7 @@ public class NenScreen extends Screen {
 		boolean hover = enabled && hovered(x, y, width, height, mouseX, mouseY);
 		if (starry()) {
 			ornateButton(graphics, x, y, width, height, enabled, hover);
-			graphics.centeredText(font, label, x + width / 2, y + (height - 8) / 2, enabled ? (hover ? GOLD : TEXT) : DIM);
+			graphics.centeredText(font, serif(label), x + width / 2, y + (height - 8) / 2, enabled ? (hover ? GOLD : TEXT) : DIM);
 			addClickable(x, y, width, height, enabled, action);
 			return;
 		}

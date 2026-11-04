@@ -168,3 +168,7 @@ O `.jar` sai em `build/libs/`. O comando `./gradlew installMod` compila e copia 
 ## Aviso
 
 Projeto de fã, sem fins lucrativos. Hunter x Hunter pertence a Yoshihiro Togashi e Shueisha. Todas as texturas do mod são originais.
+
+## Fonte
+
+Os títulos e botões usam a [Cinzel](https://github.com/NDISCOVER/Cinzel), sob a SIL Open Font License 1.1. A licença vai junto em `assets/hxh/font/cinzel_ofl.txt`.
