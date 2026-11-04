@@ -4,7 +4,10 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"AvatarRendererMixin",
+		"FirstPersonHandsMixin",
 		"HudMixin",
+		"ItemInHandLayerMixin",
+		"ItemLayerMixin",
 		"MinecraftMixin",
 		"PlayerModelMixin"
 	],

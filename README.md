@@ -72,7 +72,15 @@ Ren, Ken e Shu têm três intensidades, e o En tem quatro tamanhos de área. Ape
 
 ### Aura visível
 
-Quem libera aura solta partículas em volta do corpo, mais quanto mais aura libera. Em Zetsu não sai nenhuma. Com In, os outros jogadores não as veem, a não ser que estejam com Gyo preparado, a até 16 blocos e na linha de visão. Se você liberar mais aura por segundo do que o In consegue esconder (3 a 10, conforme a proficiência), o que passar fica à mostra.
+A aura aparece em faixas de energia ciano e douradas, com quadradinhos de luz subindo:
+
+- **Ten, Ren na intensidade 1 e outras técnicas:** faixas suaves em volta do corpo e dos braços. Em primeira pessoa, os dois braços ficam à mostra enquanto a aura está ligada.
+- **Ren na intensidade 2 e Ken:** chamas em volta do corpo.
+- **Ren na intensidade máxima e Ko:** chamas maiores e mais altas.
+- **En:** uma esfera translúcida do tamanho da área de detecção, com labaredas azuis perto do chão.
+- **Shu:** o objeto segurado fica azul brilhante e envolto pelas faixas.
+
+Em Zetsu não aparece nada. Com In, os outros jogadores não veem a aura, a não ser que estejam com Gyo preparado, a até 16 blocos e na linha de visão. Se você liberar mais aura por segundo do que o In consegue esconder (3 a 10, conforme a proficiência), o que passar fica à mostra, mais fraco.
 
 ### Ko
 

@@ -6,7 +6,8 @@
 	"environment": "*",
 	"entrypoints": {
 		"fabric-client-gametest": [
-			"com.hxhmod.gametest.NenPanelGameTest"
+			"com.hxhmod.gametest.NenPanelGameTest",
+			"com.hxhmod.gametest.NenAuraGameTest"
 		]
 	},
 	"depends": {

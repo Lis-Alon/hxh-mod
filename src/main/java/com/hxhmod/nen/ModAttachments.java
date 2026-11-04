@@ -21,6 +21,12 @@ public final class ModAttachments {
 					.initializer(() -> false)
 					.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.all()));
 
+	// O que os outros precisam para desenhar a aura; nao e salvo, sai do NenData a cada tick
+	public static final AttachmentType<AuraShow> AURA_SHOW = AttachmentRegistry.create(HxHMod.id("aura_show"),
+			builder -> builder
+					.initializer(() -> AuraShow.NONE)
+					.syncWith(AuraShow.STREAM_CODEC, AttachmentSyncPredicate.all()));
+
 	private ModAttachments() {
 	}
 

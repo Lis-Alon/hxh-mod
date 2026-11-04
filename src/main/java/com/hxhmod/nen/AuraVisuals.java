@@ -1,27 +1,22 @@
 package com.hxhmod.nen;
 
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Aura visivel em volta do corpo, enviada a cada jogador separadamente: o In esconde dos outros,
- * e quem esta com o Gyo nos olhos ve mesmo assim. Em Zetsu nao sai aura nenhuma.
+ * Lado do servidor da aura visivel: publica o estado que os clientes desenham (AuraRender) e envia as
+ * explosoes das aplicacoes a cada jogador separadamente. O In esconde dos outros, e quem esta com o
+ * Gyo nos olhos ve mesmo assim. Em Zetsu nao sai aura nenhuma.
  */
 public final class AuraVisuals {
-	private static final int MAX_PARTICLES = 24;
-	private static final int UNKNOWN_TYPE_COLOR = 0xFFFFFF;
-
 	private AuraVisuals() {
 	}
 
-	static void emit(ServerPlayer player, NenData data) {
-		if (data.active().isEmpty() || data.isActive(Technique.ZETSU)) {
-			return;
+	static void publish(ServerPlayer player, NenData data) {
+		AuraShow show = AuraShow.of(data);
+		if (!show.equals(player.getAttachedOrCreate(ModAttachments.AURA_SHOW))) {
+			player.setAttached(ModAttachments.AURA_SHOW, show);
 		}
-		int count = Math.min(MAX_PARTICLES, 2 + (int) Math.round(data.inReleased() * 2));
-		DustParticleOptions dust = new DustParticleOptions(data.revealed() ? data.type().barColor() : UNKNOWN_TYPE_COLOR, 0.8F);
-		send(player, data, dust, count, 0.01);
 	}
 
 	/** Explosao de aura de uma aplicacao, que o In tambem esconde. */

@@ -15,7 +15,6 @@ import java.util.WeakHashMap;
 
 public final class NenEvents {
 	private static final int TICKS_PER_SECOND = 20;
-	private static final int AURA_VISUAL_TICKS = 10;
 	private static final double STILL_DISTANCE_SQR = 0.01;
 
 	// Posicao de cada jogador no ultimo segundo, para saber se ele ficou parado meditando
@@ -46,14 +45,13 @@ public final class NenEvents {
 	private static void tickTechniques(ServerPlayer player, int tick) {
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
 		if (!data.awakened()) {
+			AuraVisuals.publish(player, data);
 			return;
 		}
 		ShuCoat.tick(player, data);
 		KoStrike.tick(player, data);
 		RyuFlow.tick(player, data);
-		if (tick % AURA_VISUAL_TICKS == 0) {
-			AuraVisuals.emit(player, player.getAttachedOrCreate(ModAttachments.NEN));
-		}
+		AuraVisuals.publish(player, player.getAttachedOrCreate(ModAttachments.NEN));
 	}
 
 	private static void tickPlayer(ServerPlayer player) {
