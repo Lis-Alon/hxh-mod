@@ -35,6 +35,14 @@ public final class ModAttachments {
 					.copyOnDeath()
 					.syncWith(AuraColors.STREAM_CODEC, AttachmentSyncPredicate.all()));
 
+	// Recarga das aplicacoes do Gyo; salva para nao zerar saindo do mundo ou morrendo, e o cliente precisa dela para o HUD e as teclas
+	public static final AttachmentType<GyoCooldowns> GYO_COOLDOWNS = AttachmentRegistry.create(HxHMod.id("gyo_cooldowns"),
+			builder -> builder
+					.initializer(() -> GyoCooldowns.NONE)
+					.persistent(GyoCooldowns.CODEC)
+					.copyOnDeath()
+					.syncWith(GyoCooldowns.STREAM_CODEC, AttachmentSyncPredicate.targetOnly()));
+
 	private ModAttachments() {
 	}
 

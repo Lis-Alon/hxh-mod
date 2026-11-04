@@ -57,7 +57,7 @@ Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x
 | **Zetsu** (Corte) | despertar | Mobs percebem menos você, aura volta mais rápido (mais ainda parado), mas sem defesa de Nen |
 | **Ren** (Prática) | despertar | Três intensidades: +15/25/40% de dano e -3/5/8% de dano recebido, gastando 2/3/5 de aura por segundo |
 | **Hatsu** (Liberação) | despertar | Treina a aura do seu tipo. Eficiência de Aura é a passiva geral. Quem revelou o Reforço tem também duas passivas exclusivas; as dos outros tipos seguem em pausa, como no documento |
-| **Gyo** (Coagular) | Ten 20% | A tecla prepara o Gyo; a próxima ação vira super soco, super defesa, super pulo ou super dash (veja abaixo) |
+| **Gyo** (Coagular) | Ten 20% | A tecla liga o Gyo; golpe, botão direito, pulo e Ctrl viram super soco, super defesa, super pulo e super dash, com recarga (veja abaixo) |
 | **In** (Ocultar) | Zetsu 50% | Esconde dos outros jogadores a aura das suas técnicas. Quem usa Gyo por perto ainda vê; liberar além da capacidade deixa parte à mostra |
 | **En** (Território) | Ten 40% + Ren 40% | Detecta toda criatura numa esfera de 5 (1%) até 20 blocos de diâmetro (100%), através de paredes e mesmo invisível; só você vê o contorno. Dá para escolher uma área menor, que gasta menos |
 | **Shu** (Ciclo) | Ten 50% | Reveste o objeto na mão, com benefício conforme o que ele é (veja abaixo) |
@@ -122,12 +122,14 @@ A tecla (**H**) reveste o objeto da mão principal, ou o escudo da outra mão se
 
 ### Aplicações do Gyo
 
-Aperte a tecla do Gyo (**G**) para preparar: gasta 1 de aura por segundo e você vê o contorno de quem está invisível por perto (até 16 blocos, na linha de visão). Só você vê esse contorno. A próxima ação gasta 10 de aura, usa a aplicação e termina a preparação; apertar **G** de novo cancela. Andar, olhar em volta e minerar não gastam a preparação.
+Aperte a tecla do Gyo (**G**) para ligar: gasta 1 de aura por segundo e você vê o contorno de quem está invisível por perto (até 16 blocos, na linha de visão). Só você vê esse contorno. Cada ação abaixo gasta 10 de aura e usa a aplicação, e o Gyo continua ligado até você apertar **G** de novo. Andar, olhar em volta e minerar não usam aplicação.
+
+Cada aplicação tem a própria recarga, de 20 s com proficiência 0% até 5 s com 100%. O tempo restante aparece no canto da tela. Durante a recarga, a ação funciona normalmente e não gasta aura.
 
 | Ação | Aplicação | Efeito (proficiência 0% → 100%) |
 |---|---|---|
 | Acertar um golpe | Super Soco | +50% → +100% de dano |
-| Botão direito | Super Defesa | -40% → -60% de dano recebido por 1,5 s, com 25% menos dano causado. Enquanto prepara, o botão direito não usa itens nem blocos |
+| Botão direito | Super Defesa | -40% → -60% de dano recebido por 1,5 s, com 25% menos dano causado. Com a defesa pronta, o botão direito não usa itens nem blocos |
 | Pular | Super Pulo | Impulso bem maior, só a partir do chão; a queda desse pulo não machuca |
 | Ctrl | Super Dash | Arrancada para onde você está andando, ou para onde olha se estiver parado; funciona no ar |
 
@@ -160,6 +162,7 @@ Compradas com pontos na aba Árvore, com os nomes do documento de design. "Em br
 | `/nen unlock <técnica\|funcionalidade\|all>` | Libera na hora, mesmo sem a proficiência (junto com as técnicas base) |
 | `/nen lock <técnica\|funcionalidade\|all>` | Bloqueia de novo e não deixa ser aprendida sozinha até usar o unlock; funcionalidades pagas devolvem os pontos |
 | `/nen level <1-100>` | Vai direto para o nível |
+| `/nen mastery <técnica\|all> <0-100>` | Define a proficiência da técnica ou de todas, e zera a recarga do Gyo quando ele é afetado. As técnicas que a nova proficiência libera são aprendidas na hora; baixar não bloqueia o que já foi aprendido |
 | `/nen xp <quantidade>` | Dá XP de Nen |
 | `/nen points add <quantidade>` | Pontos extras para gastar no painel (negativo tira) |
 | `/nen stats reset` | Zera os atributos e devolve os pontos |
@@ -168,7 +171,7 @@ Compradas com pontos na aba Árvore, com os nomes do documento de design. "Em br
 | `/nen aura` | Enche a aura |
 | `/nen reset` | Apaga todo o Nen e recomeça do zero |
 
-Exemplos: `/nen unlock ken`, `/nen lock zetsu`, `/nen unlock ryu_master`, `/nen awaken emission`.
+Exemplos: `/nen unlock ken`, `/nen lock zetsu`, `/nen unlock ryu_master`, `/nen awaken emission`, `/nen mastery gyo 50`, `/nen mastery all 100`.
 
 Os números de balanceamento ficam em `src/main/java/com/hxhmod/nen/NenRules.java`, `NenStat.java`, `Technique.java` e `NenUpgrade.java`.
 

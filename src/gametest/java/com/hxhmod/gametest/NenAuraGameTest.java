@@ -5,7 +5,8 @@ import com.hxhmod.nen.AuraColors;
 import com.hxhmod.nen.AuraShow;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenData;
-import com.hxhmod.nen.NenRules;
+import com.hxhmod.nen.GyoApplications;
+import com.hxhmod.nen.GyoCooldowns;
 import com.hxhmod.nen.RyuFlow;
 import com.hxhmod.nen.NenType;
 import com.hxhmod.nen.Technique;
@@ -117,6 +118,50 @@ public class NenAuraGameTest implements FabricClientGameTest {
 			shot(context, singleplayer, "aura_8b_en_inside", CameraType.FIRST_PERSON,
 					data -> mastered(data, Technique.EN, 100).withActive(Set.of(Technique.TEN, Technique.EN)), 4);
 
+			// O comando define a proficiencia e zera a recarga do Gyo
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setAttached(ModAttachments.GYO_COOLDOWNS, new GyoCooldowns(0, 0, player.level().getGameTime() + 300, 0));
+				run(server, "execute as @p run nen mastery gyo 50");
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				if (data.mastery(Technique.GYO) != 50 || GyoApplications.remaining(player, GyoApplications.Action.JUMP) != 0) {
+					throw new AssertionError("/nen mastery gyo 50 deveria definir 50 e zerar a recarga, veio " + data.mastery(Technique.GYO));
+				}
+				run(server, "execute as @p run nen mastery all 73");
+				NenData all = player.getAttachedOrCreate(ModAttachments.NEN);
+				if (!Technique.TABS.stream().allMatch(technique -> all.mastery(technique) == 73)) {
+					throw new AssertionError("/nen mastery all 73 deveria valer para todas as tecnicas");
+				}
+			});
+
+			// Comparativo: a mesma aura com pouco, medio e muito dominio
+			compare(context, singleplayer, "ten", CameraType.THIRD_PERSON_BACK, Technique.TEN, Set.of(Technique.TEN), 1);
+			compare(context, singleplayer, "ten_first", CameraType.FIRST_PERSON, Technique.TEN, Set.of(Technique.TEN), 1);
+			compare(context, singleplayer, "ken", CameraType.THIRD_PERSON_BACK, Technique.KEN, Set.of(Technique.TEN, Technique.KEN), 1);
+			compare(context, singleplayer, "ren_2", CameraType.THIRD_PERSON_BACK, Technique.REN, Set.of(Technique.TEN, Technique.REN), 2);
+			compare(context, singleplayer, "ren_3", CameraType.THIRD_PERSON_BACK, Technique.REN, Set.of(Technique.TEN, Technique.REN), 3);
+			compare(context, singleplayer, "shu", CameraType.FIRST_PERSON, Technique.SHU, Set.of(Technique.SHU), 1);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				run(server, "summon pig " + player.getX() + " " + player.getY() + " " + (player.getZ() + 6)
+						+ " {NoAI:1b,active_effects:[{id:\"minecraft:invisibility\",duration:2000,show_particles:0b}]}");
+			});
+			compare(context, singleplayer, "gyo", CameraType.FIRST_PERSON, Technique.GYO, Set.of(Technique.GYO), 1);
+			singleplayer.getServer().runOnServer(server -> {
+				run(server, "kill @e[type=pig]");
+				run(server, "kill @e[type=item]");
+				server.getPlayerList().getPlayers().getFirst().setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+			});
+			// Espera a carga do Ko encher, para a diferenca ser so do dominio
+			shot(context, singleplayer, "aura_cmp_warmup", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.KO, 10).withActive(Set.of(Technique.KO)), 1);
+			context.waitTicks(SHOW_TICKS);
+			compare(context, singleplayer, "ko", CameraType.THIRD_PERSON_BACK, Technique.KO, Set.of(Technique.KO), 1);
+			compare(context, singleplayer, "ko_first", CameraType.FIRST_PERSON, Technique.KO, Set.of(Technique.KO), 1);
+			singleplayer.getServer().runOnServer(server -> server.getPlayerList().getPlayers().getFirst()
+					.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_SWORD)));
+			compare(context, singleplayer, "en", CameraType.THIRD_PERSON_FRONT, Technique.EN, Set.of(Technique.TEN, Technique.EN), 1);
+
 			// Aba Aura: clicar numa cor pronta chega ao servidor e muda a aura no mundo
 			shot(context, singleplayer, "aura_9_page_setup", CameraType.THIRD_PERSON_BACK,
 					data -> data.withActive(Set.of(Technique.TEN, Technique.REN)), 3);
@@ -207,6 +252,17 @@ public class NenAuraGameTest implements FabricClientGameTest {
 		}
 	}
 
+	private static void compare(ClientGameTestContext context, TestSingleplayerContext singleplayer, String row, CameraType camera,
+			Technique trained, Set<Technique> active, int intensity) {
+		for (int mastery : new int[] {10, 50, 100}) {
+			shot(context, singleplayer, "aura_cmp_" + row + "_" + mastery, camera, data -> mastered(data, trained, mastery).withActive(active), intensity);
+		}
+	}
+
+	private static void run(net.minecraft.server.MinecraftServer server, String command) {
+		server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withSuppressedOutput(), command);
+	}
+
 	/** O que os outros jogadores recebem sobre a aura de quem esta no teste. */
 	private static void expect(TestSingleplayerContext singleplayer, String rule, Predicate<AuraShow> check) {
 		singleplayer.getServer().runOnServer(server -> {
@@ -223,7 +279,7 @@ public class NenAuraGameTest implements FabricClientGameTest {
 
 	/** Treina a tecnica ate este dominio. */
 	private static NenData mastered(NenData data, Technique technique, int mastery) {
-		return data.addTraining(technique, (int) (mastery * mastery * NenRules.MASTERY_SECONDS_FACTOR) + 1);
+		return data.withMastery(technique, mastery);
 	}
 
 	private static NenData aware() {

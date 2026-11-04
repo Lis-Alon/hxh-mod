@@ -1,5 +1,6 @@
 package com.hxhmod.client;
 
+import com.hxhmod.nen.GyoApplications;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenData;
 import com.hxhmod.nen.NenRules;
@@ -21,6 +22,9 @@ public final class NenHud {
 	private static final int UNKNOWN_TYPE_COLOR = 0xFFFFFF;
 	private static final int XP_COLOR = 0xFFD8B46A;
 	private static final int KO_COLOR = 0xFFE05A3A;
+	private static final int COOLDOWN_COLOR = 0xFFB8C4D0;
+	private static final GyoApplications.Action[] GYO_ORDER = {
+			GyoApplications.Action.PUNCH, GyoApplications.Action.GUARD, GyoApplications.Action.JUMP, GyoApplications.Action.DASH};
 
 	private NenHud() {
 	}
@@ -64,6 +68,15 @@ public final class NenHud {
 		if (data.isActive(Technique.RYU)) {
 			graphics.text(minecraft.font, Component.translatable("nen.hxh.ryu.stance."
 					+ TechniqueControl.stance().name().toLowerCase(java.util.Locale.ROOT)), X, nextY, 0xFFFFFFFF, true);
+			nextY += minecraft.font.lineHeight + 1;
+		}
+		for (GyoApplications.Action action : GYO_ORDER) {
+			int ticks = GyoApplications.remaining(minecraft.player, action);
+			if (ticks > 0) {
+				Component name = Component.translatable("nen.hxh.gyo.name." + action.name().toLowerCase(java.util.Locale.ROOT));
+				graphics.text(minecraft.font, Component.translatable("nen.hxh.gyo.cooldown", name, (ticks + 19) / 20), X, nextY, COOLDOWN_COLOR, true);
+				nextY += minecraft.font.lineHeight + 1;
+			}
 		}
 	}
 }

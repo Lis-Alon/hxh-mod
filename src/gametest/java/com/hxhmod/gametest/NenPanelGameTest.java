@@ -334,7 +334,7 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				check(player.getAttachedOrCreate(ModAttachments.NEN).level() == 30, "/nen level 30 deveria ir para o nivel 30");
 			});
 
-			// Gyo preparado: a proxima acao vira a aplicacao e termina a preparacao
+			// Gyo ligado: cada acao vira a aplicacao, entra na propria recarga e o Gyo continua ligado
 			double[] start = new double[3];
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
@@ -348,7 +348,9 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-				check(!data.isActive(Technique.GYO), "o pulo deveria gastar a preparacao do Gyo");
+				check(data.isActive(Technique.GYO), "o super pulo nao deveria desligar o Gyo");
+				check(GyoApplications.remaining(player, GyoApplications.Action.JUMP) > 0, "o super pulo deveria entrar em recarga");
+				check(GyoApplications.remaining(player, GyoApplications.Action.DASH) == 0, "cada aplicacao deveria ter a propria recarga");
 				check(player.getY() - start[0] > 1.5, "o super pulo deveria subir mais que um pulo normal, subiu " + (player.getY() - start[0]));
 				start[1] = player.getHealth();
 			});
@@ -356,7 +358,24 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				check(player.getHealth() >= start[1], "a queda do super pulo nao deveria machucar");
-				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.GYO).withAura(100));
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withAura(100));
+				start[0] = player.getY();
+			});
+			context.waitTicks(1);
+
+			// Durante a recarga, pular e so pular
+			input.holdKeyFor(InputConstants.KEY_SPACE, 2);
+			context.waitTicks(6);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(player.getY() - start[0] < 1.5, "pular na recarga deveria ser um pulo normal, subiu " + (player.getY() - start[0]));
+				check(data.aura() >= 100 - 2, "pular na recarga nao deveria gastar a aura da aplicacao, ficou " + data.aura());
+			});
+			context.waitTicks(30);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withAura(100));
 				start[0] = player.getX();
 				start[2] = player.getZ();
 			});
@@ -366,7 +385,8 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-				check(!data.isActive(Technique.GYO), "o Ctrl deveria gastar a preparacao do Gyo");
+				check(data.isActive(Technique.GYO), "o super dash nao deveria desligar o Gyo");
+				check(GyoApplications.remaining(player, GyoApplications.Action.DASH) > 0, "o super dash deveria entrar em recarga");
 				double moved = Math.hypot(player.getX() - start[0], player.getZ() - start[2]);
 				check(moved > 2, "o super dash deveria andar mais de 2 blocos, andou " + moved);
 				player.setAttached(ModAttachments.NEN, data.withActive(Technique.GYO).withAura(100));
@@ -374,14 +394,15 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			context.waitTicks(40);
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
-				check(player.getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.GYO), "esperar nao deveria gastar a preparacao");
+				check(player.getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.GYO), "esperar nao deveria desligar o Gyo");
 			});
 			input.pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
 			context.waitTicks(3);
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-				check(!data.isActive(Technique.GYO) && GyoApplications.guarding(player), "o botao direito deveria virar super defesa");
+				check(data.isActive(Technique.GYO) && GyoApplications.guarding(player), "o botao direito deveria virar super defesa com o Gyo ligado");
+				check(GyoApplications.remaining(player, GyoApplications.Action.GUARD) > 0, "a super defesa deveria entrar em recarga");
 				float guarded = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
 				check(guarded < 10.0F * NenBonuses.of(data).damageTaken(), "a super defesa deveria reduzir o dano, veio " + guarded);
 
@@ -392,9 +413,27 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				double normal = (10.0F + NenBonuses.of(prepared).flatDamage()) * (1 + NenBonuses.of(prepared).damageBonus());
 				float punched = NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F);
 				NenData after = player.getAttachedOrCreate(ModAttachments.NEN);
-				check(punched > normal && !after.isActive(Technique.GYO) && after.aura() == 100 - prepared.gyoCost(),
-						"o golpe com Gyo deveria ser super soco e gastar a aura, veio " + punched);
-				player.setAttached(ModAttachments.NEN, after.withActive(Technique.NONE));
+				check(punched > normal && after.isActive(Technique.GYO) && after.aura() == 100 - prepared.gyoCost(),
+						"o golpe com Gyo deveria ser super soco, gastar a aura e manter o Gyo, veio " + punched);
+				float again = NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F);
+				NenData recharging = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(again < punched && recharging.aura() == after.aura(), "o soco na recarga deveria ser comum e nao gastar aura, veio " + again);
+			});
+			context.waitTicks(10);
+
+			context.takeScreenshot("gyo_cooldowns");
+
+			// Na recarga, o botao direito volta a usar itens
+			context.runOnClient(client -> check(!GyoControl.onUseItem(client.player), "na recarga o botao direito deveria usar o item"));
+
+			// A recarga vai de 20 s com 0% a 5 s com 100%
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(data.withMastery(Technique.GYO, 0).gyoCooldownTicks() == 400, "a recarga com 0% deveria ser 20 s");
+				check(data.withMastery(Technique.GYO, 50).gyoCooldownTicks() == 250, "a recarga com 50% deveria ser 12,5 s");
+				check(data.withMastery(Technique.GYO, 100).gyoCooldownTicks() == 100, "a recarga com 100% deveria ser 5 s");
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.NONE));
 			});
 
 			// En: area de 5x5 com 1% de proficiencia ate 20x20 com 100%; um porco invisivel ao lado aparece com contorno

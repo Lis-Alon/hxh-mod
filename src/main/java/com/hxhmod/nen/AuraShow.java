@@ -9,7 +9,7 @@ import net.minecraft.network.codec.StreamCodec;
  * ao contrario do NenData, que so o proprio jogador recebe. Cada tecnica aparece onde ela age.
  *
  * @param level      aura no corpo: 0 nenhuma, 1 suave (Ten, Ren basico), 2 chamas (Ren, Ken), 3 chamas altas (Ren maximo)
- * @param mastery    dominio de 0 a 100 da tecnica que forma a aura do corpo
+ * @param mastery    dominio de 0 a 100 da tecnica que forma a aura do corpo (ou a do punho, no Ko)
  * @param koCharge   carga do Ko de 0 a 1, ou negativa com o Ko desligado
  * @param gyoMastery dominio do Gyo, ou negativo com o Gyo desligado
  * @param shuMastery dominio do Shu, ou negativo com o Shu desligado
@@ -78,7 +78,8 @@ public record AuraShow(int level, int mastery, float koCharge, int gyoMastery, i
 	}
 
 	private static int bodyMastery(NenData data) {
-		Technique source = data.isActive(Technique.REN) ? Technique.REN : data.isActive(Technique.KEN) ? Technique.KEN : Technique.TEN;
+		Technique source = data.isActive(Technique.KO) ? Technique.KO
+				: data.isActive(Technique.REN) ? Technique.REN : data.isActive(Technique.KEN) ? Technique.KEN : Technique.TEN;
 		return data.mastery(source);
 	}
 

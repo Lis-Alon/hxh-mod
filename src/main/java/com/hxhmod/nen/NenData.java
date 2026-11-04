@@ -194,6 +194,13 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		return (int) Math.round(NenRules.GYO_COST * (1 - discount));
 	}
 
+	/** Recarga de cada aplicacao do Gyo, em ticks: 20 s com proficiencia 0% ate 5 s com 100%. */
+	public int gyoCooldownTicks() {
+		double range = NenRules.GYO_COOLDOWN_SLOWEST_SECONDS - NenRules.GYO_COOLDOWN_FASTEST_SECONDS;
+		double seconds = NenRules.GYO_COOLDOWN_SLOWEST_SECONDS - range * mastery(Technique.GYO) / NenRules.MAX_MASTERY;
+		return (int) Math.round(seconds * 20);
+	}
+
 	/** Multiplicador da Concentracao Precisa sobre a potencia das aplicacoes. */
 	private double gyoPower() {
 		return 1 + (has(NenUpgrade.GYO_PRECISE)
@@ -522,6 +529,15 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 
 	public NenData addXp(int amount) {
 		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp + amount, training, stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+	}
+
+	/** Coloca o treino exatamente no comeco desta proficiencia. */
+	public NenData withMastery(Technique technique, int mastery) {
+		Map<Technique, Integer> newTraining = new EnumMap<>(Technique.class);
+		newTraining.putAll(training);
+		newTraining.put(technique, (int) Math.ceil(mastery * mastery * NenRules.MASTERY_SECONDS_FACTOR));
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, Map.copyOf(newTraining),
+				stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	public NenData addTraining(Technique technique, int seconds) {

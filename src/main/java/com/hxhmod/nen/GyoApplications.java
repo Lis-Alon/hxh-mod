@@ -9,20 +9,22 @@ import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Map;
 import java.util.WeakHashMap;
 
 /**
- * Aplicacoes do Gyo: com o Gyo preparado (ligado), a proxima acao leva a aura dos olhos para o corpo e
- * termina a preparacao. Atacar vira super soco, botao direito super defesa, pular super pulo e Ctrl super dash.
+ * Aplicacoes do Gyo: com o Gyo ligado, as acoes levam a aura dos olhos para o corpo. Atacar vira super soco,
+ * botao direito super defesa, pular super pulo e Ctrl super dash. O Gyo continua ligado, e cada aplicacao
+ * entra na propria recarga; enquanto ela dura, a acao funciona como uma acao comum.
  * O soco vem de {@link NenCombat}; as outras acoes chegam do cliente.
  */
 public final class GyoApplications {
-	/** Acoes que so o cliente enxerga; o soco e detectado quando o golpe acerta. */
+	/** So o soco nao vem do cliente: ele e detectado quando o golpe acerta. */
 	public enum Action {
-		GUARD, JUMP, DASH;
+		GUARD, JUMP, DASH, PUNCH;
 
 		public static final StreamCodec<ByteBuf, Action> STREAM_CODEC =
 				ByteBufCodecs.VAR_INT.map(i -> values()[i], Action::ordinal);
@@ -38,14 +40,15 @@ public final class GyoApplications {
 
 	public static void use(ServerPlayer player, Action action, float directionX, float directionZ) {
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-		if (!data.isActive(Technique.GYO) || (action == Action.JUMP && !player.onGround())) {
+		if (action == Action.PUNCH || !data.isActive(Technique.GYO) || remaining(player, action) > 0
+				|| (action == Action.JUMP && !player.onGround())) {
 			return;
 		}
 		if (data.aura() < data.gyoCost()) {
 			player.sendOverlayMessage(Component.translatable("nen.hxh.aura_depleted"));
 			return;
 		}
-		consume(player, data);
+		consume(player, data, action);
 		switch (action) {
 			case GUARD -> {
 				GUARD_UNTIL.put(player, player.tickCount + NenRules.GYO_GUARD_TICKS);
@@ -67,16 +70,18 @@ public final class GyoApplications {
 				launch(player, direction.normalize().scale(data.gyoDash()).add(0, NenRules.GYO_DASH_LIFT, 0));
 				feedback(player, "nen.hxh.gyo.dash");
 			}
+			case PUNCH -> {
+			}
 		}
 	}
 
-	/** Bonus de dano do super soco; gasta a preparacao. Zero se o Gyo nao estiver preparado ou faltar aura. */
+	/** Bonus de dano do super soco. Zero se o Gyo estiver desligado, o soco recarregando ou faltar aura. */
 	static double punch(ServerPlayer attacker) {
 		NenData data = attacker.getAttachedOrCreate(ModAttachments.NEN);
-		if (!data.isActive(Technique.GYO) || data.aura() < data.gyoCost()) {
+		if (!data.isActive(Technique.GYO) || remaining(attacker, Action.PUNCH) > 0 || data.aura() < data.gyoCost()) {
 			return 0;
 		}
-		consume(attacker, data);
+		consume(attacker, data, Action.PUNCH);
 		expose(attacker);
 		feedback(attacker, "nen.hxh.gyo.punch");
 		return data.gyoPunch();
@@ -105,11 +110,17 @@ public final class GyoApplications {
 		return until != null && player.tickCount < until;
 	}
 
-	private static void consume(ServerPlayer player, NenData data) {
+	/** Ticks de recarga que faltam para esta aplicacao. */
+	public static int remaining(Player player, Action action) {
+		return player.getAttachedOrElse(ModAttachments.GYO_COOLDOWNS, GyoCooldowns.NONE).remaining(action, player.level().getGameTime());
+	}
+
+	private static void consume(ServerPlayer player, NenData data, Action action) {
 		NenData after = data.withAura(data.aura() - data.gyoCost())
-				.toggled(Technique.GYO)
 				.addTraining(Technique.GYO, NenRules.GYO_APPLICATION_TRAINING);
 		player.setAttached(ModAttachments.NEN, after);
+		long until = player.level().getGameTime() + data.gyoCooldownTicks();
+		player.setAttached(ModAttachments.GYO_COOLDOWNS, player.getAttachedOrCreate(ModAttachments.GYO_COOLDOWNS).started(action, until));
 	}
 
 	private static void expose(ServerPlayer player) {

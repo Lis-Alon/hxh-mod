@@ -15,8 +15,8 @@ import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Lado do cliente do Gyo preparado: manda a proxima acao (pular, Ctrl ou botao direito) para o servidor
- * e mostra o contorno de quem esta oculto, visto so por quem usa.
+ * Lado do cliente do Gyo ligado: manda as acoes (pular, Ctrl ou botao direito) que nao estao recarregando
+ * para o servidor e mostra o contorno de quem esta oculto, visto so por quem usa.
  */
 public final class GyoControl {
 	// Espera a resposta do servidor antes de mandar outra acao
@@ -42,9 +42,9 @@ public final class GyoControl {
 			waiting--;
 		}
 		if (player != null && prepared(player) && client.gui.screen() == null && waiting == 0) {
-			if (jumping && !wasJumping && player.onGround()) {
+			if (jumping && !wasJumping && player.onGround() && GyoApplications.remaining(player, GyoApplications.Action.JUMP) == 0) {
 				send(GyoApplications.Action.JUMP, Vec3.ZERO);
-			} else if (sprinting && !wasSprinting) {
+			} else if (sprinting && !wasSprinting && GyoApplications.remaining(player, GyoApplications.Action.DASH) == 0) {
 				send(GyoApplications.Action.DASH, moveDirection(player));
 			}
 		}
@@ -52,12 +52,16 @@ public final class GyoControl {
 		wasSprinting = sprinting;
 	}
 
-	/** Botao direito com o Gyo preparado vira super defesa em vez de usar o item. Devolve se tratou o clique. */
+	/** Botao direito com a super defesa pronta vira defesa em vez de usar o item. Devolve se tratou o clique. */
 	public static boolean onUseItem(LocalPlayer player) {
 		if (player == null || !prepared(player)) {
 			return false;
 		}
 		if (waiting == 0) {
+			// Recarregando, o botao direito volta a usar itens e blocos: o Gyo agora fica ligado por muito tempo
+			if (GyoApplications.remaining(player, GyoApplications.Action.GUARD) > 0) {
+				return false;
+			}
 			send(GyoApplications.Action.GUARD, Vec3.ZERO);
 		}
 		return true;

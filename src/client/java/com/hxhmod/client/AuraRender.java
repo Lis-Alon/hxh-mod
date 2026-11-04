@@ -638,13 +638,17 @@ public final class AuraRender {
 	/** Ko: toda a aura numa esfera de energia no punho, que cresce com a carga. */
 	private static void fist(PoseStack pose, SubmitNodeCollector collector, View view, float time, float center, boolean firstPerson) {
 		float charge = view.show().koCharge();
-		float radius = (firstPerson ? 0.14F + 0.2F * charge : 0.2F + 0.36F * charge);
+		float mastery = view.show().mastery() / 100F;
+		int tier = tier(mastery);
+		float flicker = flicker(mastery);
+		float radius = (firstPerson ? 0.14F + 0.2F * charge : 0.2F + 0.36F * charge) * volume(mastery);
 		// Logo depois do punho: o miolo branco nao fica escondido atras da mao
 		float y = 0.66F + radius * 0.75F;
 		int primary = view.primary();
 		int secondary = view.secondary();
-		float visibility = view.visibility();
-		float pulse = 1 + 0.05F * Mth.sin(time * 0.12F);
+		// Pouco dominio: a esfera treme e perde forca; muito: firme, densa e cheia de faiscas
+		float visibility = view.visibility() * Mth.lerp(Math.min(1, mastery * 2), 0.6F, 1) * (1 - flicker * 0.5F * (0.5F + 0.5F * Mth.sin(time * 0.45F)));
+		float pulse = 1 + (0.05F + flicker * 0.14F) * Mth.sin(time * 0.12F * (1 + flicker * 3));
 		collector.submitCustomGeometry(pose, GLOW, (entry, buffer) -> {
 			Vector3f viewer = viewer(entry, view.preview());
 			Vector3f middle = new Vector3f(center, y, 0);
@@ -653,7 +657,7 @@ public final class AuraRender {
 			billboard(entry, buffer, middle, viewer, radius * 2F * pulse, WHITE, 0.85F * visibility);
 		});
 		twoPasses(pose, collector, RIM, RIM_SHINE, (entry, buffer, strength) -> {
-			for (int layer = 0; layer < 4; layer++) {
+			for (int layer = 0; layer < 2 + tier; layer++) {
 				Flame flame = new Flame();
 				flame.center.set(center, y, 0);
 				flame.halfWidth = radius * (1 - layer * 0.14F);
@@ -666,11 +670,12 @@ public final class AuraRender {
 				flame.alpha = 0.6F * visibility * strength;
 				flame.seed = layer * 2.3F;
 				flame.time = time * SLOW * 2.2F;
+				flame.flicker = flicker;
 				flame.emit(entry, buffer, view.preview());
 			}
 		});
 		twoPasses(pose, collector, WISP, WISP_SHINE, (entry, buffer, strength) -> {
-			for (int i = 0; i < 6; i++) {
+			for (int i = 0; i < 2 + tier * 3; i++) {
 				float tilt = hash(i, 107) * Mth.TWO_PI;
 				Ribbon ribbon = new Ribbon();
 				ribbon.axis.set(Mth.cos(tilt), 0.6F, Mth.sin(tilt)).normalize();
@@ -694,7 +699,7 @@ public final class AuraRender {
 		twoPasses(pose, collector, MOTE, MOTE_SHINE, (entry, buffer, strength) -> {
 			Vector3f viewer = viewer(entry, view.preview());
 			Vector3f position = new Vector3f();
-			int count = 8 + Math.round(charge * 14);
+			int count = Math.round((8 + charge * 14) * Mth.lerp(mastery, 0.4F, 1.3F));
 			for (int i = 0; i < count; i++) {
 				float life = (time / (35 + 35 * hash(i, 113)) + hash(i, 127)) % 1;
 				float yaw = hash(i, 131) * Mth.TWO_PI;

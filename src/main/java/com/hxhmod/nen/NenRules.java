@@ -146,6 +146,8 @@ public final class NenRules {
 	// Aplicacoes do Gyo: custo de aura por uso, treino extra (segundos) e potencia conforme a proficiencia
 	public static final int GYO_COST = 10;
 	public static final int GYO_APPLICATION_TRAINING = 20;
+	public static final int GYO_COOLDOWN_SLOWEST_SECONDS = 20;
+	public static final int GYO_COOLDOWN_FASTEST_SECONDS = 5;
 	public static final double GYO_PUNCH_BASE = 0.50;
 	public static final double GYO_PUNCH_PER_MASTERY = 0.005;
 	public static final double GYO_GUARD_BASE = 0.40;

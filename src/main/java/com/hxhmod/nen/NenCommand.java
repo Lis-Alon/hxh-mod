@@ -31,6 +31,9 @@ final class NenCommand {
 					Arrays.stream(NenType.values()).filter(type -> type != NenType.NONE).map(NenType::getSerializedName),
 					builder);
 
+	private static final SuggestionProvider<CommandSourceStack> TECHNIQUE_NAMES =
+			(context, builder) -> SharedSuggestionProvider.suggest(techniqueNames(), builder);
+
 	private NenCommand() {
 	}
 
@@ -42,6 +45,7 @@ final class NenCommand {
 						.executes(context -> {
 							ServerPlayer player = context.getSource().getPlayerOrException();
 							player.setAttached(ModAttachments.NEN, NenData.DEFAULT);
+							player.setAttached(ModAttachments.GYO_COOLDOWNS, GyoCooldowns.NONE);
 							context.getSource().sendSuccess(() -> Component.translatable("nen.hxh.reset"), false);
 							return 1;
 						}))
@@ -82,6 +86,14 @@ final class NenCommand {
 									return change(context, data -> data.withXp(NenData.xpForLevel(level)),
 											Component.translatable("nen.hxh.cmd.level", level));
 								})))
+				// /nen mastery <tecnica|all> <0-100>: define a proficiencia, para testar qualquer faixa
+				.then(Commands.literal("mastery")
+						.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+						.then(Commands.argument("technique", StringArgumentType.word())
+								.suggests(TECHNIQUE_NAMES)
+								.then(Commands.argument("value", IntegerArgumentType.integer(0, NenRules.MAX_MASTERY))
+										.executes(context -> mastery(context, StringArgumentType.getString(context, "technique"),
+												IntegerArgumentType.getInteger(context, "value"))))))
 				// /nen unlock <tecnica|funcionalidade|all> e /nen lock <...>: libera ou bloqueia quando quiser
 				.then(Commands.literal("unlock")
 						.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
@@ -169,6 +181,34 @@ final class NenCommand {
 				? Component.translatable("nen.hxh.cmd.type_changed", result.type().displayName())
 				: Component.translatable("nen.hxh.awakened"), false);
 		return 1;
+	}
+
+	private static int mastery(CommandContext<CommandSourceStack> context, String name, int value) throws CommandSyntaxException {
+		NenData data = awakenedData(context);
+		if (data == null) {
+			return 0;
+		}
+		ServerPlayer player = context.getSource().getPlayerOrException();
+		if (name.equals(ALL)) {
+			NenData result = data;
+			for (Technique technique : Technique.TABS) {
+				result = result.withMastery(technique, value);
+			}
+			NenData finalResult = result;
+			player.setAttached(ModAttachments.GYO_COOLDOWNS, GyoCooldowns.NONE);
+			return change(context, unused -> finalResult, Component.translatable("nen.hxh.cmd.mastery_all", value));
+		}
+		Technique technique = technique(name);
+		if (technique == null) {
+			context.getSource().sendFailure(Component.translatable("nen.hxh.cmd.unknown", name));
+			return 0;
+		}
+		// A recarga antiga foi calculada com a proficiencia antiga: zera, para ja testar a nova
+		if (technique == Technique.GYO) {
+			player.setAttached(ModAttachments.GYO_COOLDOWNS, GyoCooldowns.NONE);
+		}
+		return change(context, current -> current.withMastery(technique, value),
+				Component.translatable("nen.hxh.cmd.mastery", technique.displayName(), value));
 	}
 
 	private static int unlock(CommandContext<CommandSourceStack> context, String name) throws CommandSyntaxException {
@@ -267,6 +307,13 @@ final class NenCommand {
 	private static NenUpgrade upgrade(String name) {
 		return Arrays.stream(NenUpgrade.values()).filter(upgrade -> upgrade.getSerializedName().equals(name))
 				.findFirst().orElse(null);
+	}
+
+	private static List<String> techniqueNames() {
+		List<String> names = new ArrayList<>();
+		names.add(ALL);
+		Technique.TABS.forEach(technique -> names.add(technique.getSerializedName()));
+		return names;
 	}
 
 	private static List<String> skillNames() {
