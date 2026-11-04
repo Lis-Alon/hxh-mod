@@ -502,7 +502,9 @@ public class NenScreen extends Screen {
 		}
 
 		// Funcionalidades
-		List<NenUpgrade> upgrades = NenUpgrade.of(technique);
+		// Passivas exclusivas de outro tipo (ou de um tipo ainda nao revelado) ficam escondidas
+		List<NenUpgrade> upgrades = NenUpgrade.of(technique).stream()
+				.filter(upgrade -> upgrade.availableTo(data) || data.has(upgrade)).toList();
 		if (upgrades.isEmpty()) {
 			return y;
 		}

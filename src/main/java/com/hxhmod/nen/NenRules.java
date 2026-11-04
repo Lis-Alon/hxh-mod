@@ -121,6 +121,11 @@ public final class NenRules {
 	public static final double ZETSU_SUPPRESSION_VISIBILITY = 0.85;
 	// Eficiencia de Aura (Hatsu): desconto fixo no gasto de todas as tecnicas
 	public static final double HATSU_EFFICIENCY_DISCOUNT = 0.05;
+	// Passivas exclusivas do Reforco, conforme o dominio do Hatsu: vida maxima e dano corpo a corpo a mais
+	public static final double HATSU_VITALITY_BASE = 0.10;
+	public static final double HATSU_VITALITY_PER_MASTERY = 0.002;
+	public static final double HATSU_IMPACT_BASE = 0.10;
+	public static final double HATSU_IMPACT_PER_MASTERY = 0.002;
 	// Segundos que um ataque denuncia a posicao de quem esta em Zetsu
 	public static final int ZETSU_EXPOSED_SECONDS = 5;
 	// Sem a defesa de Nen: golpes de quem esta com aura liberada causam mais dano

@@ -35,7 +35,10 @@ public enum NenUpgrade implements StringRepresentable {
 	SHU_EDGE("shu_edge", Technique.SHU, 3, 25),
 	EN_WIDE("en_wide", Technique.EN, 3, 35),
 	EN_CONTROL("en_control", Technique.EN, 3, 45),
-	HATSU_EFFICIENCY("hatsu_efficiency", Technique.HATSU, 3, 15);
+	HATSU_EFFICIENCY("hatsu_efficiency", Technique.HATSU, 3, 15),
+	// Passivas exclusivas: so para quem ja revelou este tipo de Nen
+	HATSU_VITALITY("hatsu_vitality", Technique.HATSU, 4, 25, NenType.ENHANCEMENT),
+	HATSU_IMPACT("hatsu_impact", Technique.HATSU, 4, 25, NenType.ENHANCEMENT);
 
 	// Nomes antigos: "ten_calm" virou Fluidez da Aura e "en_vast" virou Controle Territorial;
 	// mundos salvos antes continuam carregando
@@ -51,8 +54,14 @@ public enum NenUpgrade implements StringRepresentable {
 	private final Technique technique;
 	private final int cost;
 	private final int minLevel;
+	private final NenType exclusiveType;
 
 	NenUpgrade(String name, Technique technique, int cost, int minLevel) {
+		this(name, technique, cost, minLevel, NenType.NONE);
+	}
+
+	NenUpgrade(String name, Technique technique, int cost, int minLevel, NenType exclusiveType) {
+		this.exclusiveType = exclusiveType;
 		this.name = name;
 		this.technique = technique;
 		this.cost = cost;
@@ -70,6 +79,16 @@ public enum NenUpgrade implements StringRepresentable {
 	@Override
 	public String getSerializedName() {
 		return name;
+	}
+
+	/** A passiva nao e exclusiva, ou e do tipo que este jogador ja revelou. */
+	public boolean availableTo(NenData data) {
+		return exclusiveType == NenType.NONE || (data.revealed() && data.type() == exclusiveType);
+	}
+
+	/** O efeito da passiva exclusiva so vale no tipo dela, mesmo se tiver sido liberada por comando. */
+	boolean appliesTo(NenData data) {
+		return data.has(this) && (exclusiveType == NenType.NONE || data.type() == exclusiveType);
 	}
 
 	public Technique technique() {

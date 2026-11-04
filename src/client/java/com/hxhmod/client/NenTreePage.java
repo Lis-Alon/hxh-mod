@@ -169,8 +169,30 @@ public final class NenTreePage {
 		return screenPoint(node.x(), node.y(), areaLeft, areaTop, areaWidth, areaHeight);
 	}
 
+	/** Passiva que este ponto vira para quem revelou o Reforco; os outros tipos seguem em pausa. */
+	private static NenUpgrade exclusiveOf(Node node) {
+		if ("exclusive_1".equals(node.soonKey())) {
+			return NenUpgrade.HATSU_VITALITY;
+		}
+		return "exclusive_2".equals(node.soonKey()) ? NenUpgrade.HATSU_IMPACT : null;
+	}
+
+	/** O ponto como este jogador deve ver: a passiva exclusiva do tipo dele, se ja existir no jogo. */
+	private static Node resolve(NenData data, Node node) {
+		NenUpgrade exclusive = exclusiveOf(node);
+		if (exclusive == null || !exclusive.availableTo(data)) {
+			return node;
+		}
+		return new Node(node.technique(), exclusive, null, node.x(), node.y(), exclusive == NenUpgrade.HATSU_VITALITY ? "heart" : "fist");
+	}
+
+	private static List<Node> nodes(NenData data) {
+		return NODES.stream().map(node -> resolve(data, node)).toList();
+	}
+
 	public static float[] screenPoint(NenUpgrade upgrade, int areaLeft, int areaTop, int areaWidth, int areaHeight) {
-		Node node = NODES.stream().filter(candidate -> candidate.upgrade() == upgrade).findFirst().orElseThrow();
+		Node node = NODES.stream().filter(candidate -> candidate.upgrade() == upgrade || exclusiveOf(candidate) == upgrade)
+				.findFirst().orElseThrow();
 		return screenPoint(node.x(), node.y(), areaLeft, areaTop, areaWidth, areaHeight);
 	}
 
@@ -182,8 +204,9 @@ public final class NenTreePage {
 		float treeX = (mouseX - originX) / scale;
 		float treeY = (mouseY - originY) / scale;
 
+		List<Node> nodes = nodes(data);
 		Node hovered = null;
-		for (Node node : NODES) {
+		for (Node node : nodes) {
 			if (Math.hypot(treeX - node.x(), treeY - node.y()) <= node.radius() + 1) {
 				hovered = node;
 			}
@@ -198,7 +221,7 @@ public final class NenTreePage {
 		graphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, 0, 0, 0, 0, WIDTH, HEIGHT, 1280, 600, 1280, 600);
 
 		drawLines(graphics, data);
-		for (Node node : NODES) {
+		for (Node node : nodes) {
 			drawNode(graphics, font, data, node, node == hovered);
 		}
 		drawRoot(graphics, font);
@@ -208,7 +231,7 @@ public final class NenTreePage {
 		graphics.pose().popMatrix();
 
 		// Areas de clique na tela, sem a escala
-		for (Node node : NODES) {
+		for (Node node : nodes) {
 			int size = (int) ((node.radius() * 2 + 2) * scale);
 			int nodeX = (int) (originX + node.x() * scale) - size / 2;
 			int nodeY = (int) (originY + node.y() * scale) - size / 2;
@@ -253,7 +276,7 @@ public final class NenTreePage {
 
 	private static void drawLines(GuiGraphicsExtractor graphics, NenData data) {
 		// Sub-habilidades ligadas a sua tecnica
-		for (Node node : NODES) {
+		for (Node node : nodes(data)) {
 			if (!node.isTechnique()) {
 				Node owner = nodeOf(node.technique());
 				boolean owned = node.upgrade() != null && data.has(node.upgrade());
@@ -417,6 +440,7 @@ public final class NenTreePage {
 		if (node.isTechnique()) {
 			return node.technique().displayName();
 		}
+		node = resolve(data, node);
 		if (node.upgrade() != null) {
 			return node.upgrade().displayName();
 		}
@@ -438,7 +462,8 @@ public final class NenTreePage {
 		return "nen.hxh.tree." + node.soonKey();
 	}
 
-	private List<Component> details(NenData data, Node node) {
+	private List<Component> details(NenData data, Node original) {
+		Node node = resolve(data, original);
 		List<Component> lines = new ArrayList<>();
 		if (node.isTechnique()) {
 			Technique technique = node.technique();

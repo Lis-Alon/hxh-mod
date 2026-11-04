@@ -55,7 +55,7 @@ Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x
 | **Ten** (Envoltura) | despertar | Reduz o dano de 10% a 25% conforme a proficiência |
 | **Zetsu** (Corte) | despertar | Mobs percebem menos você, aura volta mais rápido (mais ainda parado), mas sem defesa de Nen |
 | **Ren** (Prática) | despertar | Três intensidades: +15/25/40% de dano e -3/5/8% de dano recebido, gastando 2/3/5 de aura por segundo |
-| **Hatsu** (Liberação) | despertar | Treina a aura do seu tipo. Eficiência de Aura é a passiva geral; as duas exclusivas de cada tipo seguem em pausa, como no documento |
+| **Hatsu** (Liberação) | despertar | Treina a aura do seu tipo. Eficiência de Aura é a passiva geral. Quem revelou o Reforço tem também duas passivas exclusivas; as dos outros tipos seguem em pausa, como no documento |
 | **Gyo** (Coagular) | Ten 20% | A tecla prepara o Gyo; a próxima ação vira super soco, super defesa, super pulo ou super dash (veja abaixo) |
 | **In** (Ocultar) | Zetsu 50% | Esconde dos outros jogadores a aura das suas técnicas. Quem usa Gyo por perto ainda vê; liberar além da capacidade deixa parte à mostra |
 | **En** (Território) | Ten 40% + Ren 40% | Detecta toda criatura numa esfera de 5 (1%) até 20 blocos de diâmetro (100%), através de paredes e mesmo invisível; só você vê o contorno. Dá para escolher uma área menor, que gasta menos |
@@ -123,7 +123,7 @@ Compradas com pontos na aba Árvore, com os nomes do documento de design. "Em br
 | **Ten** | Fluidez da Aura, Corpo Jovem |
 | **Zetsu** | Supressão Refinada, Descanso Profundo, Passos Silenciosos (passos sem som) |
 | **Ren** | Controle de Liberação (menos gasto), Potência Ofensiva (mais dano) |
-| **Hatsu** | Eficiência de Aura (-5% no gasto de aura), duas passivas exclusivas do tipo (em breve) |
+| **Hatsu** | Eficiência de Aura (-5% no gasto de aura). Só para o Reforço já revelado: Vitalidade Reforçada (+10% a +30% de vida máxima) e Impacto Natural (+10% a +30% de dano corpo a corpo), conforme o domínio do Hatsu e sem precisar ligá-lo. Os outros tipos: em breve |
 | **Gyo** | Concentração Precisa (aplicações 25% a 50% mais fortes), Transferência Eficiente (custam 25% a 50% menos aura) |
 | **In** | Controle de Ocultação (menos gasto), Ocultação Sustentada (esconde mais aura) |
 | **En** | Expansão Territorial (esfera maior), Controle Territorial (menos gasto) |

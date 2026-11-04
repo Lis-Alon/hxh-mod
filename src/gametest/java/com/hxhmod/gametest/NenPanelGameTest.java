@@ -611,6 +611,48 @@ public class NenPanelGameTest implements FabricClientGameTest {
 						"o Shu nao deveria ficar ligado sem objeto");
 			});
 
+			// Passivas do Reforco: so para quem revelou o tipo; compra pela arvore
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+				NenData hidden = NenData.DEFAULT.awaken(NenType.ENHANCEMENT).withXp(NenData.xpForLevel(30));
+				check(hidden.upgradeProblem(NenUpgrade.HATSU_IMPACT) == NenData.UnlockProblem.TYPE, "o tipo escondido nao deveria comprar a passiva");
+				NenData revealed = hidden.withDivination(100);
+				check(revealed.upgradeProblem(NenUpgrade.HATSU_IMPACT) == null, "o Reforco revelado deveria poder comprar");
+				check(revealed.withType(NenType.EMISSION).upgradeProblem(NenUpgrade.HATSU_IMPACT) == NenData.UnlockProblem.TYPE,
+						"outro tipo nao deveria comprar a passiva do Reforco");
+				NenData other = revealed.withType(NenType.EMISSION).grant(NenUpgrade.HATSU_IMPACT).grant(NenUpgrade.HATSU_VITALITY);
+				check(other.hatsuImpact() == 0 && other.hatsuVitality() == 0, "liberada por comando em outro tipo, a passiva nao deveria valer");
+				player.setAttached(ModAttachments.NEN, revealed);
+				start[0] = player.getMaxHealth();
+			});
+			input.resizeWindow(1920, 1080);
+			context.setScreen(NenScreen::new);
+			context.waitTicks(5);
+			input.pressKey(InputConstants.KEY_TAB);
+			context.waitTicks(2);
+			input.pressKey(InputConstants.KEY_TAB);
+			context.waitTicks(5);
+			hoverTree(context, input, null, NenUpgrade.HATSU_IMPACT);
+			context.takeScreenshot("nen_12_tree_enhancement");
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(10);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(data.has(NenUpgrade.HATSU_IMPACT), "clicar em Impacto Natural deveria comprar");
+				check(Math.abs(NenBonuses.of(data).damageBonus() - data.hatsuImpact()) < 0.001 && data.hatsuImpact() >= 0.10,
+						"Impacto Natural deveria dar dano sem o Hatsu ligado");
+				NenData vital = data.grant(NenUpgrade.HATSU_VITALITY);
+				player.setAttached(ModAttachments.NEN, vital);
+				check(Math.abs(player.getMaxHealth() - start[0] * (1 + vital.hatsuVitality())) < 0.01,
+						"Vitalidade Reforcada deveria aumentar a vida maxima, veio " + player.getMaxHealth());
+				player.setAttached(ModAttachments.NEN, data);
+			});
+			context.setScreen(() -> null);
+			input.resizeWindow(854, 480);
+			context.waitTicks(5);
+
 			// Aba do mod no criativo
 			singleplayer.getServer().runOnServer(server ->
 					server.getPlayerList().getPlayers().getFirst().setGameMode(GameType.CREATIVE));

@@ -265,10 +265,6 @@
 	"nen.hxh.technique.shu.kanji": "周",
 	"nen.hxh.technique.ko.kanji": "硬",
 	"nen.hxh.technique.ryu.kanji": "流",
-	"nen.hxh.tree.exclusive_1.enhancement": "Vitalidade Reforçada",
-	"nen.hxh.tree.exclusive_1.enhancement.desc": "Vai aumentar a vida máxima em porcentagem.",
-	"nen.hxh.tree.exclusive_2.enhancement": "Impacto Natural",
-	"nen.hxh.tree.exclusive_2.enhancement.desc": "Vai aumentar o dano corpo a corpo em porcentagem.",
 	"nen.hxh.tree.exclusive_1.transmutation": "Propriedade Persistente",
 	"nen.hxh.tree.exclusive_1.transmutation.desc": "Vai aumentar a duração das propriedades aplicadas à aura.",
 	"nen.hxh.tree.exclusive_2.transmutation": "Adaptação Corporal",
@@ -306,5 +302,9 @@
 	"nen.hxh.ryu.stance.defend": "Ryu: defesa",
 	"nen.hxh.shu.empty": "Segure um objeto para usar o Shu",
 	"nen.hxh.shu.faded": "O revestimento do Shu se desfez",
-	"screen.hxh.nen.change_intensity": "Trocar"
+	"screen.hxh.nen.change_intensity": "Trocar",
+	"nen.hxh.upgrade.hatsu_vitality": "Vitalidade Reforçada",
+	"nen.hxh.upgrade.hatsu_vitality.desc": "Passiva do Reforço: +10% a +30% de vida máxima, conforme o domínio do Hatsu.",
+	"nen.hxh.upgrade.hatsu_impact": "Impacto Natural",
+	"nen.hxh.upgrade.hatsu_impact.desc": "Passiva do Reforço: +10% a +30% de dano corpo a corpo, conforme o domínio do Hatsu."
 }

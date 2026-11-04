@@ -35,9 +35,9 @@ public abstract class LivingEntityMixin {
 	@Inject(method = "getMaxHealth", at = @At("RETURN"), cancellable = true)
 	private void hxh$nenMaxHealth(CallbackInfoReturnable<Float> cir) {
 		if ((Object) this instanceof Player player) {
-			double bonus = NenBonuses.of(player.getAttached(ModAttachments.NEN)).maxHealth();
-			if (bonus != 0) {
-				cir.setReturnValue((float) (cir.getReturnValue() + bonus));
+			NenBonuses bonuses = NenBonuses.of(player.getAttached(ModAttachments.NEN));
+			if (bonuses.maxHealth() != 0 || bonuses.maxHealthBonus() != 0) {
+				cir.setReturnValue((float) ((cir.getReturnValue() + bonuses.maxHealth()) * (1 + bonuses.maxHealthBonus())));
 			}
 		}
 	}

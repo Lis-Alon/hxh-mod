@@ -265,10 +265,6 @@
 	"nen.hxh.technique.shu.kanji": "周",
 	"nen.hxh.technique.ko.kanji": "硬",
 	"nen.hxh.technique.ryu.kanji": "流",
-	"nen.hxh.tree.exclusive_1.enhancement": "Reinforced Vitality",
-	"nen.hxh.tree.exclusive_1.enhancement.desc": "Will raise max health by a percentage.",
-	"nen.hxh.tree.exclusive_2.enhancement": "Natural Impact",
-	"nen.hxh.tree.exclusive_2.enhancement.desc": "Will raise melee damage by a percentage.",
 	"nen.hxh.tree.exclusive_1.transmutation": "Persistent Property",
 	"nen.hxh.tree.exclusive_1.transmutation.desc": "Will extend the properties applied to your aura.",
 	"nen.hxh.tree.exclusive_2.transmutation": "Body Adaptation",
@@ -306,5 +302,9 @@
 	"nen.hxh.ryu.stance.defend": "Ryu: defense",
 	"nen.hxh.shu.empty": "Hold an object to use Shu",
 	"nen.hxh.shu.faded": "Shu's coating faded",
-	"screen.hxh.nen.change_intensity": "Change"
+	"screen.hxh.nen.change_intensity": "Change",
+	"nen.hxh.upgrade.hatsu_vitality": "Reinforced Vitality",
+	"nen.hxh.upgrade.hatsu_vitality.desc": "Enhancement passive: +10% to +30% max health, based on Hatsu mastery.",
+	"nen.hxh.upgrade.hatsu_impact": "Natural Impact",
+	"nen.hxh.upgrade.hatsu_impact.desc": "Enhancement passive: +10% to +30% melee damage, based on Hatsu mastery."
 }

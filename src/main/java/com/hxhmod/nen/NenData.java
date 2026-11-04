@@ -251,6 +251,20 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		return has(upgrade) ? base + perMastery * mastery(upgrade.technique()) : 0;
 	}
 
+	// ---- Passivas exclusivas do Hatsu ----
+
+	/** Vitalidade Reforcada: vida maxima a mais (fracao). */
+	public double hatsuVitality() {
+		return NenUpgrade.HATSU_VITALITY.appliesTo(this)
+				? NenRules.HATSU_VITALITY_BASE + NenRules.HATSU_VITALITY_PER_MASTERY * mastery(Technique.HATSU) : 0;
+	}
+
+	/** Impacto Natural: dano corpo a corpo a mais (fracao). */
+	public double hatsuImpact() {
+		return NenUpgrade.HATSU_IMPACT.appliesTo(this)
+				? NenRules.HATSU_IMPACT_BASE + NenRules.HATSU_IMPACT_PER_MASTERY * mastery(Technique.HATSU) : 0;
+	}
+
 	// ---- Ren e Ken ----
 
 	/** Bonus de dano do Ren (fracao). */
@@ -447,6 +461,9 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		if (!isUnlocked(upgrade.technique())) {
 			return UnlockProblem.PREREQUISITES;
 		}
+		if (!upgrade.availableTo(this)) {
+			return UnlockProblem.TYPE;
+		}
 		if (level() < upgrade.minLevel()) {
 			return UnlockProblem.LEVEL;
 		}
@@ -457,7 +474,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	}
 
 	public enum UnlockProblem {
-		ALREADY_UNLOCKED, LEVEL, PREREQUISITES, POINTS
+		ALREADY_UNLOCKED, LEVEL, PREREQUISITES, POINTS, TYPE
 	}
 
 	// ---- Copias modificadas ----

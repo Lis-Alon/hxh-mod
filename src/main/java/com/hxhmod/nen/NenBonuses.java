@@ -5,15 +5,16 @@ package com.hxhmod.nen;
  * Tudo e aplicado pelo mod (mixins e {@link NenCombat}), sem atributos nem pocoes do Minecraft.
  *
  * @param maxHealth   vida maxima extra
+ * @param maxHealthBonus vida maxima a mais (fracao, sobre o total)
  * @param flatDamage  dano extra em golpes corpo a corpo
  * @param damageBonus dano corpo a corpo a mais (0,25 = +25%)
  * @param damageTaken multiplicador do dano recebido (0,8 = recebe 80%)
  * @param attackSpeed velocidade de ataque a mais (fracao)
  * @param moveSpeed   velocidade de movimento a mais (fracao)
  */
-public record NenBonuses(double maxHealth, double flatDamage, double damageBonus, double damageTaken,
+public record NenBonuses(double maxHealth, double maxHealthBonus, double flatDamage, double damageBonus, double damageTaken,
 		double attackSpeed, double moveSpeed) {
-	public static final NenBonuses NONE = new NenBonuses(0, 0, 0, 1, 0, 0);
+	public static final NenBonuses NONE = new NenBonuses(0, 0, 0, 0, 1, 0, 0);
 
 	public static NenBonuses of(NenData data) {
 		if (data == null || !data.awakened()) {
@@ -24,7 +25,7 @@ public record NenBonuses(double maxHealth, double flatDamage, double damageBonus
 		double attackSpeed = points(data, NenStat.ATTACK_SPEED);
 		double moveSpeed = points(data, NenStat.AGILITY);
 		double damageTaken = 1 - points(data, NenStat.PROTECTION);
-		double damageBonus = data.isActive(Technique.REN) ? data.renDamage() : 0;
+		double damageBonus = data.hatsuImpact() + (data.isActive(Technique.REN) ? data.renDamage() : 0);
 
 		// Ten, Ren e Ken sao a mesma camada de aura: vale a maior defesa, sem somar as tres
 		double nenDefense = 0;
@@ -42,7 +43,7 @@ public record NenBonuses(double maxHealth, double flatDamage, double damageBonus
 			nenDefense = -NenRules.KO_DAMAGE_TAKEN;
 		}
 		damageTaken *= 1 - nenDefense;
-		return new NenBonuses(maxHealth, flatDamage, damageBonus, Math.max(damageTaken, NenRules.MIN_DAMAGE_TAKEN),
+		return new NenBonuses(maxHealth, data.hatsuVitality(), flatDamage, damageBonus, Math.max(damageTaken, NenRules.MIN_DAMAGE_TAKEN),
 				attackSpeed, moveSpeed);
 	}
 
