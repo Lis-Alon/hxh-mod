@@ -24,6 +24,30 @@
 			80,
 			11
 		],
+		"en_us/button_activate": [
+			55,
+			14
+		],
+		"en_us/button_activate_off": [
+			55,
+			14
+		],
+		"en_us/button_activate_on": [
+			55,
+			14
+		],
+		"en_us/button_change_intensity": [
+			49,
+			14
+		],
+		"en_us/button_change_intensity_off": [
+			49,
+			14
+		],
+		"en_us/button_change_intensity_on": [
+			49,
+			14
+		],
 		"en_us/button_confirm": [
 			54,
 			14
@@ -34,6 +58,18 @@
 		],
 		"en_us/button_confirm_on": [
 			54,
+			14
+		],
+		"en_us/button_deactivate": [
+			70,
+			14
+		],
+		"en_us/button_deactivate_off": [
+			70,
+			14
+		],
+		"en_us/button_deactivate_on": [
+			70,
 			14
 		],
 		"en_us/button_reset": [
@@ -62,6 +98,10 @@
 		],
 		"en_us/section_dormant": [
 			95,
+			13
+		],
+		"en_us/section_features": [
+			66,
 			13
 		],
 		"en_us/section_records": [
@@ -180,6 +220,30 @@
 			98,
 			11
 		],
+		"pt_br/button_activate": [
+			43,
+			14
+		],
+		"pt_br/button_activate_off": [
+			43,
+			14
+		],
+		"pt_br/button_activate_on": [
+			43,
+			14
+		],
+		"pt_br/button_change_intensity": [
+			48,
+			14
+		],
+		"pt_br/button_change_intensity_off": [
+			48,
+			14
+		],
+		"pt_br/button_change_intensity_on": [
+			48,
+			14
+		],
 		"pt_br/button_confirm": [
 			69,
 			14
@@ -190,6 +254,18 @@
 		],
 		"pt_br/button_confirm_on": [
 			69,
+			14
+		],
+		"pt_br/button_deactivate": [
+			62,
+			14
+		],
+		"pt_br/button_deactivate_off": [
+			62,
+			14
+		],
+		"pt_br/button_deactivate_on": [
+			62,
 			14
 		],
 		"pt_br/button_reset": [
@@ -218,6 +294,10 @@
 		],
 		"pt_br/section_dormant": [
 			114,
+			13
+		],
+		"pt_br/section_features": [
+			116,
 			13
 		],
 		"pt_br/section_records": [

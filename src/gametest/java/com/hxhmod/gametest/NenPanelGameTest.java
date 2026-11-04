@@ -139,6 +139,14 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
 			context.waitTicks(2);
 			context.takeScreenshot("nen_3_techniques_ten");
+			input.resizeWindow(1366, 768);
+			context.waitTicks(5);
+			context.takeScreenshot("nen_3a_techniques_768");
+			input.resizeWindow(1920, 1080);
+			context.waitTicks(5);
+			context.takeScreenshot("nen_3a2_techniques_1080");
+			input.resizeWindow(854, 480);
+			context.waitTicks(5);
 
 			input.pressKey(InputConstants.KEY_DOWN);
 			input.pressKey(InputConstants.KEY_DOWN);

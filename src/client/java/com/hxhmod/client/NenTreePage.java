@@ -408,7 +408,7 @@ public final class NenTreePage {
 			image(graphics, texture("kanji/" + node.technique().getSerializedName()), node.x() - 10, node.y() - 10, 20, 96,
 					learned ? 0xFFFFFFFF : ICON_LOCKED);
 			int value = learned ? data.mastery(node.technique()) : data.requirementProgress(node.technique());
-			Component label = screen.levelFont(node.technique().displayName().copy().append(" " + value + "%"));
+			Component label = screen.panelFont(node.technique().displayName().copy().append(" " + value + "%"));
 			small(graphics, font, label, node.x(), node.y() + node.radius() + 2, LABEL_SCALE, learned ? TEXT : DIM, true);
 			return;
 		}
@@ -417,7 +417,7 @@ public final class NenTreePage {
 				iconSize, 48, iconColor(data, node));
 		if (showNames) {
 			// Nome embaixo do no, em ate duas linhas, como na referencia
-			List<FormattedCharSequence> lines = font.split(screen.levelFont(title(data, node)), node.x() == ARC_X ? NAME_WRAP_ARC : NAME_WRAP);
+			List<FormattedCharSequence> lines = font.split(screen.panelFont(title(data, node)), node.x() == ARC_X ? NAME_WRAP_ARC : NAME_WRAP);
 			for (int i = 0; i < Math.min(2, lines.size()); i++) {
 				graphics.pose().pushMatrix();
 				graphics.pose().translate(node.x(), node.y() + node.radius() + 1 + i * 6.5F);
@@ -480,10 +480,10 @@ public final class NenTreePage {
 		int textWidth = width - 12;
 		List<FormattedCharSequence> lines = new ArrayList<>();
 		List<Integer> colors = new ArrayList<>();
-		addLines(font, screen.levelFont(title(data, node)), GOLD, textWidth, lines, colors);
-		addLines(font, screen.levelFont(subtitle(node)), DIM, textWidth, lines, colors);
+		addLines(font, screen.panelFont(title(data, node)), GOLD, textWidth, lines, colors);
+		addLines(font, screen.panelFont(subtitle(node)), DIM, textWidth, lines, colors);
 		for (Component text : details(data, node)) {
-			addLines(font, fancy(text), text.getStyle().getColor() != null ? text.getStyle().getColor().getValue() | 0xFF000000 : TEXT,
+			addLines(font, screen.panelFont(text), text.getStyle().getColor() != null ? text.getStyle().getColor().getValue() | 0xFF000000 : TEXT,
 					textWidth, lines, colors);
 		}
 		int height = lines.size() * (font.lineHeight + 1) + 11;
@@ -510,11 +510,6 @@ public final class NenTreePage {
 			lines.add(line);
 			colors.add(color);
 		}
-	}
-
-	/** Texto de varias cores (como os requisitos) fica como esta; o resto ganha a fonte da pagina. */
-	private Component fancy(Component text) {
-		return text.getSiblings().isEmpty() ? screen.levelFont(text) : text;
 	}
 
 	private static Component title(NenData data, Node node) {
@@ -575,11 +570,11 @@ public final class NenTreePage {
 
 	private void drawOptions(GuiGraphicsExtractor graphics, Font font) {
 		graphics.fillGradient(4, 4, 80, 16, 0xFF3A7FA8, OPTIONS_HEADER);
-		graphics.text(font, screen.levelFont(Component.translatable("screen.hxh.nen.tree.options")), 8, 6, 0xFFFFFFFF, false);
+		graphics.text(font, screen.panelFont(Component.translatable("screen.hxh.nen.tree.options")), 8, 6, 0xFFFFFFFF, false);
 		graphics.fill(4, 16, 80, 29, BOX);
 		graphics.fill(7, 19, 14, 26, 0xFFFFFFFF);
 		graphics.fill(8, 20, 13, 25, showNames ? 0xFF2F6F96 : 0xFF20232A);
-		small(graphics, font, screen.levelFont(Component.translatable("screen.hxh.nen.tree.show_names")), 17, 19, 0.8F, TEXT, false);
+		small(graphics, font, screen.panelFont(Component.translatable("screen.hxh.nen.tree.show_names")), 17, 19, 0.8F, TEXT, false);
 	}
 
 	/** Pontos e o botao de resetar, em tamanho fixo na tela para o texto sempre caber na moldura. */
