@@ -167,6 +167,7 @@ public final class NenRules {
 	public static final int GYO_REVEAL_RADIUS = 16;
 	// Aplicacoes do Gyo: custo de aura por uso, treino extra (segundos) e potencia conforme a proficiencia
 	public static final int GYO_COST = 10;
+	public static final int GYO_PUNCH_READY_TICKS = 100;
 	public static final int GYO_APPLICATION_TRAINING = 20;
 	public static final int GYO_COOLDOWN_SLOWEST_SECONDS = 20;
 	public static final int GYO_COOLDOWN_FASTEST_SECONDS = 5;

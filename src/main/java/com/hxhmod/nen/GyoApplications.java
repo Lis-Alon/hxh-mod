@@ -12,40 +12,56 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 /**
- * Aplicacoes do Gyo: com o Gyo ligado, as acoes levam a aura dos olhos para o corpo. Atacar vira super soco,
- * botao direito super defesa, pular super pulo e Ctrl super dash. O Gyo continua ligado, e cada aplicacao
- * entra na propria recarga; enquanto ela dura, a acao funciona como uma acao comum.
- * O soco vem de {@link NenCombat}; as outras acoes chegam do cliente.
+ * Aplicacoes do Gyo: com o Gyo ligado, cada tecla leva a aura dos olhos para uma parte do corpo: super soco,
+ * super defesa, super pulo e super dash. O Gyo continua ligado, e cada aplicacao entra na propria recarga.
+ * A tecla do soco deixa o proximo golpe pronto; quem aplica o bonus e {@link NenCombat}, quando o golpe acerta.
  */
 public final class GyoApplications {
-	/** So o soco nao vem do cliente: ele e detectado quando o golpe acerta. */
 	public enum Action {
 		GUARD, JUMP, DASH, PUNCH;
 
 		public static final StreamCodec<ByteBuf, Action> STREAM_CODEC =
 				ByteBufCodecs.VAR_INT.map(i -> values()[i], Action::ordinal);
+
+		public String keyName() {
+			return "key.hxh.gyo." + name().toLowerCase(Locale.ROOT);
+		}
+	}
+
+	/** Os nomes das teclas atuais de quem le, na ordem soco, defesa, pulo e dash, para usar nos textos. */
+	public static Object[] keys() {
+		return new Object[] {Component.keybind(Action.PUNCH.keyName()), Component.keybind(Action.GUARD.keyName()),
+				Component.keybind(Action.JUMP.keyName()), Component.keybind(Action.DASH.keyName())};
 	}
 
 	// Ate que tick dura a super defesa, a exposicao depois de concentrar a aura e a queda sem dano do super pulo
 	private static final Map<ServerPlayer, Integer> GUARD_UNTIL = new WeakHashMap<>();
 	private static final Map<ServerPlayer, Integer> EXPOSED_UNTIL = new WeakHashMap<>();
 	private static final Map<ServerPlayer, Integer> SAFE_LANDING_UNTIL = new WeakHashMap<>();
+	// Ate que tick o proximo golpe vira super soco, depois de apertar a tecla
+	private static final Map<ServerPlayer, Integer> PUNCH_READY_UNTIL = new WeakHashMap<>();
 
 	private GyoApplications() {
 	}
 
 	public static void use(ServerPlayer player, Action action, float directionX, float directionZ) {
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-		if (action == Action.PUNCH || !data.isActive(Technique.GYO) || remaining(player, action) > 0
-				|| (action == Action.JUMP && !player.onGround())) {
+		if (!data.isActive(Technique.GYO) || remaining(player, action) > 0 || (action == Action.JUMP && !player.onGround())) {
 			return;
 		}
 		if (data.aura() < data.gyoCost()) {
 			player.sendOverlayMessage(Component.translatable("nen.hxh.aura_depleted"));
+			return;
+		}
+		// O soco so gasta quando acerta: errar nao custa nada
+		if (action == Action.PUNCH) {
+			PUNCH_READY_UNTIL.put(player, player.tickCount + NenRules.GYO_PUNCH_READY_TICKS);
+			player.sendOverlayMessage(Component.translatable("nen.hxh.gyo.punch_ready", NenRules.GYO_PUNCH_READY_TICKS / 20));
 			return;
 		}
 		consume(player, data, action);
@@ -77,12 +93,15 @@ public final class GyoApplications {
 		}
 	}
 
-	/** Bonus de dano do super soco. Zero se o Gyo estiver desligado, o soco recarregando ou faltar aura. */
+	/** Bonus de dano do super soco. Zero se a tecla nao foi apertada antes, o Gyo estiver desligado ou faltar aura. */
 	static double punch(ServerPlayer attacker) {
 		NenData data = attacker.getAttachedOrCreate(ModAttachments.NEN);
-		if (!data.isActive(Technique.GYO) || remaining(attacker, Action.PUNCH) > 0 || data.aura() < data.gyoCost()) {
+		Integer readyUntil = PUNCH_READY_UNTIL.get(attacker);
+		if (readyUntil == null || attacker.tickCount >= readyUntil || !data.isActive(Technique.GYO)
+				|| remaining(attacker, Action.PUNCH) > 0 || data.aura() < data.gyoCost()) {
 			return 0;
 		}
+		PUNCH_READY_UNTIL.remove(attacker);
 		consume(attacker, data, Action.PUNCH);
 		expose(attacker);
 		feedback(attacker, "nen.hxh.gyo.punch");

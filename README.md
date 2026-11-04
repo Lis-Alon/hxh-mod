@@ -79,6 +79,8 @@ Cada técnica tem sua tecla de atalho (dá para trocar em Opções > Controles >
 |---|---|---|---|---|---|---|---|---|---|---|
 | Z | V | R | U | K | G | I | B | Y | H | J |
 
+As aplicações do Gyo também têm teclas próprias, no mesmo lugar (veja [Aplicações do Gyo](#aplicações-do-gyo)).
+
 **Proficiência (0% a 100%):** cada técnica tem a sua, que sobe com o tempo em que ela fica ligada (mais rápido usando do jeito certo: Ten levando golpes, Zetsu parado). Os quatro princípios vêm ao despertar; as outras técnicas são aprendidas **sozinhas e de graça** quando a proficiência nas técnicas base chega no mínimo pedido.
 
 Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x Hunter](https://hunter-x-hunter.fandom.com/pt/wiki/Nen):
@@ -89,7 +91,7 @@ Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x
 | **Zetsu** (Corte) | despertar | Mobs percebem menos você, aura volta mais rápido (mais ainda parado), mas sem defesa de Nen |
 | **Ren** (Prática) | despertar | Três intensidades: +15/25/40% de dano e -3/5/8% de dano recebido, gastando 2/3/5 de aura por segundo |
 | **Hatsu** (Liberação) | despertar | Treina a aura do seu tipo. Eficiência de Aura é a passiva geral. Quem revelou o Reforço tem também duas passivas exclusivas; as dos outros tipos seguem em pausa, como no documento |
-| **Gyo** (Coagular) | Ten 20% | A tecla liga o Gyo; golpe, botão direito, pulo e Ctrl viram super soco, super defesa, super pulo e super dash, com recarga (veja abaixo) |
+| **Gyo** (Coagular) | Ten 20% | A tecla liga o Gyo, e outras quatro teclas usam super soco, super defesa, super pulo e super dash, com recarga (veja abaixo) |
 | **In** (Ocultar) | Zetsu 50% | Esconde dos outros jogadores a aura das suas técnicas. Quem usa Gyo por perto ainda vê; liberar além da capacidade deixa parte à mostra |
 | **En** (Território) | Ten 40% + Ren 40% | Detecta toda criatura numa esfera de 5 (1%) até 20 blocos de diâmetro (100%), através de paredes e mesmo invisível; só você vê o contorno. Dá para escolher uma área menor, que gasta menos |
 | **Shu** (Ciclo) | Ten 50% | Reveste o objeto na mão, com benefício conforme o que ele é (veja abaixo) |
@@ -157,16 +159,18 @@ A proficiência multiplica esses valores, de metade com 0% até o dobro com 100%
 
 ### Aplicações do Gyo
 
-Aperte a tecla do Gyo (**G**) para ligar: gasta 1 de aura por segundo e você vê o contorno de quem está invisível por perto (até 16 blocos, na linha de visão). Só você vê esse contorno. Cada ação abaixo gasta 10 de aura e usa a aplicação, e o Gyo continua ligado até você apertar **G** de novo. Andar, olhar em volta e minerar não usam aplicação.
+Aperte a tecla do Gyo (**G**) para ligar: gasta 1 de aura por segundo e você vê o contorno de quem está invisível por perto (até 16 blocos, na linha de visão). Só você vê esse contorno. Cada aplicação abaixo tem a própria tecla, que dá para trocar em Opções > Controles > Hunter x Hunter, e gasta 10 de aura. O Gyo continua ligado até você apertar **G** de novo. Andar, correr, pular, atacar e usar itens continuam normais: só as teclas abaixo usam aplicação.
 
-Cada aplicação tem a própria recarga, de 20 s com proficiência 0% até 5 s com 100%. O tempo restante aparece no canto da tela. Durante a recarga, a ação funciona normalmente e não gasta aura.
+Cada aplicação tem a própria recarga, de 20 s com proficiência 0% até 5 s com 100%. O tempo restante aparece no canto da tela. Durante a recarga, a tecla não faz nada e não gasta aura.
 
-| Ação | Aplicação | Efeito (proficiência 0% → 100%) |
+| Tecla padrão | Aplicação | Efeito (proficiência 0% → 100%) |
 |---|---|---|
-| Acertar um golpe | Super Soco | +50% → +100% de dano |
-| Botão direito | Super Defesa | -40% → -60% de dano recebido por 1,5 s, com 25% menos dano causado. Com a defesa pronta, o botão direito não usa itens nem blocos |
-| Pular | Super Pulo | Impulso bem maior, só a partir do chão; a queda desse pulo não machuca |
-| Ctrl | Super Dash | Arrancada para onde você está andando, ou para onde olha se estiver parado; funciona no ar |
+| A tecla à esquerda do 1 (' ou `, conforme o teclado) | Super Soco | O próximo golpe nos 5 s seguintes dá +50% → +100% de dano. A aura e a recarga só são gastas se o golpe acertar |
+| X | Super Defesa | -40% → -60% de dano recebido por 1,5 s, com 25% menos dano causado |
+| C | Super Pulo | Impulso bem maior, só a partir do chão; a queda desse pulo não machuca |
+| Alt esquerdo | Super Dash | Arrancada para onde você está andando, ou para onde olha se estiver parado; funciona no ar |
+
+Dá para usar a mesma tecla de uma ação normal: com o Super Pulo no Espaço, por exemplo, pular com a aplicação pronta vira super pulo. O X e o C também são as teclas de salvar e carregar a hotbar no modo criativo, então aparecem em vermelho nos Controles, mas isso só atrapalha no criativo.
 
 Depois do soco, do pulo ou do dash, o resto do corpo fica com menos aura: você recebe +25% de dano por 1 segundo.
 

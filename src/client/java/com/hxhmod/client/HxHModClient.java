@@ -37,6 +37,7 @@ public class HxHModClient implements ClientModInitializer {
 		technique(Technique.SHU, InputConstants.KEY_H);
 		technique(Technique.EN, InputConstants.KEY_J);
 		technique(Technique.HATSU, InputConstants.KEY_U);
+		GyoControl.registerKeys(CATEGORY);
 	}
 
 	private static void technique(Technique technique, int defaultKey) {

@@ -125,6 +125,8 @@ public enum Technique implements StringRepresentable {
 
 	/** O que a tecnica faz no jogo. */
 	public Component effect() {
-		return Component.translatable("nen.hxh.technique." + name + ".effect");
+		String key = "nen.hxh.technique." + name + ".effect";
+		// O texto do Gyo mostra as teclas que quem joga escolheu
+		return this == GYO ? Component.translatable(key, GyoApplications.keys()) : Component.translatable(key);
 	}
 }

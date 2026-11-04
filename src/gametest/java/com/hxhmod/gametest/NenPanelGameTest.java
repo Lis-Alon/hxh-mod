@@ -10,6 +10,7 @@ import com.hxhmod.client.NenTreePage;
 import com.hxhmod.item.ModItems;
 import com.hxhmod.nen.AuraVisuals;
 import com.hxhmod.nen.GyoApplications;
+import com.hxhmod.nen.GyoCooldowns;
 import com.hxhmod.nen.KoStrike;
 import com.hxhmod.nen.ShuCoat;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
@@ -37,6 +38,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.client.CameraType;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -526,7 +528,7 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				check(player.getAttachedOrCreate(ModAttachments.NEN).level() == 30, "/nen level 30 deveria ir para o nivel 30");
 			});
 
-			// Gyo ligado: cada acao vira a aplicacao, entra na propria recarga e o Gyo continua ligado
+			// Gyo ligado: cada tecla usa a aplicacao, entra na propria recarga e o Gyo continua ligado
 			double[] start = new double[3];
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
@@ -535,7 +537,22 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				start[0] = player.getY();
 			});
 			context.waitTicks(5);
+			// As acoes normais continuam normais, mesmo com o Gyo ligado
 			input.holdKeyFor(InputConstants.KEY_SPACE, 2);
+			input.holdKeyFor(InputConstants.KEY_LCONTROL, 2);
+			input.pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+			context.waitTicks(25);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				for (GyoApplications.Action action : GyoApplications.Action.values()) {
+					check(GyoApplications.remaining(player, action) == 0, "pular, correr e o botao direito nao deveriam usar " + action);
+				}
+				check(player.getAttachedOrCreate(ModAttachments.NEN).aura() >= 90, "as acoes normais nao deveriam gastar aura de aplicacao");
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withAura(100));
+				start[0] = player.getY();
+			});
+			context.waitTicks(5);
+			input.holdKeyFor(InputConstants.KEY_C, 2);
 			context.waitTicks(6);
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
@@ -555,14 +572,14 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(1);
 
-			// Durante a recarga, pular e so pular
-			input.holdKeyFor(InputConstants.KEY_SPACE, 2);
+			// Durante a recarga, a tecla nao faz nada
+			input.holdKeyFor(InputConstants.KEY_C, 2);
 			context.waitTicks(6);
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-				check(player.getY() - start[0] < 1.5, "pular na recarga deveria ser um pulo normal, subiu " + (player.getY() - start[0]));
-				check(data.aura() >= 100 - 2, "pular na recarga nao deveria gastar a aura da aplicacao, ficou " + data.aura());
+				check(player.getY() - start[0] < 0.1, "a tecla na recarga nao deveria pular, subiu " + (player.getY() - start[0]));
+				check(data.aura() >= 100 - 2, "a tecla na recarga nao deveria gastar a aura da aplicacao, ficou " + data.aura());
 			});
 			context.waitTicks(30);
 			singleplayer.getServer().runOnServer(server -> {
@@ -572,7 +589,7 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				start[2] = player.getZ();
 			});
 			context.waitTicks(5);
-			input.holdKeyFor(InputConstants.KEY_LCONTROL, 2);
+			input.holdKeyFor(InputConstants.KEY_LALT, 2);
 			context.waitTicks(10);
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
@@ -588,19 +605,32 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				check(player.getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.GYO), "esperar nao deveria desligar o Gyo");
 			});
-			input.pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+			input.holdKeyFor(InputConstants.KEY_X, 2);
 			context.waitTicks(3);
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-				check(data.isActive(Technique.GYO) && GyoApplications.guarding(player), "o botao direito deveria virar super defesa com o Gyo ligado");
+				check(data.isActive(Technique.GYO) && GyoApplications.guarding(player), "a tecla deveria usar a super defesa com o Gyo ligado");
 				check(GyoApplications.remaining(player, GyoApplications.Action.GUARD) > 0, "a super defesa deveria entrar em recarga");
 				float guarded = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
 				check(guarded < 10.0F * NenBonuses.of(data).damageTaken(), "a super defesa deveria reduzir o dano, veio " + guarded);
 
-				// Super soco: so quando o golpe acerta, e soma com os outros bonus
+				// Super soco: sem a tecla o golpe e comum e nao gasta nada
 				player.setAttached(ModAttachments.NEN, data.withActive(Technique.GYO).withAura(100));
 				NenData prepared = player.getAttachedOrCreate(ModAttachments.NEN);
+				Pig target = EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
+				double normal = (10.0F + NenBonuses.of(prepared).flatDamage()) * (1 + NenBonuses.of(prepared).damageBonus());
+				float plain = NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F);
+				check(GyoApplications.remaining(player, GyoApplications.Action.PUNCH) == 0 && player.getAttachedOrCreate(ModAttachments.NEN).aura() == 100,
+						"sem apertar a tecla o golpe nao deveria usar o super soco, veio " + plain);
+			});
+			input.holdKeyFor(InputConstants.KEY_GRAVE, 2);
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withAura(100));
+				NenData prepared = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(GyoApplications.remaining(player, GyoApplications.Action.PUNCH) == 0 && prepared.aura() == 100, "apertar a tecla do soco so deixa pronto: gasta ao acertar");
 				Pig target = EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
 				double normal = (10.0F + NenBonuses.of(prepared).flatDamage()) * (1 + NenBonuses.of(prepared).damageBonus());
 				float punched = NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F);
@@ -615,8 +645,39 @@ public class NenPanelGameTest implements FabricClientGameTest {
 
 			context.takeScreenshot("gyo_cooldowns");
 
-			// Na recarga, o botao direito volta a usar itens
-			context.runOnClient(client -> check(!GyoControl.onUseItem(client.player), "na recarga o botao direito deveria usar o item"));
+			// Trocando a tecla do super pulo para a do pulo normal, os dois saem juntos
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setAttached(ModAttachments.GYO_COOLDOWNS, GyoCooldowns.NONE);
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withAura(100));
+				start[0] = player.getY();
+			});
+			context.runOnClient(client -> {
+				GyoControl.key(GyoApplications.Action.JUMP).setKey(InputConstants.getKey(client.options.keyJump.saveString()));
+				KeyMapping.resetMapping();
+			});
+			context.waitTicks(40);
+			singleplayer.getServer().runOnServer(server -> start[0] = server.getPlayerList().getPlayers().getFirst().getY());
+			input.holdKeyFor(InputConstants.KEY_C, 2);
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> check(
+					GyoApplications.remaining(server.getPlayerList().getPlayers().getFirst(), GyoApplications.Action.JUMP) == 0,
+					"a tecla antiga nao deveria usar mais o super pulo"));
+			input.holdKeyFor(InputConstants.KEY_SPACE, 2);
+			context.waitTicks(6);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				check(GyoApplications.remaining(player, GyoApplications.Action.JUMP) > 0, "a tecla trocada deveria usar o super pulo");
+				check(player.getY() - start[0] > 1.5, "no Espaco deveria sair o super pulo, subiu " + (player.getY() - start[0]));
+			});
+			context.runOnClient(client -> {
+				GyoControl.key(GyoApplications.Action.JUMP).setKey(GyoControl.key(GyoApplications.Action.JUMP).getDefaultKey());
+				KeyMapping.resetMapping();
+				// O texto do painel mostra a tecla atual
+				String effect = Technique.GYO.effect().getString();
+				check(effect.contains("[C]") && !effect.contains("%s"), "o texto do Gyo deveria mostrar as teclas, veio " + effect);
+			});
+			context.waitTicks(60);
 
 			// A recarga vai de 20 s com 0% a 5 s com 100%
 			singleplayer.getServer().runOnServer(server -> {

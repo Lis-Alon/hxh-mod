@@ -29,7 +29,7 @@ public final class NenActions {
 			NenTraining.switched(player, technique);
 		}
 		if (technique == Technique.GYO && next.isActive(technique)) {
-			player.sendOverlayMessage(Component.translatable("nen.hxh.gyo.prepared"));
+			player.sendOverlayMessage(Component.translatable("nen.hxh.gyo.prepared", GyoApplications.keys()));
 		}
 	}
 
