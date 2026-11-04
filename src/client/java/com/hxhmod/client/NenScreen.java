@@ -19,10 +19,12 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Util;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -65,6 +67,12 @@ public class NenScreen extends Screen {
 	private static final int ROW_HOVER_BOTTOM = 0xFF1D2236;
 	private static final int BAR_BACK = 0xFF262A36;
 	private static final int XP_COLOR = 0xFFD8B46A;
+	private static final int SKY_ROW = 0x6014161C;
+	private static final int SKY_ROW_HOVER = 0x90262830;
+	private static final int SKY_ROW_LINE = 0x28FFFFFF;
+	private static final int SKY_ROW_SELECTED_TOP = 0xC0584A2E;
+	private static final int SKY_ROW_SELECTED_BOTTOM = 0xC0302818;
+	private static final int SKY_BUTTON_OFF = 0xFF3C3A36;
 
 	private enum Page {
 		LEVEL("screen.hxh.nen.page.level"),
@@ -174,11 +182,20 @@ public class NenScreen extends Screen {
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		if (starry()) {
+			StarrySky.render(graphics, width, height, minecraft.getWindow().getGuiScale(), Util.getMillis());
+			return;
+		}
 		super.extractBackground(graphics, mouseX, mouseY, partialTick);
 		graphics.fill(0, 0, width, height, BACKDROP);
 		graphics.fillGradient(left, top, left + panelWidth, top + panelHeight, PANEL_TOP, PANEL_BOTTOM);
 		graphics.fill(left, top, left + panelWidth, top + 1, GOLD_DIM);
 		graphics.fill(left, top + panelHeight - 1, left + panelWidth, top + panelHeight, GOLD_DIM);
+	}
+
+	/** A pagina de Nivel fica direto sobre o ceu estrelado, sem o painel. */
+	private boolean starry() {
+		return page == Page.LEVEL;
 	}
 
 	@Override
@@ -212,9 +229,14 @@ public class NenScreen extends Screen {
 		graphics.centeredText(font, Component.literal("念"), iconX + 9, iconY + 5, GOLD);
 
 		graphics.pose().pushMatrix();
-		graphics.pose().translate(iconX + 26, iconY + 3);
-		graphics.pose().scale(1.5F, 1.5F);
-		graphics.text(font, page.title().copy().withStyle(ChatFormatting.BOLD), 0, 0, TEXT, false);
+		graphics.pose().translate(iconX + 26, iconY + (starry() ? 2 : 3));
+		if (starry()) {
+			graphics.pose().scale(1.75F, 1.75F);
+			graphics.text(font, upper(page.title()), 0, 0, TEXT, false);
+		} else {
+			graphics.pose().scale(1.5F, 1.5F);
+			graphics.text(font, page.title().copy().withStyle(ChatFormatting.BOLD), 0, 0, TEXT, false);
+		}
 		graphics.pose().popMatrix();
 
 		// Abas no canto direito
@@ -230,7 +252,7 @@ public class NenScreen extends Screen {
 			boolean hover = hovered(x - 4, top + 6, labelWidth + 8, 18, mouseX, mouseY);
 			graphics.text(font, label, x, top + 11, current || hover ? GOLD : TEXT, false);
 			if (current) {
-				graphics.fill(x, top + 22, x + labelWidth, top + 24, GOLD);
+				graphics.fill(x, top + 22, x + labelWidth, top + (starry() ? 23 : 24), GOLD);
 			}
 			addClickable(x - 4, top + 6, labelWidth + 8, 18, true, () -> setPage(tab));
 		}
@@ -640,7 +662,16 @@ public class NenScreen extends Screen {
 
 	// ------------------------------------------------------------- Pecas
 
+	private static Component upper(Component text) {
+		return Component.literal(text.getString().toUpperCase(Locale.ROOT));
+	}
+
 	private void sectionTitle(GuiGraphicsExtractor graphics, Component title, int x, int y, int width) {
+		if (starry()) {
+			graphics.text(font, Component.literal("✦ ").append(upper(title)), x, y, GOLD, false);
+			graphics.fill(x, y + 10, x + width, y + 11, GOLD_DIM);
+			return;
+		}
 		graphics.text(font, Component.literal("✦ ").append(title.copy().withStyle(ChatFormatting.BOLD)), x, y, GOLD, false);
 		graphics.fill(x, y + 10, x + width, y + 11, GOLD_DIM);
 	}
@@ -650,6 +681,16 @@ public class NenScreen extends Screen {
 	}
 
 	private void row(GuiGraphicsExtractor graphics, int x, int y, int width, int height, boolean selected, boolean hover) {
+		if (starry()) {
+			if (selected) {
+				graphics.fillGradient(x, y, x + width, y + height, SKY_ROW_SELECTED_TOP, SKY_ROW_SELECTED_BOTTOM);
+				outline(graphics, x, y, width, height, GOLD);
+			} else {
+				graphics.fill(x, y, x + width, y + height, hover ? SKY_ROW_HOVER : SKY_ROW);
+				graphics.fill(x, y + height - 1, x + width, y + height, SKY_ROW_LINE);
+			}
+			return;
+		}
 		int topColor = selected ? ROW_SELECTED_TOP : hover ? ROW_HOVER_TOP : ROW_TOP;
 		int bottomColor = selected ? ROW_SELECTED_BOTTOM : hover ? ROW_HOVER_BOTTOM : ROW_BOTTOM;
 		graphics.fillGradient(x, y, x + width, y + height, topColor, bottomColor);
@@ -661,11 +702,37 @@ public class NenScreen extends Screen {
 	private void button(GuiGraphicsExtractor graphics, Component label, int x, int y, int width, int height,
 			boolean enabled, int mouseX, int mouseY, Runnable action) {
 		boolean hover = enabled && hovered(x, y, width, height, mouseX, mouseY);
+		if (starry()) {
+			ornateButton(graphics, x, y, width, height, enabled, hover);
+			graphics.centeredText(font, label, x + width / 2, y + (height - 8) / 2, enabled ? (hover ? GOLD : TEXT) : DIM);
+			addClickable(x, y, width, height, enabled, action);
+			return;
+		}
 		int border = !enabled ? LOCKED : hover ? GOLD : TEXT;
 		graphics.fill(x, y, x + width, y + height, border);
 		graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, hover ? 0xFF2A2418 : 0xFF0B0C11);
 		graphics.centeredText(font, label, x + width / 2, y + (height - 8) / 2, enabled ? (hover ? GOLD : TEXT) : LOCKED);
 		addClickable(x, y, width, height, enabled, action);
+	}
+
+	/** Moldura dupla com cantos marcados, como na referencia da pagina de Nivel. */
+	private static void ornateButton(GuiGraphicsExtractor graphics, int x, int y, int width, int height, boolean enabled, boolean hover) {
+		int edge = hover ? GOLD : enabled ? GOLD_DIM : SKY_BUTTON_OFF;
+		graphics.fillGradient(x, y, x + width, y + height, hover ? 0xE02E271A : 0xD01A1A20, hover ? 0xE0191510 : 0xD00C0C11);
+		outline(graphics, x, y, width, height, edge);
+		outline(graphics, x + 2, y + 2, width - 4, height - 4, (edge & 0xFFFFFF) | 0x70000000);
+		for (int cornerX : new int[] {x, x + width - 3}) {
+			for (int cornerY : new int[] {y, y + height - 3}) {
+				graphics.fill(cornerX, cornerY, cornerX + 3, cornerY + 3, edge);
+			}
+		}
+	}
+
+	private static void outline(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
+		graphics.fill(x, y, x + width, y + 1, color);
+		graphics.fill(x, y + height - 1, x + width, y + height, color);
+		graphics.fill(x, y + 1, x + 1, y + height - 1, color);
+		graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
 	}
 
 	/** Largura do botao para caber o texto, com um minimo para os botoes ficarem alinhados. */

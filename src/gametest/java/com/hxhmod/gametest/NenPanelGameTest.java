@@ -120,6 +120,9 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			input.pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
 			context.waitTicks(2);
 			context.takeScreenshot("nen_2_level");
+			// O ceu da pagina de Nivel se mexe sozinho
+			context.waitTicks(100);
+			context.takeScreenshot("nen_2b_level_sky");
 
 			input.pressKey(InputConstants.KEY_TAB);
 			context.waitTicks(2);
