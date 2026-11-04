@@ -1,8 +1,10 @@
 package com.hxhmod.gametest;
 
 import com.hxhmod.block.ModBlocks;
+import com.hxhmod.client.DamageTrail;
 import com.hxhmod.client.EnSense;
 import com.hxhmod.client.GyoControl;
+import com.hxhmod.client.NenHud;
 import com.hxhmod.client.NenScreen;
 import com.hxhmod.client.NenTreePage;
 import com.hxhmod.item.ModItems;
@@ -66,6 +68,99 @@ public class NenPanelGameTest implements FabricClientGameTest {
 	private static final int PANEL_WIDTH = 440;
 	private static final int PANEL_HEIGHT = 256;
 	private static final int FIRST_STAT_ROW_Y = 30 + 8 + 22 + 14;
+
+	/** HUD de combate: rastro de dano, icones so das tecnicas aprendidas, brilho das ativas e a versao antes do despertar. */
+	private void checkCombatHud(ClientGameTestContext context, TestSingleplayerContext singleplayer, TestInput input) {
+		// O rastro fica parado, esvazia devagar, recomeca com outro golpe e nunca fica abaixo da vida
+		DamageTrail trail = new DamageTrail();
+		check(trail.update(1.0F, 0.0F) == 1.0F, "sem dano o rastro acompanha a vida");
+		check(trail.update(0.4F, 0.1F) == 1.0F, "logo depois do golpe o rastro fica onde a vida estava");
+		check(trail.update(0.4F, DamageTrail.HOLD_SECONDS) == 1.0F, "durante a espera o rastro nao deveria descer");
+		float drained = trail.update(0.4F, 0.5F);
+		check(Math.abs(drained - (1.0F - DamageTrail.DRAIN_PER_SECOND * 0.5F)) < 0.001F, "o rastro deveria esvaziar devagar, veio " + drained);
+		check(trail.update(0.2F, 0.1F) == drained, "um golpe novo deveria segurar o rastro de novo");
+		check(trail.update(0.2F, 0.1F) == drained, "o golpe novo ainda esta na espera");
+		trail.update(0.2F, DamageTrail.HOLD_SECONDS);
+		check(trail.update(0.2F, 10.0F) == 0.2F, "o rastro nao deveria passar da vida");
+		check(trail.update(0.9F, 0.1F) == 0.9F, "ao curar o rastro acompanha a vida");
+
+		// A barra com ponta inclinada: vazia em 0, cheia em 1 e a linha de cima mais comprida
+		check(NenHud.rowWidth(0.0F, 99, 104, 0, 11) == 0, "barra vazia nao deveria desenhar nada");
+		check(NenHud.rowWidth(1.0F, 99, 104, 0, 11) == 104 && NenHud.rowWidth(1.0F, 99, 104, 10, 11) == 99, "barra cheia deveria preencher o trilho");
+		check(NenHud.rowWidth(0.5F, 99, 104, 0, 11) > NenHud.rowWidth(0.5F, 99, 104, 10, 11), "a ponta deveria ficar inclinada");
+
+		NenData[] saved = new NenData[1];
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+			NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+			saved[0] = data;
+			check(NenHud.icons(NenData.DEFAULT.awaken(NenType.ENHANCEMENT)).equals(List.of(Technique.TEN, Technique.ZETSU, Technique.REN, Technique.HATSU)),
+					"recem desperto deveria mostrar so os icones de Ten, Zetsu, Ren e Hatsu");
+			check(NenHud.icons(NenData.DEFAULT).isEmpty(), "sem Nen nao deveria ter icone nenhum");
+			player.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+			player.setHealth(player.getMaxHealth());
+		});
+		context.waitTicks(5);
+
+		// O golpe de verdade: a barra cai na hora e o rastro fica para tras
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+			player.setHealth(player.getMaxHealth() * 0.35F);
+		});
+		context.waitFor(client -> client.player.getHealth() < client.player.getMaxHealth() * 0.5F);
+		context.waitTicks(1);
+		context.takeScreenshot("nen_7c_hud_impact");
+		float afterHit = context.computeOnClient(client -> NenHud.trailShown());
+		check(afterHit > 0.5F, "logo depois do golpe o rastro deveria estar acima da vida, veio " + afterHit);
+		context.waitFor(client -> NenHud.trailShown() < 0.36F, 2000);
+		context.takeScreenshot("nen_7d_hud_after_impact");
+
+		// Muda a cor com veneno e wither, e mostra a vida extra da absorcao
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+			player.addEffect(new MobEffectInstance(MobEffects.POISON, 200, 0));
+			player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 200, 1));
+		});
+		context.waitTicks(5);
+		context.takeScreenshot("nen_7e_hud_poison_absorb");
+
+		// Tudo aprendido, com tecnicas ligadas e nas outras escalas de interface
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+			player.removeEffect(MobEffects.POISON);
+			player.removeEffect(MobEffects.ABSORPTION);
+			NenData all = saved[0];
+			for (Technique technique : Technique.TABS) {
+				all = all.unlock(technique);
+			}
+			check(NenHud.icons(all).size() == Technique.TABS.size(), "todas as tecnicas deveriam ter icone");
+			NenData on = all.withActive(Set.of(Technique.TEN, Technique.REN, Technique.GYO, Technique.RYU));
+			player.setAttached(ModAttachments.NEN, on.withAura(on.maxAura() * 2 / 3));
+		});
+		context.waitTicks(5);
+		context.takeScreenshot("nen_7f_hud_all_icons");
+		input.resizeWindow(1920, 1080);
+		context.waitTicks(5);
+		context.takeScreenshot("nen_7g_hud_1080");
+		input.resizeWindow(854, 480);
+		context.waitTicks(5);
+
+		// Antes do despertar: so retrato e vida, sem coracoes
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+			player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
+			player.setAttached(ModAttachments.NEN, NenData.DEFAULT);
+		});
+		context.waitTicks(5);
+		context.takeScreenshot("nen_7h_hud_dormant");
+
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+			player.setAttached(ModAttachments.NEN, saved[0]);
+			player.setHealth(player.getMaxHealth());
+		});
+		context.waitTicks(5);
+	}
 
 	@Override
 	public void runTest(ClientGameTestContext context) {
@@ -326,6 +421,7 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(25);
 			context.takeScreenshot("nen_7b_hud_ten_ren");
+			checkCombatHud(context, singleplayer, input);
 
 			// Treino correndo de verdade: a Vitalidade esta a meio XP de subir, e o Ten ligado completa
 			singleplayer.getServer().runOnServer(server -> {

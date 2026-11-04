@@ -143,8 +143,6 @@
 	"nen.hxh.not_awakened": "Your Nen has not awakened yet. Crouch still to meditate.",
 	"nen.hxh.status": "Nen: %s | Level %s | Points: %s | Aura: %s/%s",
 	"nen.hxh.reset": "Your Nen was cleared. Start meditating again.",
-	"nen.hxh.hud": "Lv %s · %s  %s/%s",
-	"nen.hxh.hud_active": "Lv %s · %s  %s/%s  [%s]",
 	"screen.hxh.nen.title": "Nen Panel",
 	"screen.hxh.nen.page.level": "Level Up",
 	"screen.hxh.nen.page.techniques": "Techniques",

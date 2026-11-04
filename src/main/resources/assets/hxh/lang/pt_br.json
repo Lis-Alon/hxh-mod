@@ -143,8 +143,6 @@
 	"nen.hxh.not_awakened": "Seu Nen ainda não despertou. Agache parado para meditar.",
 	"nen.hxh.status": "Nen: %s | Nível %s | Pontos: %s | Aura: %s/%s",
 	"nen.hxh.reset": "Seu Nen foi apagado. Comece a meditar de novo.",
-	"nen.hxh.hud": "Nv %s · %s  %s/%s",
-	"nen.hxh.hud_active": "Nv %s · %s  %s/%s  [%s]",
 	"screen.hxh.nen.title": "Painel do Nen",
 	"screen.hxh.nen.page.level": "Nível",
 	"screen.hxh.nen.page.techniques": "Técnicas",

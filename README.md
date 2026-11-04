@@ -9,7 +9,7 @@ Fan mod de Hunter x Hunter para Minecraft **26.3** (Fabric).
 1. **Despertar:** fique parado no chão agachado (ou com o painel do Nen aberto) para meditar. Depois de 60 segundos sua aura desperta e você aprende os quatro princípios: **Ten, Zetsu, Ren e Hatsu**.
 2. **Painel do Nen:** aperte **N** (dá para trocar em Opções > Controles > Hunter x Hunter).
 3. **Nível de Nen (1 a 100):** cada segundo com uma técnica ativa dá XP de Nen. Cada nível dá 2 pontos para as funcionalidades, e a cada 10 níveis você ganha +3 de bônus.
-4. **Atributos e pontos:** os **atributos** (vitalidade, capacidade e fluxo de aura, ataque, proteção, agilidade e percepção) não recebem pontos: sobem sozinhos com o treino (veja [Atributos](#atributos)). Os pontos servem só para as **funcionalidades** de cada técnica. As técnicas não custam pontos: são aprendidas pela proficiência (veja abaixo). Os atributos e os bônus das técnicas são **status internos do personagem**: não mexem na armadura, na vida máxima nem em outros atributos do Minecraft (os corações extras aparecem normalmente na barra de vida).
+4. **Atributos e pontos:** os **atributos** (vitalidade, capacidade e fluxo de aura, ataque, proteção, agilidade e percepção) não recebem pontos: sobem sozinhos com o treino (veja [Atributos](#atributos)). Os pontos servem só para as **funcionalidades** de cada técnica. As técnicas não custam pontos: são aprendidas pela proficiência (veja abaixo). Os atributos e os bônus das técnicas são **status internos do personagem**: não mexem na armadura, na vida máxima nem em outros atributos do Minecraft (a vida extra aparece normalmente na barra de vida da HUD).
 5. **Vidência (Copo d'Água com Folha):** com o Ren, coloque o copo no chão e clique nele com a mão vazia: o personagem senta e se concentra por 5 segundos (não ande nem se afaste). Também dá para segurar o botão direito com o copo na mão. Cada sessão gasta aura e avança a leitura até revelar seu tipo de Nen.
 6. **Meditação:** com o painel aberto, meditando para despertar ou concentrado no copo, o personagem senta de pernas cruzadas.
 
@@ -18,6 +18,18 @@ Todos os itens do mod ficam na aba **Hunter x Hunter** do inventário do criativ
 | Meditação | Copo no chão | Aba do criativo |
 |---|---|---|
 | ![Pose de meditação](docs/meditacao.png) | ![Copo d'água com folha](docs/copo-no-chao.png) | ![Aba Hunter x Hunter](docs/aba-criativo.png) |
+
+### HUD de combate
+
+No canto superior esquerdo, no lugar dos corações e da armadura do Minecraft (a comida e o ar continuam onde sempre estiveram):
+
+- **Retrato:** o rosto da skin, com a cor do seu tipo de Nen em volta (branco enquanto o tipo não foi revelado). Embaixo ficam o nível de Nen e a barra de XP.
+- **Vida:** vai do vermelho ao amarelo conforme enche, com o número em cima. Ao apanhar, ela cai na hora e um rastro amarelo fica para trás, espera 0,45 s e esvazia devagar; outro golpe nesse meio-tempo segura o rastro de novo. Fica verde com veneno e cinza com wither, e a vida extra da absorção aparece como uma faixa dourada em cima.
+- **Nen:** a barra azul elétrica logo abaixo, com a aura atual e a máxima. Só aparece depois do despertar.
+- **Armadura:** um escudo com o número ao lado da barra de Nen, só quando você usa alguma.
+- **Técnicas:** ícones redondos de 14 pixels colados embaixo da barra de Nen, só das técnicas já aprendidas. A técnica ligada acende e ganha um brilho pulsando na cor dela; a desligada fica apagada.
+
+A carga do Ko, a postura do Ryu e as recargas do Gyo continuam em texto embaixo da HUD. Antes do despertar sobram só o retrato e a vida, e no modo criativo a HUD só aparece para quem já despertou.
 
 ### O painel
 
@@ -216,4 +228,4 @@ Projeto de fã, sem fins lucrativos. Hunter x Hunter pertence a Yoshihiro Togash
 
 ## Fonte
 
-As texturas da árvore são geradas por `tools/gen_tree_textures.py` e depois `tools/gen_tree_art.py`, que usa as silhuetas de `tools/art/tree_reference.png` e desenha os kanjis com a Yu Gothic do Windows. As imagens de títulos, abas e botões são geradas por `tools/gen_panel_art.py` e a página de Nível também usa a [Cinzel](https://github.com/NDISCOVER/Cinzel), sob a SIL Open Font License 1.1. A licença vai junto em `assets/hxh/font/cinzel_ofl.txt`.
+As texturas da árvore são geradas por `tools/gen_tree_textures.py` e depois `tools/gen_tree_art.py`, que usa as silhuetas de `tools/art/tree_reference.png` e desenha os kanjis com a Yu Gothic do Windows. As peças da HUD são geradas por `tools/gen_hud_art.py`. As imagens de títulos, abas e botões são geradas por `tools/gen_panel_art.py` e a página de Nível também usa a [Cinzel](https://github.com/NDISCOVER/Cinzel), sob a SIL Open Font License 1.1. A licença vai junto em `assets/hxh/font/cinzel_ofl.txt`.

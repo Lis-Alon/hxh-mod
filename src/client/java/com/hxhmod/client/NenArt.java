@@ -55,7 +55,7 @@ final class NenArt {
 		return HxHMod.id("textures/gui/art/" + path + "_" + scale + ".png");
 	}
 
-	private static int scale() {
+	static int scale() {
 		return Math.clamp(Minecraft.getInstance().getWindow().getGuiScale(), 1, MAX_SCALE);
 	}
 

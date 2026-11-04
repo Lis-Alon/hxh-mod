@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.KeyMapping;
 
 import java.util.EnumMap;
@@ -46,6 +47,9 @@ public class HxHModClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		HudElementRegistry.addLast(HxHMod.id("nen_aura"), NenHud::render);
+		// A vida e a armadura agora ficam na HUD de combate
+		HudElementRegistry.removeElement(VanillaHudElements.HEALTH_BAR);
+		HudElementRegistry.removeElement(VanillaHudElements.ARMOR_BAR);
 		HudElementRegistry.addFirst(HxHMod.id("gyo_vignette"), AuraRender::gyoVignette);
 		AuraRender.register();
 
