@@ -8,10 +8,8 @@ import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenActions;
 import com.hxhmod.nen.RyuFlow;
 import com.hxhmod.nen.NenPose;
-import com.hxhmod.nen.NenStat;
 import com.hxhmod.nen.NenUpgrade;
 import com.hxhmod.nen.Technique;
-import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -19,7 +17,6 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-import java.util.Map;
 
 /** Pedidos que o painel do Nen manda para o servidor. O servidor sempre confere se o pedido e valido. */
 public final class NenPayloads {
@@ -42,19 +39,6 @@ public final class NenPayloads {
 		public static final Type<BuyUpgrade> TYPE = new Type<>(HxHMod.id("buy_upgrade"));
 		public static final StreamCodec<ByteBuf, BuyUpgrade> CODEC =
 				NenUpgrade.STREAM_CODEC.map(BuyUpgrade::new, BuyUpgrade::upgrade);
-
-		@Override
-		public Type<? extends CustomPacketPayload> type() {
-			return TYPE;
-		}
-	}
-
-	/** Os pontos distribuidos na aba Nivel, enviados de uma vez ao confirmar. */
-	public record AllocateStats(Map<NenStat, Integer> points) implements CustomPacketPayload {
-		public static final Type<AllocateStats> TYPE = new Type<>(HxHMod.id("allocate_stats"));
-		public static final StreamCodec<ByteBuf, AllocateStats> CODEC =
-				ByteBufCodecs.fromCodec(Codec.unboundedMap(NenStat.CODEC, Codec.INT))
-						.map(AllocateStats::new, AllocateStats::points);
 
 		@Override
 		public Type<? extends CustomPacketPayload> type() {
@@ -159,7 +143,6 @@ public final class NenPayloads {
 	public static void register() {
 		PayloadTypeRegistry.serverboundPlay().register(ToggleTechnique.TYPE, ToggleTechnique.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(BuyUpgrade.TYPE, BuyUpgrade.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(AllocateStats.TYPE, AllocateStats.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(GyoApplication.TYPE, GyoApplication.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(CycleIntensity.TYPE, CycleIntensity.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(KoHold.TYPE, KoHold.CODEC);
@@ -173,8 +156,6 @@ public final class NenPayloads {
 				(payload, context) -> NenActions.toggle(context.player(), payload.technique()));
 		ServerPlayNetworking.registerGlobalReceiver(BuyUpgrade.TYPE,
 				(payload, context) -> NenActions.buy(context.player(), payload.upgrade()));
-		ServerPlayNetworking.registerGlobalReceiver(AllocateStats.TYPE,
-				(payload, context) -> NenActions.allocate(context.player(), payload.points()));
 		ServerPlayNetworking.registerGlobalReceiver(GyoApplication.TYPE, (payload, context) ->
 				GyoApplications.use(context.player(), payload.action(), payload.directionX(), payload.directionZ()));
 		ServerPlayNetworking.registerGlobalReceiver(CycleIntensity.TYPE, (payload, context) ->

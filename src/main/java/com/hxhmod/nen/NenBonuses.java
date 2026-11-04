@@ -1,7 +1,7 @@
 package com.hxhmod.nen;
 
 /**
- * Status internos do personagem: o que os pontos de atributo e as tecnicas ligadas somam.
+ * Status internos do personagem: o que os atributos treinados e as tecnicas ligadas somam.
  * Tudo e aplicado pelo mod (mixins e {@link NenCombat}), sem atributos nem pocoes do Minecraft.
  *
  * @param maxHealth   vida maxima extra
@@ -20,34 +20,32 @@ public record NenBonuses(double maxHealth, double maxHealthBonus, double flatDam
 		if (data == null || !data.awakened()) {
 			return NONE;
 		}
-		double maxHealth = points(data, NenStat.VITALITY);
-		double flatDamage = points(data, NenStat.ATTACK_POWER);
-		double attackSpeed = points(data, NenStat.ATTACK_SPEED);
-		double moveSpeed = points(data, NenStat.AGILITY);
-		double damageTaken = 1 - points(data, NenStat.PROTECTION);
-		double damageBonus = data.hatsuImpact() + (data.isActive(Technique.REN) ? data.renDamage() : 0);
+		double maxHealth = data.attributeLevel(NenStat.VITALITY) * NenRules.VITALITY_HEALTH;
+		int attack = data.attributeLevel(NenStat.ATTACK_POWER);
+		double flatDamage = attack * NenRules.ATTACK_FLAT;
+		int agility = data.attributeLevel(NenStat.AGILITY);
+		double attackSpeed = agility * NenRules.AGILITY_ATTACK;
+		double moveSpeed = agility * NenRules.AGILITY_MOVE;
+		double damageBonus = attack * NenRules.ATTACK_PERCENT + data.hatsuImpact() + (data.isActive(Technique.REN) ? data.renDamage() : 0);
 
 		// Ten, Ren e Ken sao a mesma camada de aura: vale a maior defesa, sem somar as tres
+		// A Protecao reforca a defesa passiva do Ten e do Ken
+		double protection = 1 + data.attributeLevel(NenStat.PROTECTION) * NenRules.PROTECTION_DEFENSE;
 		double nenDefense = 0;
 		if (data.isActive(Technique.TEN)) {
-			nenDefense = Math.max(nenDefense, data.tenDefense());
+			nenDefense = Math.max(nenDefense, data.tenDefense() * protection);
 		}
 		if (data.isActive(Technique.REN)) {
 			nenDefense = Math.max(nenDefense, data.renDefense());
 		}
 		if (data.isActive(Technique.KEN)) {
-			nenDefense = Math.max(nenDefense, data.kenDefense());
+			nenDefense = Math.max(nenDefense, data.kenDefense() * protection);
 		}
 		if (data.isActive(Technique.KO)) {
 			// Toda a aura no punho: o resto do corpo fica sem defesa de Nen
 			nenDefense = -NenRules.KO_DAMAGE_TAKEN;
 		}
-		damageTaken *= 1 - nenDefense;
-		return new NenBonuses(maxHealth, data.hatsuVitality(), flatDamage, damageBonus, Math.max(damageTaken, NenRules.MIN_DAMAGE_TAKEN),
+		return new NenBonuses(maxHealth, data.hatsuVitality(), flatDamage, damageBonus, Math.max(1 - nenDefense, NenRules.MIN_DAMAGE_TAKEN),
 				attackSpeed, moveSpeed);
-	}
-
-	private static double points(NenData data, NenStat stat) {
-		return data.statPoints(stat) * stat.perPoint();
 	}
 }

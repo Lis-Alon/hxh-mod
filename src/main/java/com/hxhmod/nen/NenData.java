@@ -20,7 +20,7 @@ import java.util.Set;
  * @param xp        experiencia total de Nen (define o nivel de proficiencia)
  * @param active    tecnicas ligadas agora (varias juntas; o Zetsu so funciona sozinho)
  * @param training  segundos que cada tecnica ficou ativa
- * @param stats     pontos gastos em cada atributo
+ * @param attributeXp XP de treino de cada atributo
  * @param unlocked  tecnicas desbloqueadas
  * @param upgrades  funcionalidades compradas
  * @param bonusPoints pontos extras dados por comando (somam aos pontos ganhos por nivel)
@@ -30,13 +30,13 @@ import java.util.Set;
  * @param intensity intensidade escolhida para as tecnicas que podem ser reguladas
  */
 public record NenData(boolean awakened, NenType type, boolean revealed, int aura, int meditation, int divination,
-		Set<Technique> active, int xp, Map<Technique, Integer> training, Map<NenStat, Integer> stats,
+		Set<Technique> active, int xp, Map<Technique, Integer> training, Map<NenStat, Double> attributeXp,
 		Set<Technique> unlocked, Set<NenUpgrade> upgrades, int bonusPoints, Set<Technique> granted,
 		Set<NenUpgrade> grantedUpgrades, Set<Technique> blocked, Map<Technique, Integer> intensity) {
 	public static final NenData DEFAULT = new NenData(false, NenType.NONE, false, 0, 0, 0, Set.of(), 0,
 			Map.of(), Map.of(), Set.of(), Set.of(), 0, Set.of(), Set.of(), Set.of(), Map.of());
 
-	// O construtor de codec aceita ate 16 campos, entao a intensidade fica num grupo por fora
+	// O construtor de codec aceita ate 16 campos, entao a intensidade e os pontos antigos ficam num grupo por fora
 	private static final MapCodec<NenData> CORE_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
 			Codec.BOOL.optionalFieldOf("awakened", false).forGetter(NenData::awakened),
 			NenType.CODEC.optionalFieldOf("type", NenType.NONE).forGetter(NenData::type),
@@ -50,7 +50,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 					.optionalFieldOf("active", Set.of()).forGetter(NenData::active),
 			Codec.INT.optionalFieldOf("xp", 0).forGetter(NenData::xp),
 			Codec.unboundedMap(Technique.CODEC, Codec.INT).optionalFieldOf("training", Map.of()).forGetter(NenData::training),
-			Codec.unboundedMap(NenStat.CODEC, Codec.INT).optionalFieldOf("stats", Map.of()).forGetter(NenData::stats),
+			Codec.unboundedMap(NenStat.CODEC, Codec.DOUBLE).optionalFieldOf("attribute_xp", Map.of()).forGetter(NenData::attributeXp),
 			Technique.CODEC.listOf().<Set<Technique>>xmap(Set::copyOf, List::copyOf)
 					.optionalFieldOf("unlocked", Set.of()).forGetter(NenData::unlocked),
 			NenUpgrade.CODEC.listOf().<Set<NenUpgrade>>xmap(Set::copyOf, List::copyOf)
@@ -62,14 +62,16 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 					.optionalFieldOf("granted_upgrades", Set.of()).forGetter(NenData::grantedUpgrades),
 			Technique.CODEC.listOf().<Set<Technique>>xmap(Set::copyOf, List::copyOf)
 					.optionalFieldOf("blocked", Set.of()).forGetter(NenData::blocked)
-	).apply(instance, (awakened, type, revealed, aura, meditation, divination, active, xp, training, stats, unlocked,
+	).apply(instance, (awakened, type, revealed, aura, meditation, divination, active, xp, training, attributeXp, unlocked,
 			upgrades, bonusPoints, granted, grantedUpgrades, blocked) -> new NenData(awakened, type, revealed, aura, meditation,
-			divination, active, xp, training, stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, Map.of())));
+			divination, active, xp, training, attributeXp, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, Map.of())));
 
 	public static final Codec<NenData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
 			CORE_CODEC.forGetter(data -> data),
-			Codec.unboundedMap(Technique.CODEC, Codec.INT).optionalFieldOf("intensity", Map.of()).forGetter(NenData::intensity)
-	).apply(instance, NenData::withIntensity));
+			Codec.unboundedMap(Technique.CODEC, Codec.INT).optionalFieldOf("intensity", Map.of()).forGetter(NenData::intensity),
+			// Mundos antigos guardavam pontos distribuidos: so se le, nao se grava mais
+			Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("stats", Map.of()).forGetter(data -> Map.of())
+	).apply(instance, (data, intensity, legacyStats) -> data.withIntensity(intensity).withLegacyStats(legacyStats)));
 
 	public static final StreamCodec<ByteBuf, NenData> STREAM_CODEC = ByteBufCodecs.fromCodec(CODEC);
 
@@ -100,10 +102,8 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	}
 
 	public int pointsSpent() {
-		// As tecnicas sao aprendidas pela proficiencia e nao custam pontos; o que foi liberado por comando tambem nao
-		int spent = stats.values().stream().mapToInt(Integer::intValue).sum();
-		spent += upgrades.stream().filter(upgrade -> !grantedUpgrades.contains(upgrade)).mapToInt(NenUpgrade::cost).sum();
-		return spent;
+		// Os pontos so compram funcionalidades: atributos e tecnicas vem do treino, e o que foi liberado por comando e de graca
+		return upgrades.stream().filter(upgrade -> !grantedUpgrades.contains(upgrade)).mapToInt(NenUpgrade::cost).sum();
 	}
 
 	public int pointsAvailable() {
@@ -112,8 +112,23 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 
 	// ---- Aura e atributos ----
 
-	public int statPoints(NenStat stat) {
-		return stats.getOrDefault(stat, 0);
+	/** Nivel do atributo (0 a 100), que vem so do treino dele. */
+	public int attributeLevel(NenStat stat) {
+		return Math.min(NenRules.MAX_ATTRIBUTE, (int) Math.sqrt(attributeXp.getOrDefault(stat, 0.0) / NenRules.ATTRIBUTE_XP_FACTOR));
+	}
+
+	/** Porcentagem do caminho ate o proximo nivel do atributo (100 no maximo). */
+	public int attributeProgress(NenStat stat) {
+		int level = attributeLevel(stat);
+		if (level >= NenRules.MAX_ATTRIBUTE) {
+			return 100;
+		}
+		double from = attributeXpFor(level);
+		return (int) ((attributeXp.getOrDefault(stat, 0.0) - from) * 100 / (attributeXpFor(level + 1) - from));
+	}
+
+	private static double attributeXpFor(int level) {
+		return level * level * NenRules.ATTRIBUTE_XP_FACTOR;
 	}
 
 	public int maxAura() {
@@ -121,7 +136,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 			return 0;
 		}
 		return NenRules.BASE_MAX_AURA + NenRules.AURA_PER_LEVEL * (level() - 1)
-				+ (int) (statPoints(NenStat.AURA_CAPACITY) * NenStat.AURA_CAPACITY.perPoint());
+				+ (int) (attributeLevel(NenStat.AURA_CAPACITY) * NenRules.CAPACITY_AURA);
 	}
 
 	/** Aura recuperada por segundo sem nenhuma tecnica que gaste aura (pode ser fracionada). */
@@ -131,7 +146,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 
 	/** @param resting parado, sem andar (o Zetsu recupera mais em repouso) */
 	public double auraRegen(boolean resting) {
-		double regen = NenRules.REGEN + statPoints(NenStat.AURA_FLOW) * NenStat.AURA_FLOW.perPoint();
+		double regen = NenRules.REGEN + attributeLevel(NenStat.AURA_FLOW) * NenRules.FLOW_REGEN;
 		if (active.contains(Technique.TEN) && has(NenUpgrade.TEN_FLOW)) {
 			regen *= 1 + tenFlowBonus();
 		}
@@ -245,7 +260,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	}
 
 	private NenData withIntensity(Map<Technique, Integer> newIntensity) {
-		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, stats, unlocked,
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, attributeXp, unlocked,
 				upgrades, bonusPoints, granted, grantedUpgrades, blocked, newIntensity);
 	}
 
@@ -277,7 +292,8 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	/** Bonus de dano do Ren (fracao). */
 	public double renDamage() {
 		return byIntensity(Technique.REN, NenRules.REN_DAMAGE)
-				* (1 + upgradeScale(NenUpgrade.REN_SURGE, NenRules.REN_POWER_BASE, NenRules.REN_POWER_PER_MASTERY));
+				* (1 + upgradeScale(NenUpgrade.REN_SURGE, NenRules.REN_POWER_BASE, NenRules.REN_POWER_PER_MASTERY))
+				* (1 + attributeLevel(NenStat.ATTACK_POWER) * NenRules.ATTACK_IMPACT);
 	}
 
 	/** Resistencia corporal do Ren (fracao do golpe). */
@@ -330,7 +346,8 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	public double koDamage(double charge) {
 		return (NenRules.KO_DAMAGE_MIN + (NenRules.KO_DAMAGE_MAX - NenRules.KO_DAMAGE_MIN) * charge)
 				* (1 + NenRules.KO_DAMAGE_PER_MASTERY * mastery(Technique.KO)
-				+ upgradeScale(NenUpgrade.KO_ABSOLUTE, NenRules.KO_ABSOLUTE_BASE, NenRules.KO_ABSOLUTE_PER_MASTERY));
+				+ upgradeScale(NenUpgrade.KO_ABSOLUTE, NenRules.KO_ABSOLUTE_BASE, NenRules.KO_ABSOLUTE_PER_MASTERY))
+				* (1 + attributeLevel(NenStat.ATTACK_POWER) * NenRules.ATTACK_IMPACT);
 	}
 
 	// ---- Ryu ----
@@ -394,7 +411,8 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	public double enMaxSize() {
 		int mastery = Math.max(1, mastery(Technique.EN));
 		double size = NenRules.EN_MIN_SIZE + (NenRules.EN_MAX_SIZE - NenRules.EN_MIN_SIZE) * (mastery - 1) / (NenRules.MAX_MASTERY - 1);
-		return size * (1 + upgradeScale(NenUpgrade.EN_WIDE, NenRules.EN_WIDE_BASE, NenRules.EN_WIDE_PER_MASTERY));
+		return size * (1 + upgradeScale(NenUpgrade.EN_WIDE, NenRules.EN_WIDE_BASE, NenRules.EN_WIDE_PER_MASTERY))
+				* (1 + attributeLevel(NenStat.PERCEPTION) * NenRules.PERCEPTION_RADIUS);
 	}
 
 	/** Diametro (blocos) da esfera do En, na intensidade escolhida. */
@@ -407,6 +425,10 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 
 	/** Aura gasta por segundo pela tecnica, com a intensidade e os descontos das funcionalidades (pode ser fracionada). */
 	public double auraDrain(Technique technique) {
+		return rawDrain(technique) * (1 - attributeLevel(NenStat.AURA_FLOW) * NenRules.FLOW_UPKEEP);
+	}
+
+	private double rawDrain(Technique technique) {
 		return switch (technique) {
 			case REN -> byIntensity(technique, NenRules.REN_DRAIN)
 					* (1 - upgradeScale(NenUpgrade.REN_CONTROL, NenRules.REN_CONTROL_BASE, NenRules.REN_CONTROL_PER_MASTERY));
@@ -414,7 +436,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 					* (1 - upgradeScale(NenUpgrade.KEN_ENDURANCE, NenRules.KEN_ENDURANCE_BASE, NenRules.KEN_ENDURANCE_PER_MASTERY));
 			case SHU -> byIntensity(technique, NenRules.SHU_DRAIN)
 					* (1 - upgradeScale(NenUpgrade.SHU_COAT, NenRules.SHU_COAT_BASE, NenRules.SHU_COAT_PER_MASTERY));
-			case EN -> (NenRules.EN_DRAIN_BASE + NenRules.EN_DRAIN_PER_BLOCK * enSize())
+			case EN -> (NenRules.EN_DRAIN_BASE + NenRules.EN_DRAIN_PER_BLOCK * enSize() * (1 - attributeLevel(NenStat.PERCEPTION) * NenRules.PERCEPTION_UPKEEP))
 					* (1 - upgradeScale(NenUpgrade.EN_CONTROL, NenRules.EN_CONTROL_BASE, NenRules.EN_CONTROL_PER_MASTERY));
 			case IN -> (NenRules.IN_DRAIN_BASE + NenRules.IN_DRAIN_PER_HIDDEN * Math.min(inReleased(), inCapacity()))
 					* (1 - upgradeScale(NenUpgrade.IN_CONTROL, NenRules.IN_CONTROL_BASE, NenRules.IN_CONTROL_PER_MASTERY));
@@ -502,21 +524,21 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	public NenData awaken(NenType rolledType) {
 		// Ao despertar ja vem os quatro principios: Ten, Zetsu, Ren e Hatsu
 		return new NenData(true, rolledType, false, NenRules.BASE_MAX_AURA, meditation, divination, Set.of(), xp,
-				training, stats, Set.copyOf(Technique.BASE), upgrades, bonusPoints, granted, grantedUpgrades, Set.of(), intensity);
+				training, attributeXp, Set.copyOf(Technique.BASE), upgrades, bonusPoints, granted, grantedUpgrades, Set.of(), intensity);
 	}
 
 	public NenData withMeditation(int newMeditation) {
-		return new NenData(awakened, type, revealed, aura, newMeditation, divination, active, xp, training, stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+		return new NenData(awakened, type, revealed, aura, newMeditation, divination, active, xp, training, attributeXp, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	public NenData withAura(int newAura) {
 		return new NenData(awakened, type, revealed, Math.clamp(newAura, 0, maxAura()), meditation, divination, active, xp,
-				training, stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+				training, attributeXp, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	public NenData withActive(Set<Technique> newActive) {
 		return new NenData(awakened, type, revealed, aura, meditation, divination, Set.copyOf(newActive), xp, training,
-				stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+				attributeXp, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	/** Deixa so esta tecnica ligada (NONE desliga tudo). */
@@ -541,7 +563,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	}
 
 	public NenData addXp(int amount) {
-		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp + amount, training, stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp + amount, training, attributeXp, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	/** Coloca o treino exatamente no comeco desta proficiencia. */
@@ -550,7 +572,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		newTraining.putAll(training);
 		newTraining.put(technique, (int) Math.ceil(mastery * mastery * NenRules.MASTERY_SECONDS_FACTOR));
 		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, Map.copyOf(newTraining),
-				stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+				attributeXp, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	public NenData addTraining(Technique technique, int seconds) {
@@ -558,34 +580,76 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		newTraining.putAll(training);
 		newTraining.merge(technique, seconds, Integer::sum);
 		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, Map.copyOf(newTraining),
-				stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+				attributeXp, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	public NenData withDivination(int newDivination) {
 		int clamped = Math.min(newDivination, 100);
 		return new NenData(awakened, type, revealed || clamped >= 100, aura, meditation, clamped, active, xp, training,
-				stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+				attributeXp, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
-	public NenData addStats(Map<NenStat, Integer> added) {
-		Map<NenStat, Integer> newStats = new EnumMap<>(NenStat.class);
-		newStats.putAll(stats);
-		added.forEach((stat, amount) -> newStats.merge(stat, amount, Integer::sum));
+	/** Soma XP de treino no atributo, sem passar do que o nivel maximo pede. */
+	public NenData addAttributeXp(NenStat stat, double amount) {
+		if (amount <= 0) {
+			return this;
+		}
+		return withAttributeXp(stat, Math.min(attributeXpFor(NenRules.MAX_ATTRIBUTE), attributeXp.getOrDefault(stat, 0.0) + amount));
+	}
+
+	/** Poe o atributo no comeco do nivel pedido. */
+	public NenData withAttributeLevel(NenStat stat, int level) {
+		return withAttributeXp(stat, attributeXpFor(level));
+	}
+
+	private NenData withAttributeXp(NenStat stat, double value) {
+		Map<NenStat, Double> newXp = new EnumMap<>(NenStat.class);
+		newXp.putAll(attributeXp);
+		newXp.put(stat, value);
 		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training,
-				Map.copyOf(newStats), unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+				Map.copyOf(newXp), unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+	}
+
+	/**
+	 * Mundos de antes: cada atributo comeca no nivel equivalente aos pontos que tinha (mesma fracao do limite antigo),
+	 * e esses pontos voltam a ficar livres para as funcionalidades. A velocidade de ataque agora faz parte da Agilidade.
+	 */
+	private NenData withLegacyStats(Map<String, Integer> legacy) {
+		NenData result = this;
+		for (Map.Entry<String, Integer> entry : legacy.entrySet()) {
+			record Old(NenStat stat, int maxPoints) {
+			}
+			Old old = switch (entry.getKey()) {
+				case "vitality" -> new Old(NenStat.VITALITY, 40);
+				case "attack_power" -> new Old(NenStat.ATTACK_POWER, 40);
+				case "attack_speed" -> new Old(NenStat.AGILITY, 25);
+				case "protection" -> new Old(NenStat.PROTECTION, 40);
+				case "agility" -> new Old(NenStat.AGILITY, 30);
+				case "aura_capacity" -> new Old(NenStat.AURA_CAPACITY, 50);
+				case "aura_flow" -> new Old(NenStat.AURA_FLOW, 20);
+				default -> null;
+			};
+			if (old != null) {
+				int level = Math.min(NenRules.MAX_ATTRIBUTE, entry.getValue() * NenRules.MAX_ATTRIBUTE / old.maxPoints());
+				if (level > result.attributeLevel(old.stat())) {
+					result = result.withAttributeLevel(old.stat(), level);
+				}
+			}
+		}
+		return result;
 	}
 
 	public NenData unlock(Technique technique) {
 		Set<Technique> newUnlocked = EnumSet.of(technique);
 		newUnlocked.addAll(unlocked);
-		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, stats,
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, attributeXp,
 				Set.copyOf(newUnlocked), upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	public NenData buy(NenUpgrade upgrade) {
 		Set<NenUpgrade> newUpgrades = EnumSet.of(upgrade);
 		newUpgrades.addAll(upgrades);
-		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, stats, unlocked,
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, attributeXp, unlocked,
 				Set.copyOf(newUpgrades), bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
@@ -600,22 +664,17 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 
 	public NenData withXp(int newXp) {
 		return new NenData(awakened, type, revealed, aura, meditation, divination, active, Math.max(newXp, 0), training,
-				stats, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
+				attributeXp, unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	public NenData withType(NenType newType) {
-		return new NenData(awakened, newType, revealed, aura, meditation, divination, active, xp, training, stats,
+		return new NenData(awakened, newType, revealed, aura, meditation, divination, active, xp, training, attributeXp,
 				unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	public NenData withBonusPoints(int newBonus) {
-		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, stats, unlocked,
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, attributeXp, unlocked,
 				upgrades, newBonus, granted, grantedUpgrades, blocked, intensity);
-	}
-
-	public NenData clearStats() {
-		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, Map.of(),
-				unlocked, upgrades, bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	/** Libera por comando, mesmo sem a proficiencia pedida (e tira o bloqueio). */
@@ -623,7 +682,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		if (isUnlocked(technique)) {
 			return this;
 		}
-		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, stats,
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, attributeXp,
 				with(unlocked, technique, Technique.class), upgrades, bonusPoints, with(granted, technique, Technique.class),
 				grantedUpgrades, without(blocked, technique, Technique.class), intensity);
 	}
@@ -632,7 +691,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		if (has(upgrade)) {
 			return this;
 		}
-		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, stats, unlocked,
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, attributeXp, unlocked,
 				with(upgrades, upgrade, NenUpgrade.class), bonusPoints, granted,
 				with(grantedUpgrades, upgrade, NenUpgrade.class), blocked, intensity);
 	}
@@ -647,19 +706,19 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 			result = result.lock(upgrade);
 		}
 		return new NenData(awakened, type, revealed, aura, meditation, divination,
-				without(active, technique, Technique.class), xp, training, stats,
+				without(active, technique, Technique.class), xp, training, attributeXp,
 				without(unlocked, technique, Technique.class), result.upgrades, bonusPoints,
 				without(granted, technique, Technique.class), result.grantedUpgrades, with(blocked, technique, Technique.class), intensity);
 	}
 
 	/** Tira as funcionalidades compradas, devolvendo os pontos; as liberadas por comando ficam. */
 	public NenData resetUpgrades() {
-		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, stats, unlocked,
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, attributeXp, unlocked,
 				Set.copyOf(grantedUpgrades), bonusPoints, granted, grantedUpgrades, blocked, intensity);
 	}
 
 	public NenData lock(NenUpgrade upgrade) {
-		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, stats, unlocked,
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, attributeXp, unlocked,
 				without(upgrades, upgrade, NenUpgrade.class), bonusPoints, granted,
 				without(grantedUpgrades, upgrade, NenUpgrade.class), blocked, intensity);
 	}

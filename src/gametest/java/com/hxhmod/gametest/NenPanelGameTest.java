@@ -16,6 +16,14 @@ import com.hxhmod.nen.NenBonuses;
 import com.hxhmod.nen.NenCombat;
 import com.hxhmod.nen.NenData;
 import com.hxhmod.nen.NenStat;
+import com.hxhmod.nen.NenTraining;
+import com.hxhmod.nen.NenRules;
+import com.hxhmod.nen.NenActions;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.monster.zombie.Zombie;
 import com.hxhmod.nen.NenPose;
 import com.hxhmod.nen.NenType;
 import com.hxhmod.nen.NenUpgrade;
@@ -53,6 +61,8 @@ public class NenPanelGameTest implements FabricClientGameTest {
 	private static final int TEST_XP = 2640;
 	private static final int RELOAD_TICKS = 100;
 	// Mesmas medidas do NenScreen, para achar a primeira linha de atributo com o mouse
+	private final Zombie[] hiddenTarget = new Zombie[1];
+
 	private static final int PANEL_WIDTH = 440;
 	private static final int PANEL_HEIGHT = 256;
 	private static final int FIRST_STAT_ROW_Y = 30 + 8 + 22 + 14;
@@ -100,12 +110,18 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			TestInput input = context.getInput();
 			context.setScreen(NenScreen::new);
 			context.waitTicks(5);
-			input.pressKey(InputConstants.KEY_RIGHT);
-			input.pressKey(InputConstants.KEY_RIGHT);
+			// Atributos vindos do treino: a pagina so mostra, nao tem mais onde por pontos
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				player.setAttached(ModAttachments.NEN, data.withAttributeLevel(NenStat.VITALITY, 40).addAttributeXp(NenStat.VITALITY, 333)
+						.withAttributeLevel(NenStat.AURA_FLOW, 12).addAttributeXp(NenStat.AURA_FLOW, 40)
+						.withAttributeLevel(NenStat.ATTACK_POWER, 100).withAttributeLevel(NenStat.PERCEPTION, 7));
+			});
+			context.waitTicks(3);
 			input.pressKey(InputConstants.KEY_DOWN);
-			input.pressKey(InputConstants.KEY_RIGHT);
 
-			// Mouse: rodinha em cima da Vitalidade poe 3 pontos, botao direito tira 1
+			// Mouse: a rodinha troca o atributo selecionado
 			double[] cursor = context.computeOnClient(client -> {
 				int scale = client.getWindow().getGuiScale();
 				int guiWidth = client.getWindow().getGuiScaledWidth();
@@ -116,10 +132,7 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			});
 			input.setCursorPos(cursor[0], cursor[1]);
 			context.waitTicks(2);
-			for (int i = 0; i < 3; i++) {
-				input.scroll(1);
-			}
-			input.pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+			input.scroll(-1);
 			context.waitTicks(2);
 			context.takeScreenshot("nen_2_level");
 			// O ceu da pagina de Nivel se mexe sozinho
@@ -275,13 +288,15 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				check(renAgain.active().equals(Set.of(Technique.REN)), "ligar o Ren deveria encerrar o Zetsu");
 
 				// Status internos: nada de modificador nos atributos do Minecraft
-				NenData strong = data.addStats(Map.of(NenStat.VITALITY, 5, NenStat.PROTECTION, 20));
+				NenData strong = data.withAttributeLevel(NenStat.VITALITY, 25).withAttributeLevel(NenStat.PROTECTION, 100);
 				player.setAttached(ModAttachments.NEN, strong);
-				check(player.getMaxHealth() == 30.0F, "Vitalidade 5 deveria dar 30 de vida maxima, veio " + player.getMaxHealth());
+				check(player.getMaxHealth() == 40.0F, "Vitalidade 25 deveria dar 40 de vida maxima, veio " + player.getMaxHealth());
 				check(player.getAttributeValue(Attributes.ARMOR) == 0.0, "Protecao nao deveria mexer na armadura do Minecraft");
 				check(player.getAttributeValue(Attributes.MAX_HEALTH) == 20.0, "Vitalidade nao deveria mexer no atributo de vida");
-				float protectedDamage = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
-				check(Math.abs(protectedDamage - 8.5F) < 0.001F, "Protecao 20 deveria tirar 15% do dano, veio " + protectedDamage);
+				float unprotected = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+				check(unprotected == 10.0F, "Protecao sem Ten nem Ken nao deveria reduzir o dano, veio " + unprotected);
+				checkAttributes(data);
+				checkTrainingEvents(player, data);
 				player.setAttached(ModAttachments.NEN, data.withActive(Technique.TEN).withAura(80));
 			});
 			context.waitTicks(5);
@@ -296,21 +311,94 @@ public class NenPanelGameTest implements FabricClientGameTest {
 						"Z deveria desligar o Ten e R ligar o Ren, ficou " + data.active());
 			});
 			input.pressKey(InputConstants.KEY_Z);
-			// Vitalidade 10 = +10 coracoes de vida, que a barra precisa mostrar
+			// Vitalidade 25 = +10 coracoes de vida, que a barra precisa mostrar
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-				player.setAttached(ModAttachments.NEN, data.addStats(Map.of(NenStat.VITALITY, 10)));
+				player.setAttached(ModAttachments.NEN, data.withAttributeLevel(NenStat.VITALITY, 25));
 				player.setHealth(player.getMaxHealth());
 			});
 			context.waitTicks(25);
 			context.takeScreenshot("nen_7b_hud_ten_ren");
+
+			// Treino correndo de verdade: a Vitalidade esta a meio XP de subir, e o Ten ligado completa
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.TEN).withAura(data.maxAura())
+						.withAttributeLevel(NenStat.VITALITY, 30).addAttributeXp(NenStat.VITALITY, 304.5));
+			});
+			context.waitTicks(25);
+			singleplayer.getServer().runOnServer(server -> {
+				NenData data = server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.NEN);
+				check(data.attributeLevel(NenStat.VITALITY) == 31, "o Ten ligado deveria subir a Vitalidade para 31, ficou " + data.attributeLevel(NenStat.VITALITY));
+			});
+			context.takeScreenshot("nen_7c_trained_message");
+
+			// Esgotar a aura com o Ren treina a capacidade
+			double[] capacityBefore = new double[1];
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				capacityBefore[0] = data.attributeXp().getOrDefault(NenStat.AURA_CAPACITY, 0.0);
+				// Ren no maximo e sem Fluxo treinado: o gasto passa da recuperacao
+				NenData ren = data.withAttributeLevel(NenStat.AURA_FLOW, 0).withActive(Technique.REN).withAura(0);
+				while (ren.intensityOf(Technique.REN) < Technique.REN.maxIntensity()) {
+					ren = ren.cycledIntensity(Technique.REN);
+				}
+				player.setAttached(ModAttachments.NEN, ren);
+			});
+			context.waitTicks(25);
+			singleplayer.getServer().runOnServer(server -> {
+				NenData data = server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.NEN);
+				check(!data.isActive(Technique.REN), "sem aura o Ren deveria desligar");
+				double gained = data.attributeXp().getOrDefault(NenStat.AURA_CAPACITY, 0.0) - capacityBefore[0];
+				check(gained >= 60, "esgotar a aura com Ren deveria render XP de Capacidade, rendeu " + gained);
+			});
+
+			// Recuperar aura em Zetsu treina a capacidade; ja com a barra cheia nao rende
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				capacityBefore[0] = data.attributeXp().getOrDefault(NenStat.AURA_CAPACITY, 0.0);
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.ZETSU).withAura(0));
+			});
+			context.waitTicks(25);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(data.attributeXp().getOrDefault(NenStat.AURA_CAPACITY, 0.0) > capacityBefore[0], "recuperar aura em Zetsu deveria render XP de Capacidade");
+				// En aberto com uma criatura invisivel no raio: rende mais que o En sozinho
+				capacityBefore[0] = data.attributeXp().getOrDefault(NenStat.PERCEPTION, 0.0);
+				player.setAttached(ModAttachments.NEN, data.unlock(Technique.EN).withActive(Technique.EN).withAura(data.maxAura()));
+				Zombie zombie = EntityTypes.ZOMBIE.create(player.level(), EntitySpawnReason.TRIGGERED);
+				zombie.setPos(player.position());
+				zombie.setNoAi(true);
+				zombie.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 200));
+				player.level().addFreshEntity(zombie);
+				hiddenTarget[0] = zombie;
+			});
+			context.waitTicks(25);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				double gained = data.attributeXp().getOrDefault(NenStat.PERCEPTION, 0.0) - capacityBefore[0];
+				// O jogador do teste esta parado ha um tempo, entao vale o multiplicador de agora
+				check(gained >= 2.4 * NenTraining.multiplier(player), "achar um alvo invisivel com o En deveria render mais XP de Percepcao, rendeu " + gained);
+				hiddenTarget[0].discard();
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.TEN));
+			});
+			context.waitTicks(3);
 
 			// Comandos de liberar e bloquear
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				CommandSourceStack source = server.createCommandSourceStack().withEntity(player);
 				int pointsBefore = player.getAttachedOrCreate(ModAttachments.NEN).pointsAvailable();
+				server.getCommands().performPrefixedCommand(source, "nen attribute aura_flow 50");
+				check(player.getAttachedOrCreate(ModAttachments.NEN).attributeLevel(NenStat.AURA_FLOW) == 50, "/nen attribute deveria definir o nivel");
+				server.getCommands().performPrefixedCommand(source, "nen attribute all 3");
+				check(player.getAttachedOrCreate(ModAttachments.NEN).attributeLevel(NenStat.PERCEPTION) == 3, "/nen attribute all deveria definir todos");
 				server.getCommands().performPrefixedCommand(source, "nen unlock ryu");
 				NenData unlocked = player.getAttachedOrCreate(ModAttachments.NEN);
 				check(unlocked.isUnlocked(Technique.RYU) && unlocked.isUnlocked(Technique.KEN) && unlocked.isUnlocked(Technique.GYO),
@@ -622,7 +710,9 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			// Ryu: a postura do jogador muda dano e defesa depois da transicao
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
-				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withActive(Set.of(Technique.RYU, Technique.KEN)).withAura(100);
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withActive(Set.of(Technique.RYU, Technique.KEN)).withAura(100)
+						// No teto a Protecao nao sobe com os golpes do teste, que comparam o dano exato
+						.withAttributeLevel(NenStat.PROTECTION, 100);
 				player.setAttached(ModAttachments.NEN, data);
 				start[0] = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
 			});
@@ -786,6 +876,100 @@ public class NenPanelGameTest implements FabricClientGameTest {
 		});
 		input.setCursorPos(point[0], point[1]);
 		context.waitTicks(2);
+	}
+
+	/** Nivel, gravacao e o que cada nivel de atributo da. */
+	private static void checkAttributes(NenData base) {
+		NenData data = base.withActive(Technique.NONE);
+		for (NenStat stat : NenStat.values()) {
+			data = data.withAttributeLevel(stat, 0);
+		}
+		NenData zero = data;
+
+		// Curva: nivel = raiz(XP / 5), com teto no 100
+		NenData forty = zero.withAttributeLevel(NenStat.VITALITY, 40);
+		check(forty.attributeLevel(NenStat.VITALITY) == 40 && forty.attributeProgress(NenStat.VITALITY) == 0, "nivel 40 deveria comecar com 0%");
+		check(forty.addAttributeXp(NenStat.VITALITY, 332.1).attributeProgress(NenStat.VITALITY) == 82, "405 XP separam o 40 do 41: 332 deveria dar 82%");
+		check(forty.addAttributeXp(NenStat.VITALITY, 405).attributeLevel(NenStat.VITALITY) == 41, "405 XP deveriam subir para o 41");
+		NenData maxed = zero.withAttributeLevel(NenStat.VITALITY, 100).addAttributeXp(NenStat.VITALITY, 1.0E9);
+		check(maxed.attributeLevel(NenStat.VITALITY) == 100 && maxed.attributeProgress(NenStat.VITALITY) == 100, "o atributo deveria parar no 100");
+
+		// Mundo antigo: pontos viram nivel na mesma fracao do limite e voltam a ficar livres; desconhecidos sao ignorados
+		NenData legacy = NenData.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString(
+				"{\"awakened\":true,\"stats\":{\"vitality\":20,\"attack_speed\":25,\"agility\":3,\"nada\":9}}")).getOrThrow();
+		check(legacy.attributeLevel(NenStat.VITALITY) == 50, "20 de 40 pontos deveriam virar Vitalidade 50, veio " + legacy.attributeLevel(NenStat.VITALITY));
+		check(legacy.attributeLevel(NenStat.AGILITY) == 100, "a velocidade de ataque antiga deveria contar na Agilidade");
+		check(legacy.pointsSpent() == 0, "os pontos antigos deveriam voltar a ficar livres");
+		JsonObject saved = NenData.CODEC.encodeStart(JsonOps.INSTANCE, legacy).getOrThrow().getAsJsonObject();
+		check(!saved.has("stats") && saved.has("attribute_xp"), "deveria gravar so a XP dos atributos: " + saved);
+		check(NenData.CODEC.parse(JsonOps.INSTANCE, saved).getOrThrow().attributeLevel(NenStat.VITALITY) == 50, "a XP dos atributos deveria voltar do save");
+
+		// O que o nivel 100 da
+		check(zero.withAttributeLevel(NenStat.AURA_CAPACITY, 100).maxAura() == zero.maxAura() + 500, "Capacidade 100 deveria dar +500 de aura");
+		NenData flow = zero.withAttributeLevel(NenStat.AURA_FLOW, 100);
+		check(close(flow.auraRegen(), zero.auraRegen() + 20), "Fluxo 100 deveria recuperar +20/s, veio " + flow.auraRegen());
+		check(close(flow.auraDrain(Technique.REN), zero.auraDrain(Technique.REN) * 0.7), "Fluxo 100 deveria gastar 30% menos");
+		NenBonuses attack = NenBonuses.of(zero.withAttributeLevel(NenStat.ATTACK_POWER, 100));
+		check(close(attack.flatDamage(), 10) && close(attack.damageBonus(), NenBonuses.of(zero).damageBonus() + 1), "Ataque 100 deveria dar +10 e +100%");
+		check(close(zero.withAttributeLevel(NenStat.ATTACK_POWER, 100).renDamage(), zero.renDamage() * 1.5), "Ataque 100 deveria dar +50% de impacto no Ren");
+		check(close(zero.withAttributeLevel(NenStat.ATTACK_POWER, 100).koDamage(1), zero.koDamage(1) * 1.5), "Ataque 100 deveria dar +50% de impacto no Ko");
+		NenBonuses agility = NenBonuses.of(zero.withAttributeLevel(NenStat.AGILITY, 100));
+		check(close(agility.moveSpeed(), 0.45) && close(agility.attackSpeed(), 0.25), "Agilidade 100 deveria dar +45% de movimento e +25% de ataque");
+		NenData perceptive = zero.withAttributeLevel(NenStat.PERCEPTION, 100);
+		check(close(perceptive.enMaxSize(), zero.enMaxSize() * 2), "Percepcao 100 deveria dobrar o alcance do En");
+		double perBlockBefore = (zero.auraDrain(Technique.EN) - NenRules.EN_DRAIN_BASE) / zero.enSize();
+		double perBlockAfter = (perceptive.auraDrain(Technique.EN) - NenRules.EN_DRAIN_BASE) / perceptive.enSize();
+		check(close(perBlockAfter, perBlockBefore * 0.6), "Percepcao 100 deveria gastar 40% menos por bloco");
+		NenData ten = zero.withActive(Technique.TEN);
+		check(close(NenBonuses.of(ten.withAttributeLevel(NenStat.PROTECTION, 100)).damageTaken(), 1 - ten.tenDefense() * 1.75), "Protecao 100 deveria reforcar a defesa do Ten");
+
+		// Multiplicadores do treino
+		check(close(NenTraining.idleFactor(0), 1) && close(NenTraining.idleFactor(60), 1), "o primeiro minuto parado nao deveria perder XP");
+		check(close(NenTraining.idleFactor(240), 0.2) && close(NenTraining.idleFactor(5000), 0.2), "parado por muito tempo deveria render 20%");
+		check(close(NenTraining.combatFactor(0), 1.5) && close(NenTraining.combatFactor(600), 2), "o combate deveria render de 1,5x a 2x");
+	}
+
+	/** Golpes, dano absorvido e troca de estados pelo caminho de verdade. */
+	private static void checkTrainingEvents(ServerPlayer player, NenData start) {
+		// Longe do teto, onde a XP para de subir
+		NenData base = start.withAttributeLevel(NenStat.ATTACK_POWER, 10);
+		Zombie target = EntityTypes.ZOMBIE.create(player.level(), EntitySpawnReason.TRIGGERED);
+		DamageSource hit = player.damageSources().playerAttack(player);
+
+		player.setAttached(ModAttachments.NEN, base.withActive(Technique.NONE));
+		NenCombat.incomingDamage(target, hit, 5.0F);
+		check(attributeXp(player, NenStat.ATTACK_POWER) == base.attributeXp().getOrDefault(NenStat.ATTACK_POWER, 0.0), "golpe sem Nen nao deveria treinar o Ataque");
+		check(NenTraining.multiplier(player) >= 1.5, "acertar um golpe deveria contar como combate, veio " + NenTraining.multiplier(player));
+
+		player.setAttached(ModAttachments.NEN, base.withActive(Technique.REN));
+		double attackBefore = attributeXp(player, NenStat.ATTACK_POWER);
+		NenCombat.incomingDamage(target, hit, 5.0F);
+		check(attributeXp(player, NenStat.ATTACK_POWER) > attackBefore, "golpe com Ren deveria treinar o Ataque");
+
+		player.setAttached(ModAttachments.NEN, base.withActive(Technique.TEN));
+		double defenseBefore = attributeXp(player, NenStat.PROTECTION);
+		NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+		check(attributeXp(player, NenStat.PROTECTION) > defenseBefore, "dano absorvido pelo Ten deveria treinar a Protecao");
+
+		player.setAttached(ModAttachments.NEN, base.withActive(Technique.ZETSU));
+		defenseBefore = attributeXp(player, NenStat.PROTECTION);
+		NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+		check(attributeXp(player, NenStat.PROTECTION) == defenseBefore, "em Zetsu nao ha defesa de Nen para treinar");
+
+		player.setAttached(ModAttachments.NEN, base.withActive(Technique.NONE).withAura(base.maxAura()));
+		double flowBefore = attributeXp(player, NenStat.AURA_FLOW);
+		NenActions.toggle(player, Technique.TEN);
+		check(attributeXp(player, NenStat.AURA_FLOW) == flowBefore, "a primeira tecnica ligada ainda nao e uma troca");
+		NenActions.toggle(player, Technique.REN);
+		check(attributeXp(player, NenStat.AURA_FLOW) > flowBefore, "trocar rapido do Ten para o Ren deveria treinar o Fluxo");
+	}
+
+	private static double attributeXp(ServerPlayer player, NenStat stat) {
+		return player.getAttachedOrCreate(ModAttachments.NEN).attributeXp().getOrDefault(stat, 0.0);
+	}
+
+	private static boolean close(double a, double b) {
+		return Math.abs(a - b) < 1.0E-6;
 	}
 
 	private static void check(boolean condition, String message) {

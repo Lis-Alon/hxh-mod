@@ -60,6 +60,7 @@ public final class GyoApplications {
 				Vec3 motion = player.getDeltaMovement();
 				launch(player, new Vec3(motion.x, data.gyoJump(), motion.z));
 				feedback(player, "nen.hxh.gyo.jump");
+				NenTraining.gyoMove(player);
 			}
 			case DASH -> {
 				expose(player);
@@ -69,6 +70,7 @@ public final class GyoApplications {
 				}
 				launch(player, direction.normalize().scale(data.gyoDash()).add(0, NenRules.GYO_DASH_LIFT, 0));
 				feedback(player, "nen.hxh.gyo.dash");
+				NenTraining.gyoMove(player);
 			}
 			case PUNCH -> {
 			}

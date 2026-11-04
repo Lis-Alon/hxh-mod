@@ -69,7 +69,7 @@ public final class KoStrike {
 		NenData after = data.withAura(data.aura() - (int) Math.round(data.koCost(charge)))
 				.toggled(Technique.KO)
 				.addTraining(Technique.KO, NenRules.KO_APPLICATION_TRAINING);
-		player.setAttached(ModAttachments.NEN, after);
+		player.setAttached(ModAttachments.NEN, NenTraining.koReleased(player, after));
 		CHARGE_START.remove(player);
 		player.sendOverlayMessage(Component.translatable(messageKey));
 		AuraVisuals.burst(player, data, ParticleTypes.CRIT, 25);

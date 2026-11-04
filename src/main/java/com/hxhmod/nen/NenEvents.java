@@ -38,6 +38,7 @@ public final class NenEvents {
 			}
 		});
 
+		NenTraining.register();
 		CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> NenCommand.register(dispatcher));
 	}
 
@@ -60,6 +61,7 @@ public final class NenEvents {
 		boolean still = lastPosition != null && lastPosition.distanceToSqr(player.position()) < STILL_DISTANCE_SQR;
 		NenData after = before.awakened() ? tickTraining(player, before, still) : tickMeditation(player, before, still);
 		after = learnTechniques(player, after);
+		after = NenTraining.second(player, before, after);
 		if (!after.equals(before)) {
 			player.setAttached(ModAttachments.NEN, after);
 			announceLevelUp(player, before, after);
@@ -107,10 +109,12 @@ public final class NenEvents {
 		int whole = (int) Math.floor(balance);
 		if (result.aura() + whole < 0) {
 			// Sem aura para manter: desliga o que gasta e fica so com o que nao gasta (Ten)
+			boolean intense = active.contains(Technique.REN) || active.contains(Technique.KO);
 			active.removeIf(technique -> result.auraDrain(technique) > 0);
 			player.sendOverlayMessage(Component.translatable("nen.hxh.aura_depleted"));
 			AURA_REMAINDER.put(player, 0.0);
-			return result.withActive(active).withAura(result.aura() + (int) regen);
+			NenData drained = result.withActive(active).withAura(result.aura() + (int) regen);
+			return intense ? NenTraining.exhausted(player, drained) : drained;
 		}
 		AURA_REMAINDER.put(player, balance - whole);
 		NenData updated = result.withAura(result.aura() + whole);
@@ -153,7 +157,8 @@ public final class NenEvents {
 			fraction = NenRules.ZETSU_DEEP_REST_HEAL;
 		}
 		if (fraction > 0 && player.getHealth() < player.getMaxHealth()) {
-			player.heal((float) (player.getMaxHealth() * fraction));
+			double recovery = 1 + data.attributeLevel(NenStat.VITALITY) * NenRules.VITALITY_RECOVERY;
+			player.heal((float) (player.getMaxHealth() * fraction * recovery));
 		}
 	}
 

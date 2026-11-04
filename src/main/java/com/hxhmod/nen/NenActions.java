@@ -5,9 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
-import java.util.Map;
-
-/** O que o servidor faz quando o painel pede para ligar, desbloquear ou distribuir pontos. */
+/** O que o servidor faz quando o painel pede para ligar uma tecnica ou comprar uma funcionalidade. */
 public final class NenActions {
 	private NenActions() {
 	}
@@ -27,6 +25,9 @@ public final class NenActions {
 			return;
 		}
 		player.setAttached(ModAttachments.NEN, next);
+		if (next.isActive(technique)) {
+			NenTraining.switched(player, technique);
+		}
 		if (technique == Technique.GYO && next.isActive(technique)) {
 			player.sendOverlayMessage(Component.translatable("nen.hxh.gyo.prepared"));
 		}
@@ -52,24 +53,6 @@ public final class NenActions {
 		}
 		player.setAttached(ModAttachments.NEN, data.buy(upgrade));
 		player.sendSystemMessage(Component.translatable("nen.hxh.upgrade_bought", upgrade.displayName()));
-		celebrate(player);
-	}
-
-	/** Aplica os pontos so se o pedido inteiro for valido (pontos suficientes e sem passar do limite). */
-	public static void allocate(ServerPlayer player, Map<NenStat, Integer> points) {
-		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-		int total = 0;
-		for (Map.Entry<NenStat, Integer> entry : points.entrySet()) {
-			int amount = entry.getValue();
-			if (amount < 0 || data.statPoints(entry.getKey()) + amount > entry.getKey().maxPoints()) {
-				return;
-			}
-			total += amount;
-		}
-		if (!data.awakened() || total == 0 || total > data.pointsAvailable()) {
-			return;
-		}
-		player.setAttached(ModAttachments.NEN, data.addStats(points));
 		celebrate(player);
 	}
 

@@ -4,6 +4,7 @@ import com.hxhmod.nen.GyoApplications;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenBonuses;
 import com.hxhmod.nen.NenCombat;
+import com.hxhmod.nen.NenTraining;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -29,6 +30,14 @@ public abstract class LivingEntityMixin {
 	@ModifyVariable(method = "hurtServer", at = @At("HEAD"), argsOnly = true)
 	private float hxh$nenDamage(float amount, ServerLevel level, DamageSource source) {
 		return NenCombat.incomingDamage((LivingEntity) (Object) this, source, amount);
+	}
+
+	// Bloqueio com escudo treina a Protecao
+	@Inject(method = "applyItemBlocking", at = @At("RETURN"))
+	private void hxh$blocked(ServerLevel level, DamageSource source, float amount, CallbackInfoReturnable<Float> cir) {
+		if ((Object) this instanceof ServerPlayer player) {
+			NenTraining.blocked(player, cir.getReturnValueF());
+		}
 	}
 
 	// Vida maxima e velocidade de movimento vem dos status internos do Nen (sem atributos do Minecraft)

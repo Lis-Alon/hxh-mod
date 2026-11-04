@@ -33,6 +33,8 @@ final class NenCommand {
 
 	private static final SuggestionProvider<CommandSourceStack> TECHNIQUE_NAMES =
 			(context, builder) -> SharedSuggestionProvider.suggest(techniqueNames(), builder);
+	private static final SuggestionProvider<CommandSourceStack> ATTRIBUTE_NAMES = (context, builder) -> SharedSuggestionProvider.suggest(
+			java.util.stream.Stream.concat(java.util.Arrays.stream(NenStat.values()).map(NenStat::getSerializedName), java.util.stream.Stream.of(ALL)), builder);
 
 	private NenCommand() {
 	}
@@ -120,19 +122,14 @@ final class NenCommand {
 											return change(context, unused -> result,
 													Component.translatable("nen.hxh.cmd.points", amount, result.pointsAvailable()));
 										}))))
-				// /nen stats reset: devolve os pontos dos atributos
-				.then(Commands.literal("stats")
+				// /nen attribute <atributo|all> <0-100>: define o nivel do atributo, para testar qualquer faixa
+				.then(Commands.literal("attribute")
 						.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-						.then(Commands.literal("reset")
-								.executes(context -> {
-									NenData data = awakenedData(context);
-									if (data == null) {
-										return 0;
-									}
-									NenData result = data.clearStats();
-									return change(context, unused -> result,
-											Component.translatable("nen.hxh.cmd.stats_reset", result.pointsAvailable()));
-								})))
+						.then(Commands.argument("attribute", StringArgumentType.word())
+								.suggests(ATTRIBUTE_NAMES)
+								.then(Commands.argument("value", IntegerArgumentType.integer(0, NenRules.MAX_ATTRIBUTE))
+										.executes(context -> attribute(context, StringArgumentType.getString(context, "attribute"),
+												IntegerArgumentType.getInteger(context, "value"))))))
 				// /nen aura: enche a aura
 				.then(Commands.literal("aura")
 						.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
@@ -181,6 +178,29 @@ final class NenCommand {
 				? Component.translatable("nen.hxh.cmd.type_changed", result.type().displayName())
 				: Component.translatable("nen.hxh.awakened"), false);
 		return 1;
+	}
+
+	private static int attribute(CommandContext<CommandSourceStack> context, String name, int value) throws CommandSyntaxException {
+		if (awakenedData(context) == null) {
+			return 0;
+		}
+		if (name.equals(ALL)) {
+			return change(context, current -> {
+				NenData result = current;
+				for (NenStat stat : NenStat.values()) {
+					result = result.withAttributeLevel(stat, value);
+				}
+				return result;
+			}, Component.translatable("nen.hxh.cmd.attribute_all", value));
+		}
+		for (NenStat stat : NenStat.values()) {
+			if (stat.getSerializedName().equals(name)) {
+				return change(context, current -> current.withAttributeLevel(stat, value),
+						Component.translatable("nen.hxh.cmd.attribute", stat.displayName(), value));
+			}
+		}
+		context.getSource().sendFailure(Component.translatable("nen.hxh.cmd.unknown", name));
+		return 0;
 	}
 
 	private static int mastery(CommandContext<CommandSourceStack> context, String name, int value) throws CommandSyntaxException {

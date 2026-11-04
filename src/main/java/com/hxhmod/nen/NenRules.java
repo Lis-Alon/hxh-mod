@@ -6,6 +6,24 @@ public final class NenRules {
 	public static final int MEDITATION_SECONDS = 60;
 
 	// Proficiencia de Nen: nivel 1 a 100
+	// Atributos treinados: nivel = raiz(XP / fator), como a proficiencia das tecnicas. O nivel 100 pede 50 000 XP.
+	public static final int MAX_ATTRIBUTE = 100;
+	public static final double ATTRIBUTE_XP_FACTOR = 5;
+	// O que cada nivel de atributo da
+	public static final double VITALITY_HEALTH = 0.8;
+	public static final double VITALITY_RECOVERY = 0.01;
+	public static final double CAPACITY_AURA = 5;
+	public static final double FLOW_REGEN = 0.2;
+	public static final double FLOW_UPKEEP = 0.003;
+	public static final double ATTACK_FLAT = 0.1;
+	public static final double ATTACK_PERCENT = 0.01;
+	public static final double ATTACK_IMPACT = 0.005;
+	public static final double PROTECTION_DEFENSE = 0.0075;
+	public static final double AGILITY_MOVE = 0.0045;
+	public static final double AGILITY_ATTACK = 0.0025;
+	public static final double PERCEPTION_RADIUS = 0.01;
+	public static final double PERCEPTION_UPKEEP = 0.004;
+
 	public static final int MAX_LEVEL = 100;
 	public static final int XP_FIRST_LEVEL = 60;
 	public static final int XP_GROWTH_PER_LEVEL = 20;

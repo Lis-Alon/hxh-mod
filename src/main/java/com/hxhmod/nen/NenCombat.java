@@ -34,6 +34,7 @@ public final class NenCombat {
 		}
 		if (source.getEntity() instanceof ServerPlayer attacker && attacker != victim) {
 			NenData attackerData = attacker.getAttachedOrCreate(ModAttachments.NEN);
+			NenTraining.combat(attacker, victim);
 			if (attackerData.isActive(Technique.ZETSU)) {
 				// Atacar denuncia a posicao
 				EXPOSED_UNTIL.put(attacker, attacker.tickCount + NenRules.ZETSU_EXPOSED_SECONDS * 20);
@@ -42,22 +43,32 @@ public final class NenCombat {
 				NenBonuses bonuses = NenBonuses.of(attackerData);
 				LAST_ATTACK.put(attacker, attacker.tickCount);
 				// Tudo soma, para Ren, Shu, Gyo, Ko e Ryu nao se multiplicarem
-				double bonus = bonuses.damageBonus() + ShuCoat.damageBonus(attacker, attackerData) + RyuFlow.damageBonus(attacker)
-						+ GyoApplications.punch(attacker) + KoStrike.strike(attacker);
+				double shu = ShuCoat.damageBonus(attacker, attackerData);
+				double punch = GyoApplications.punch(attacker);
+				double ko = KoStrike.strike(attacker);
+				double bonus = bonuses.damageBonus() + shu + RyuFlow.damageBonus(attacker) + punch + ko;
 				amount = (float) ((amount + bonuses.flatDamage()) * (1 + bonus) * GyoApplications.damageDealt(attacker));
+				NenTraining.landedHit(attacker, victim, amount, attackerData.isActive(Technique.REN) || shu > 0 || punch > 0 || ko > 0, ko > 0);
 			} else if (source.getDirectEntity() instanceof AbstractArrow) {
-				amount = (float) (amount * (1 + ShuCoat.rangedBonus(attacker, attackerData)));
+				double shu = ShuCoat.rangedBonus(attacker, attackerData);
+				amount = (float) (amount * (1 + shu));
+				NenTraining.landedHit(attacker, victim, amount, shu > 0, false);
 			}
 		}
 		if (!(victim instanceof ServerPlayer player)) {
 			return amount;
 		}
 		LAST_HURT.put(player, player.tickCount);
+		if (source.getEntity() instanceof LivingEntity enemy && enemy != player) {
+			NenTraining.combat(player, enemy);
+		}
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+		float raw = amount;
 		// A super defesa soma com as outras defesas, mas o piso continua valendo
 		double taken = NenBonuses.of(data).damageTaken() * GyoApplications.damageTaken(player)
 				* RyuFlow.damageTaken(player) * ShuCoat.damageTaken(player, data);
 		amount = (float) (amount * Math.max(NenRules.MIN_DAMAGE_TAKEN, taken));
+		NenTraining.absorbed(player, data, raw - amount);
 		if (data.isActive(Technique.ZETSU) && releasingAura(source)) {
 			amount = (float) (amount * NenRules.ZETSU_NEN_DAMAGE_MULTIPLIER);
 		}

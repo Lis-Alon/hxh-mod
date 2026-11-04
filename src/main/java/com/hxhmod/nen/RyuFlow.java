@@ -58,6 +58,7 @@ public final class RyuFlow {
 			player.setAttached(ModAttachments.NEN, data.withAura(data.aura() - data.ryuShiftCost()));
 		}
 		STANCE.put(player, stance);
+		NenTraining.stanceChanged(player);
 	}
 
 	static double offense(ServerPlayer player) {

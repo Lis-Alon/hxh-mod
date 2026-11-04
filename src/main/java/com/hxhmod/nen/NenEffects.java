@@ -22,8 +22,8 @@ public final class NenEffects {
 	public static void removeLegacyModifiers(ServerPlayer player) {
 		List<Holder<Attribute>> attributes = List.of(Attributes.MAX_HEALTH, Attributes.ATTACK_DAMAGE,
 				Attributes.ATTACK_SPEED, Attributes.ARMOR, Attributes.MOVEMENT_SPEED);
-		for (NenStat stat : NenStat.values()) {
-			Identifier id = HxHMod.id("stat/" + stat.getSerializedName());
+		for (String stat : List.of("vitality", "attack_power", "attack_speed", "protection", "agility", "aura_capacity", "aura_flow")) {
+			Identifier id = HxHMod.id("stat/" + stat);
 			for (Holder<Attribute> attribute : attributes) {
 				AttributeInstance instance = player.getAttribute(attribute);
 				if (instance != null && instance.getModifier(id) != null) {

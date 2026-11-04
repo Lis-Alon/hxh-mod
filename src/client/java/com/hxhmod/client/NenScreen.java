@@ -26,11 +26,9 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Util;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Locale;
-import java.util.Map;
 import java.util.function.DoubleConsumer;
 import java.util.stream.Collectors;
 
@@ -51,7 +49,10 @@ public class NenScreen extends Screen {
 	private static final int BUTTON_HEIGHT = 16;
 	private static final int TECH_ROW_HEIGHT = 16;
 	private static final int TECH_LIST_WIDTH = 112;
-	private static final int SHIFT_STEP = 5;
+	// Barrinha de progresso de cada atributo
+	private static final int ATTRIBUTE_ROW_STEP = 15;
+	private static final int ATTRIBUTE_SEGMENTS = 10;
+	private static final int ATTRIBUTE_SEGMENT_STEP = 4;
 	static final int PREVIEW_WIDTH = 84;
 	private static final int DETAIL_SCROLL_STEP = 12;
 	private static final int GOLD = 0xFFD8B46A;
@@ -90,7 +91,6 @@ public class NenScreen extends Screen {
 		}
 	}
 
-	private final Map<NenStat, Integer> pending = new EnumMap<>(NenStat.class);
 	private final List<Clickable> clickables = new ArrayList<>();
 	/** Tecnicas nao tem aba: abrem pelo botao da arvore e pelos nos dela. */
 	private static final List<Page> TABS = List.of(Page.LEVEL, Page.TREE, Page.STATUS, Page.AURA);
@@ -101,7 +101,6 @@ public class NenScreen extends Screen {
 	private int selectedStat;
 	private int selectedTechnique;
 	// Linha embaixo do mouse neste quadro (-1 se nenhuma), usada pela rodinha
-	private int hoveredStat = -1;
 	private int hoveredTechnique = -1;
 	// Rolagem dos detalhes da tecnica e area visivel (o que fica fora nao recebe clique)
 	private int detailScroll;
@@ -193,7 +192,6 @@ public class NenScreen extends Screen {
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 		clickables.clear();
-		hoveredStat = -1;
 		hoveredTechnique = -1;
 		NenData data = data();
 
@@ -266,12 +264,12 @@ public class NenScreen extends Screen {
 	// ---------------------------------------------------------------- Nivel
 
 	private void renderLevelPage(GuiGraphicsExtractor graphics, NenData data, int mouseX, int mouseY) {
-		int columnWidth = (panelWidth - 3 * MARGIN) * 52 / 100;
+		int columnWidth = (panelWidth - 3 * MARGIN) * 60 / 100;
 		int x = left + MARGIN;
 		int y = top + HEADER_HEIGHT + 8;
 
-		// Nivel, pontos e progresso para o proximo nivel
-		int available = data.pointsAvailable() - pendingTotal();
+		// Nivel, pontos (para as funcionalidades) e progresso para o proximo nivel
+		int available = data.pointsAvailable();
 		Component level = panelFont(Component.translatable("screen.hxh.nen.level", data.level()));
 		graphics.text(font, level, x + 4, y, TEXT, false);
 		graphics.text(font, panelFont(Component.translatable("screen.hxh.nen.points", available)), x + 16 + font.width(level), y,
@@ -284,92 +282,70 @@ public class NenScreen extends Screen {
 		bar(graphics, x + 4, y + 12, columnWidth - 4, 3, data.maxLevel() ? 1 : data.xpIntoLevel(),
 				data.maxLevel() ? 1 : NenRules.xpToNext(data.level()), XP_COLOR);
 
-		// Lista de atributos
+		// Atributos: sobem sozinhos com o treino
 		y += 22;
 		sectionTitle(graphics, Component.translatable("screen.hxh.nen.attributes"), x, y, columnWidth);
 		y += 14;
 		NenStat[] stats = NenStat.values();
 		for (int i = 0; i < stats.length; i++) {
-			renderStatRow(graphics, data, stats[i], i, x, y + i * ROW_HEIGHT, columnWidth, mouseX, mouseY);
+			renderStatRow(graphics, data, stats[i], i, x, y + i * ATTRIBUTE_ROW_STEP, columnWidth, mouseX, mouseY);
 		}
-
-		// Confirmar / Resetar, logo abaixo da lista sem encostar no rodape
-		int buttonsY = Math.min(y + stats.length * ROW_HEIGHT + 6, top + panelHeight - 22 - BUTTON_HEIGHT);
-		int confirmWidth = columnWidth * 62 / 100;
-		boolean hasPending = pendingTotal() > 0;
-		button(graphics, Component.translatable("screen.hxh.nen.confirm"), x, buttonsY, confirmWidth, BUTTON_HEIGHT,
-				hasPending, mouseX, mouseY, this::confirmStats);
-		button(graphics, Component.translatable("screen.hxh.nen.reset"), x + confirmWidth + 6, buttonsY,
-				columnWidth - confirmWidth - 6, BUTTON_HEIGHT, hasPending, mouseX, mouseY, pending::clear);
+		wrapped(graphics, panelFont(stats[selectedStat].description()), x + 4, y + stats.length * ATTRIBUTE_ROW_STEP + 2, columnWidth - 8, DIM, 3);
 
 		renderBaseStats(graphics, data, left + 2 * MARGIN + columnWidth, top + HEADER_HEIGHT + 8,
 				panelWidth - 3 * MARGIN - columnWidth);
 		footer(graphics, Component.translatable("screen.hxh.nen.hint.level"));
 	}
 
+	/** "Vitalidade   Niv. 40 ▮▮▮▮▮▮▮▮▯▯ 82%". */
 	private void renderStatRow(GuiGraphicsExtractor graphics, NenData data, NenStat stat, int index, int x, int y,
 			int width, int mouseX, int mouseY) {
 		boolean selected = index == selectedStat;
-		boolean hover = hovered(x, y, width, ROW_HEIGHT - 2, mouseX, mouseY);
-		if (hover) {
-			hoveredStat = index;
+		boolean hover = hovered(x, y, width, ATTRIBUTE_ROW_STEP - 2, mouseX, mouseY);
+		row(graphics, x, y, width, ATTRIBUTE_ROW_STEP - 2, selected, hover);
+		addClickable(x, y, width, ATTRIBUTE_ROW_STEP - 2, true, () -> selectedStat = index);
+		graphics.text(font, panelFont(stat.displayName()), x + 8, y + 3, TEXT, false);
+
+		int level = data.attributeLevel(stat);
+		int progress = data.attributeProgress(stat);
+		boolean maxed = level >= NenRules.MAX_ATTRIBUTE;
+		Component percent = Component.literal(progress + "%");
+		int percentRight = x + width - 6;
+		graphics.text(font, percent, percentRight - font.width(percent), y + 3, DIM, false);
+
+		int barWidth = ATTRIBUTE_SEGMENTS * ATTRIBUTE_SEGMENT_STEP - 1;
+		int barX = percentRight - font.width("100%") - 4 - barWidth;
+		for (int i = 0; i < ATTRIBUTE_SEGMENTS; i++) {
+			boolean filled = progress >= (i + 1) * 100 / ATTRIBUTE_SEGMENTS;
+			int segmentX = barX + i * ATTRIBUTE_SEGMENT_STEP;
+			graphics.fill(segmentX, y + 4, segmentX + ATTRIBUTE_SEGMENT_STEP - 1, y + 9, filled ? (maxed ? GOLD : GOLD_DIM) : BAR_BACK);
 		}
-		row(graphics, x, y, width, ROW_HEIGHT - 2, selected, hover);
-		addClickable(x, y, width, ROW_HEIGHT - 2, true, () -> selectedStat = index, () -> {
-			selectedStat = index;
-			adjust(stat, -1);
-		});
 
-		int current = data.statPoints(stat);
-		int next = current + pending.getOrDefault(stat, 0);
-		graphics.text(font, panelFont(stat.displayName()), x + 8, y + 4, TEXT, false);
-
-		// Valores colados na direita, deixando espaco para nomes compridos
-		int nextX = x + width - 22;
-		Component currentText = Component.literal(current + " →");
-		graphics.text(font, currentText, nextX - 34 - font.width(currentText), y + 4, TEXT, false);
-		Component nextText = Component.literal(next >= stat.maxPoints() ? next + "★" : String.valueOf(next));
-		graphics.centeredText(font, nextText, nextX, y + 4, next > current ? GOOD : TEXT);
-
-		if (selected || hover) {
-			arrow(graphics, "‹", nextX - 22, y, mouseX, mouseY, () -> adjust(stat, -1));
-			arrow(graphics, "›", nextX + 12, y, mouseX, mouseY, () -> adjust(stat, 1));
-		}
+		Component levelText = panelFont(Component.translatable("screen.hxh.nen.attribute_level", level));
+		graphics.text(font, levelText, barX - 5 - font.width(levelText), y + 3, maxed ? GOLD : TEXT, false);
 	}
 
 	private void renderBaseStats(GuiGraphicsExtractor graphics, NenData data, int x, int y, int width) {
 		sectionTitle(graphics, Component.translatable("screen.hxh.nen.base_stats"), x, y, width);
 		y += 14;
-		// Status internos do Nen, ja com as tecnicas ligadas; a direita fica como ficaria com os pontos pendentes
+		// Status internos do Nen, ja com as tecnicas ligadas
 		NenBonuses now = NenBonuses.of(data);
-		NenBonuses next = NenBonuses.of(data.addStats(pending));
-		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.health"),
-				number(20 + now.maxHealth()), number(20 + next.maxHealth()), x, y, width);
-		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.damage"),
-				damage(now), damage(next), x, y, width);
-		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.attack_speed"),
-				signedPercent(now.attackSpeed()), signedPercent(next.attackSpeed()), x, y, width);
-		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.defense"),
-				percent(1 - now.damageTaken()), percent(1 - next.damageTaken()), x, y, width);
-		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.speed"),
-				percent(1 + now.moveSpeed()), percent(1 + next.moveSpeed()), x, y, width);
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.health"), number(20 + now.maxHealth()), x, y, width);
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.damage"), damage(now), x, y, width);
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.attack_speed"), signedPercent(now.attackSpeed()), x, y, width);
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.defense"), percent(1 - now.damageTaken()), x, y, width);
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.speed"), percent(1 + now.moveSpeed()), x, y, width);
 
 		y += 6;
 		sectionTitle(graphics, Component.translatable("screen.hxh.nen.aura_stats"), x, y, width);
 		y += 14;
-		int capacityBonus = (int) (pending.getOrDefault(NenStat.AURA_CAPACITY, 0) * NenStat.AURA_CAPACITY.perPoint());
-		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.max_aura"),
-				String.valueOf(data.maxAura()), String.valueOf(data.maxAura() + capacityBonus), x, y, width);
-		double regen = data.withActive(Technique.NONE).auraRegen();
-		double flowBonus = pending.getOrDefault(NenStat.AURA_FLOW, 0) * NenStat.AURA_FLOW.perPoint();
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.max_aura"), String.valueOf(data.maxAura()), x, y, width);
 		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.aura_regen"),
-				number(regen) + "/s", number(regen + flowBonus) + "/s", x, y, width);
-
-		// Explicacao do atributo selecionado
-		NenStat stat = NenStat.values()[selectedStat];
-		y += 8;
-		graphics.text(font, panelFont(stat.displayName()), x, y, GOLD, false);
-		wrapped(graphics, panelFont(stat.description()), x, y + 11, width, DIM, 4);
+				number(data.withActive(Technique.NONE).auraRegen()) + "/s", x, y, width);
+		y = valueLine(graphics, Component.translatable("screen.hxh.nen.stat.upkeep"),
+				signedPercent(-data.attributeLevel(NenStat.AURA_FLOW) * NenRules.FLOW_UPKEEP), x, y, width);
+		valueLine(graphics, Component.translatable("screen.hxh.nen.stat.en_range"),
+				Component.translatable("screen.hxh.nen.blocks", Math.round(data.enMaxSize())).getString(), x, y, width);
 	}
 
 	/** "+1,5 +25%": dano fixo dos pontos e bonus em porcentagem das tecnicas. */
@@ -386,12 +362,11 @@ public class NenScreen extends Screen {
 		return (fraction >= 0 ? "+" : "") + percent(fraction);
 	}
 
-	private int valueLine(GuiGraphicsExtractor graphics, Component name, String current, String next, int x, int y, int width) {
+	private int valueLine(GuiGraphicsExtractor graphics, Component name, String value, int x, int y, int width) {
 		row(graphics, x, y, width, ROW_HEIGHT - 3, false);
 		graphics.text(font, panelFont(name), x + 6, y + 3, TEXT, false);
-		Component values = Component.literal(current + " → ").append(
-				Component.literal(next).withColor(next.equals(current) ? TEXT : GOOD));
-		graphics.text(font, values, x + width - 6 - font.width(values), y + 3, TEXT, false);
+		Component shown = Component.literal(value);
+		graphics.text(font, shown, x + width - 6 - font.width(shown), y + 3, TEXT, false);
 		return y + ROW_HEIGHT - 1;
 	}
 
@@ -730,12 +705,6 @@ public class NenScreen extends Screen {
 		return Math.max(64, NenArt.width("button_" + artKey(label), font.width(panelFont(label))) + 16);
 	}
 
-	private void arrow(GuiGraphicsExtractor graphics, String symbol, int x, int y, int mouseX, int mouseY, Runnable action) {
-		boolean hover = hovered(x - 4, y, 14, ROW_HEIGHT - 2, mouseX, mouseY);
-		graphics.text(font, Component.literal(symbol), x, y + 4, hover ? GOLD : DIM, false);
-		addClickable(x - 4, y, 14, ROW_HEIGHT - 2, true, action);
-	}
-
 	private void bar(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int value, int max, int color) {
 		int filled = max > 0 ? width * Math.min(value, max) / max : 0;
 		graphics.fill(x, y, x + width, y + height, BAR_BACK);
@@ -812,38 +781,6 @@ public class NenScreen extends Screen {
 	}
 
 	// ======================================================================
-	// Pontos de atributo
-	// ======================================================================
-
-	private int pendingTotal() {
-		return pending.values().stream().mapToInt(Integer::intValue).sum();
-	}
-
-	private void adjust(NenStat stat, int delta) {
-		NenData data = data();
-		int current = pending.getOrDefault(stat, 0);
-		int room = stat.maxPoints() - data.statPoints(stat) - current;
-		int free = data.pointsAvailable() - pendingTotal();
-		int change = delta > 0 ? Math.min(delta, Math.min(room, free)) : Math.max(delta, -current);
-		if (change != 0) {
-			pending.put(stat, current + change);
-		}
-	}
-
-	private void confirmStats() {
-		Map<NenStat, Integer> points = new EnumMap<>(NenStat.class);
-		pending.forEach((stat, amount) -> {
-			if (amount > 0) {
-				points.put(stat, amount);
-			}
-		});
-		if (!points.isEmpty()) {
-			ClientPlayNetworking.send(new NenPayloads.AllocateStats(Map.copyOf(points)));
-		}
-		pending.clear();
-	}
-
-	// ======================================================================
 	// Entrada
 	// ======================================================================
 
@@ -889,14 +826,7 @@ public class NenScreen extends Screen {
 		}
 		int direction = scrollY > 0 ? 1 : -1;
 		if (page == Page.LEVEL) {
-			// Em cima de um atributo: a rodinha poe ou tira pontos (Shift = 5). Fora: troca a selecao.
-			if (hoveredStat >= 0) {
-				selectedStat = hoveredStat;
-				int step = minecraft.hasShiftDown() ? SHIFT_STEP : 1;
-				adjust(NenStat.values()[hoveredStat], direction * step);
-			} else {
-				handleLevelKey(direction > 0 ? InputConstants.KEY_UP : InputConstants.KEY_DOWN, false);
-			}
+			handleLevelKey(direction > 0 ? InputConstants.KEY_UP : InputConstants.KEY_DOWN);
 			return true;
 		}
 		if (page == Page.TECHNIQUES) {
@@ -926,7 +856,7 @@ public class NenScreen extends Screen {
 			setPage(TABS.get((TABS.indexOf(page) + step) % TABS.size()));
 			return true;
 		}
-		if (page == Page.LEVEL && handleLevelKey(key, event.hasShiftDown())) {
+		if (page == Page.LEVEL && handleLevelKey(key)) {
 			return true;
 		}
 		if (page == Page.TECHNIQUES && handleTechniqueKey(key)) {
@@ -935,15 +865,11 @@ public class NenScreen extends Screen {
 		return super.keyPressed(event);
 	}
 
-	private boolean handleLevelKey(int key, boolean shift) {
+	private boolean handleLevelKey(int key) {
 		int count = NenStat.values().length;
-		NenStat stat = NenStat.values()[selectedStat];
 		switch (key) {
 			case InputConstants.KEY_UP -> selectedStat = (selectedStat + count - 1) % count;
 			case InputConstants.KEY_DOWN -> selectedStat = (selectedStat + 1) % count;
-			case InputConstants.KEY_LEFT -> adjust(stat, shift ? -SHIFT_STEP : -1);
-			case InputConstants.KEY_RIGHT -> adjust(stat, shift ? SHIFT_STEP : 1);
-			case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> confirmStats();
 			default -> {
 				return false;
 			}
