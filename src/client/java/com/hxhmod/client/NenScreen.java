@@ -477,7 +477,7 @@ public class NenScreen extends Screen {
 			Component info = Component.translatable("screen.hxh.nen.training_info", data.mastery(technique),
 					data.masteryProgress(technique),
 					data.auraDrain(technique) > 0
-							? Component.translatable("screen.hxh.nen.drain", data.auraDrain(technique))
+							? Component.translatable("screen.hxh.nen.drain", Math.round(data.auraDrain(technique) * 10) / 10.0)
 							: Component.translatable("screen.hxh.nen.no_drain"));
 			Component label = Component.translatable(data.isActive(technique)
 					? "screen.hxh.nen.deactivate" : "screen.hxh.nen.activate");
@@ -488,6 +488,17 @@ public class NenScreen extends Screen {
 						() -> ClientPlayNetworking.send(new NenPayloads.ToggleTechnique(technique)));
 			}
 			y += 24;
+			if (technique.maxIntensity() > 1) {
+				Component intensity = technique == Technique.EN
+						? Component.translatable("nen.hxh.en.size", Math.round(data.enSize()))
+						: Component.translatable("nen.hxh.intensity", technique.displayName(), data.intensityOf(technique), technique.maxIntensity());
+				Component change = Component.translatable("screen.hxh.nen.change_intensity");
+				int changeWidth = buttonWidth(change);
+				graphics.text(font, intensity, x, y + 4, TEXT, false);
+				button(graphics, change, x + width - changeWidth, y, changeWidth, 16, true, mouseX, mouseY,
+						() -> ClientPlayNetworking.send(new NenPayloads.CycleIntensity(technique)));
+				y += 22;
+			}
 		}
 
 		// Funcionalidades

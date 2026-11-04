@@ -126,6 +126,6 @@ public final class GyoApplications {
 		player.sendOverlayMessage(Component.translatable(messageKey));
 		player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.PLAYER_ATTACK_STRONG, SoundSource.PLAYERS, 0.8F, 1.2F);
-		player.level().sendParticles(ParticleTypes.CRIT, player.getX(), player.getY() + 1, player.getZ(), 12, 0.3, 0.5, 0.3, 0.2);
+		AuraVisuals.burst(player, player.getAttachedOrCreate(ModAttachments.NEN), ParticleTypes.CRIT, 12);
 	}
 }

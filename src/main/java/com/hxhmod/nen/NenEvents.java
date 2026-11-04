@@ -15,6 +15,7 @@ import java.util.WeakHashMap;
 
 public final class NenEvents {
 	private static final int TICKS_PER_SECOND = 20;
+	private static final int AURA_VISUAL_TICKS = 10;
 	private static final double STILL_DISTANCE_SQR = 0.01;
 
 	// Posicao de cada jogador no ultimo segundo, para saber se ele ficou parado meditando
@@ -27,6 +28,9 @@ public final class NenEvents {
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+				tickTechniques(player, server.getTickCount());
+			}
 			if (server.getTickCount() % TICKS_PER_SECOND != 0) {
 				return;
 			}
@@ -36,6 +40,20 @@ public final class NenEvents {
 		});
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> NenCommand.register(dispatcher));
+	}
+
+	/** O que precisa andar a cada tick: objeto do Shu, carga do Ko, postura do Ryu e aura visivel. */
+	private static void tickTechniques(ServerPlayer player, int tick) {
+		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+		if (!data.awakened()) {
+			return;
+		}
+		ShuCoat.tick(player, data);
+		KoStrike.tick(player, data);
+		RyuFlow.tick(player, data);
+		if (tick % AURA_VISUAL_TICKS == 0) {
+			AuraVisuals.emit(player, player.getAttachedOrCreate(ModAttachments.NEN));
+		}
 	}
 
 	private static void tickPlayer(ServerPlayer player) {
@@ -79,6 +97,10 @@ public final class NenEvents {
 		if (active.contains(Technique.ZETSU) && active.size() > 1) {
 			active.retainAll(Set.of(Technique.ZETSU));
 		}
+		// O Ryu redistribui a aura do Ken
+		if (!active.contains(Technique.KEN)) {
+			active.remove(Technique.RYU);
+		}
 		NenData result = data.withActive(active);
 
 		// A aura volta sempre e as tecnicas ligadas gastam juntas
@@ -96,7 +118,6 @@ public final class NenEvents {
 		NenData updated = result.withAura(result.aura() + whole);
 
 		if (!active.isEmpty()) {
-			NenEffects.applyTechniques(player, updated);
 			heal(player, updated, still);
 			for (Technique technique : active) {
 				updated = updated.addTraining(technique, 1 + pertinentBonus(player, technique, still))
@@ -140,11 +161,12 @@ public final class NenEvents {
 
 	/**
 	 * Segundo extra de dominio quando a tecnica e usada do jeito certo:
-	 * Ten aguentando golpes, Zetsu descansando parado.
+	 * Ten e Ken aguentando golpes, Ren, Shu e Ryu acertando golpes, Zetsu descansando parado.
 	 */
 	private static int pertinentBonus(ServerPlayer player, Technique active, boolean still) {
 		return switch (active) {
-			case TEN -> NenCombat.hurtRecently(player) ? 1 : 0;
+			case TEN, KEN -> NenCombat.hurtRecently(player) ? 1 : 0;
+			case REN, SHU, RYU -> NenCombat.attackedRecently(player) ? 1 : 0;
 			case ZETSU -> still ? 1 : 0;
 			default -> 0;
 		};

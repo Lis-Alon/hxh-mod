@@ -3,6 +3,7 @@ package com.hxhmod.nen;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -14,6 +15,8 @@ import java.util.WeakHashMap;
 public final class NenCombat {
 	// Ultimo tick em que o jogador levou dano (treino pertinente do Ten)
 	private static final Map<ServerPlayer, Integer> LAST_HURT = new WeakHashMap<>();
+	// Ultimo tick em que o jogador acertou um golpe (treino pertinente de Ren, Shu e Ryu)
+	private static final Map<ServerPlayer, Integer> LAST_ATTACK = new WeakHashMap<>();
 	// Ate que tick o jogador em Zetsu fica exposto por ter atacado
 	private static final Map<ServerPlayer, Integer> EXPOSED_UNTIL = new WeakHashMap<>();
 
@@ -36,8 +39,10 @@ public final class NenCombat {
 			}
 			if (source.getDirectEntity() == attacker) {
 				NenBonuses bonuses = NenBonuses.of(attackerData);
-				// Soma com os outros bonus para nao multiplicar o Ren com o super soco
-				double bonus = bonuses.damageBonus() + GyoApplications.punch(attacker);
+				LAST_ATTACK.put(attacker, attacker.tickCount);
+				// Tudo soma, para Ren, Shu, Gyo, Ko e Ryu nao se multiplicarem
+				double bonus = bonuses.damageBonus() + ShuCoat.damageBonus(attacker, attackerData) + RyuFlow.damageBonus(attacker)
+						+ GyoApplications.punch(attacker) + KoStrike.strike(attacker);
 				amount = (float) ((amount + bonuses.flatDamage()) * (1 + bonus) * GyoApplications.damageDealt(attacker));
 			}
 		}
@@ -47,7 +52,8 @@ public final class NenCombat {
 		LAST_HURT.put(player, player.tickCount);
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
 		// A super defesa soma com as outras defesas, mas o piso continua valendo
-		double taken = NenBonuses.of(data).damageTaken() * GyoApplications.damageTaken(player);
+		double taken = NenBonuses.of(data).damageTaken() * GyoApplications.damageTaken(player)
+				* RyuFlow.damageTaken(player) * ShuCoat.damageTaken(player, data);
 		amount = (float) (amount * Math.max(NenRules.MIN_DAMAGE_TAKEN, taken));
 		if (data.isActive(Technique.ZETSU) && releasingAura(source)) {
 			amount = (float) (amount * NenRules.ZETSU_NEN_DAMAGE_MULTIPLIER);
@@ -77,14 +83,25 @@ public final class NenCombat {
 		if (data.has(NenUpgrade.ZETSU_SUPPRESS)) {
 			visibility *= NenRules.ZETSU_SUPPRESSION_VISIBILITY;
 		}
-		if (player.isShiftKeyDown() && data.has(NenUpgrade.ZETSU_STEP)) {
+		if (data.has(NenUpgrade.ZETSU_STEP)) {
 			visibility *= NenRules.ZETSU_SILENT_STEP_VISIBILITY;
 		}
 		return visibility;
 	}
 
+	/** Em Zetsu com Passos Silenciosos, os passos nao fazem som. */
+	public static boolean silentSteps(Player player) {
+		NenData data = player.getAttached(ModAttachments.NEN);
+		return data != null && data.isActive(Technique.ZETSU) && data.has(NenUpgrade.ZETSU_STEP);
+	}
+
 	public static boolean exposed(ServerPlayer player) {
 		return player.tickCount < EXPOSED_UNTIL.getOrDefault(player, 0);
+	}
+
+	/** Acertou um golpe no ultimo segundo. */
+	static boolean attackedRecently(ServerPlayer player) {
+		return player.tickCount - LAST_ATTACK.getOrDefault(player, -1000) <= 20;
 	}
 
 	/** Levou dano no ultimo segundo. */

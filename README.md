@@ -54,17 +54,52 @@ Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x
 |---|---|---|
 | **Ten** (Envoltura) | despertar | Reduz o dano de 10% a 25% conforme a proficiência |
 | **Zetsu** (Corte) | despertar | Mobs percebem menos você, aura volta mais rápido (mais ainda parado), mas sem defesa de Nen |
-| **Ren** (Prática) | despertar | +25% de dano corpo a corpo |
-| **Hatsu** (Liberação) | despertar | Treina a aura do seu tipo (a habilidade especial vem em breve) |
+| **Ren** (Prática) | despertar | Três intensidades: +15/25/40% de dano e -3/5/8% de dano recebido, gastando 2/3/5 de aura por segundo |
+| **Hatsu** (Liberação) | despertar | Treina a aura do seu tipo. Eficiência de Aura é a passiva geral; as duas exclusivas de cada tipo seguem em pausa, como no documento |
 | **Gyo** (Coagular) | Ten 20% | A tecla prepara o Gyo; a próxima ação vira super soco, super defesa, super pulo ou super dash (veja abaixo) |
-| **In** (Ocultar) | Zetsu 50% | Invisibilidade e +15% de dano corpo a corpo |
-| **En** (Território) | Ten 40% + Ren 40% | Detecta toda criatura numa área de 5x5 (1%) até 20x20 (100%), mesmo invisível; só você vê o contorno |
-| **Shu** (Ciclo) | Ten 50% | Quebra blocos 60% mais rápido |
-| **Ken** (Fortificar) | Ten 60% + Ren 60% | -30% de dano recebido (-45% com Densidade Protetora) |
-| **Ko** (Endurecimento) | Gyo, Ten, Zetsu, Ren e Hatsu 70% | +80% de dano, mas recebe +50% de dano e fica 15% mais lento |
-| **Ryu** (Fluxo) | Gyo 40% + Ken 40% | +35% de dano, -25% de dano recebido e +10% de velocidade |
+| **In** (Ocultar) | Zetsu 50% | Esconde dos outros jogadores a aura das suas técnicas. Quem usa Gyo por perto ainda vê; liberar além da capacidade deixa parte à mostra |
+| **En** (Território) | Ten 40% + Ren 40% | Detecta toda criatura numa esfera de 5 (1%) até 20 blocos de diâmetro (100%), através de paredes e mesmo invisível; só você vê o contorno. Dá para escolher uma área menor, que gasta menos |
+| **Shu** (Ciclo) | Ten 50% | Reveste o objeto na mão, com benefício conforme o que ele é (veja abaixo) |
+| **Ken** (Fortificar) | Ten 60% + Ren 60% | Três intensidades: -20/30/40% de dano recebido, gastando 2/3/5 de aura por segundo. Não soma com Ten e Ren: vale a maior defesa |
+| **Ko** (Endurecimento) | Gyo, Ten, Zetsu, Ren e Hatsu 70% | Segure a tecla para carregar um golpe de +100% a +300% (veja abaixo) |
+| **Ryu** (Fluxo) | Gyo 40% + Ken 40% | Liga junto com o Ken e move a aura dele entre ataque e defesa (veja abaixo) |
 
 ![En detectando um porco invisível](docs/en-invisivel.png)
+
+### Intensidade
+
+Ren, Ken e Shu têm três intensidades, e o En tem quatro tamanhos de área. Aperte a tecla da técnica **agachado** para trocar, ou use o botão **Trocar** na página da técnica no painel.
+
+### Aura visível
+
+Quem libera aura solta partículas em volta do corpo, mais quanto mais aura libera. Em Zetsu não sai nenhuma. Com In, os outros jogadores não as veem, a não ser que estejam com Gyo preparado, a até 16 blocos e na linha de visão. Se você liberar mais aura por segundo do que o In consegue esconder (3 a 10, conforme a proficiência), o que passar fica à mostra.
+
+### Ko
+
+Segure a tecla (**B**) para concentrar a aura no punho; uma barra mostra a carga, que enche em 3 segundos. Atacar libera de +100% a +300% de dano e gasta de 10 a 40 de aura, conforme a carga, mesmo se o golpe for no ar. Minerar não conta como erro. Soltar a tecla antes de atacar cancela. Enquanto carrega, você perde a defesa de Nen (Ten, Ren e Ken) e recebe +50% de dano.
+
+### Ryu
+
+A tecla (**Y**) liga o Ryu junto com o Ken, e desligar o Ken desliga o Ryu. O dano recebido e causado muda com o lugar da aura:
+
+| Ação | Aura no ataque | Dano causado | Dano recebido |
+|---|---|---|---|
+| Sem atacar nem defender | 50% | normal | normal |
+| Atacar (fica por 1,5 s depois do clique) | 70% | +30% | +30% |
+| Segurar o botão direito | 30% | -30% | -30% |
+
+A aura leva 6 ticks para chegar ao destino, então trocar tarde deixa uma janela vulnerável. Mandar a aura para um lado gasta 3 de aura; voltar ao equilíbrio é de graça.
+
+### Shu
+
+A tecla (**H**) reveste o objeto da mão principal, ou o escudo da outra mão se a principal estiver vazia. Guardar, soltar ou trocar o objeto desfaz o revestimento. Todo objeto revestido desgasta 30/40/50% menos, conforme a intensidade.
+
+| Objeto | Benefício por intensidade |
+|---|---|
+| Espadas, machados, tridente e maça | +15/25/40% de dano (machados também quebram blocos mais rápido) |
+| Picaretas, pás e enxadas | Quebram blocos 30/60/100% mais rápido |
+| Escudo | -10/15/20% de dano recebido, além do bloqueio normal |
+| Outros objetos | +8/12/16% de dano |
 
 ### Aplicações do Gyo
 
@@ -86,16 +121,16 @@ Compradas com pontos na aba Árvore, com os nomes do documento de design. "Em br
 | Técnica | Sub-habilidades |
 |---|---|
 | **Ten** | Fluidez da Aura, Corpo Jovem |
-| **Zetsu** | Supressão Refinada, Descanso Profundo, Passos Silenciosos |
-| **Ren** | Controle de Liberação, Potência Ofensiva |
+| **Zetsu** | Supressão Refinada, Descanso Profundo, Passos Silenciosos (passos sem som) |
+| **Ren** | Controle de Liberação (menos gasto), Potência Ofensiva (mais dano) |
 | **Hatsu** | Eficiência de Aura (-5% no gasto de aura), duas passivas exclusivas do tipo (em breve) |
 | **Gyo** | Concentração Precisa (aplicações 25% a 50% mais fortes), Transferência Eficiente (custam 25% a 50% menos aura) |
-| **In** | Controle de Ocultação, Ocultação Sustentada |
-| **En** | Expansão Territorial, Controle Territorial |
-| **Ken** | Fortificação Duradoura, Densidade Protetora |
-| **Shu** | Revestimento Eficiente, Reforço Estrutural |
-| **Ko** | Concentração Absoluta, Preparação Refinada |
-| **Ryu** | Transferência Rápida, Fluxo Eficiente |
+| **In** | Controle de Ocultação (menos gasto), Ocultação Sustentada (esconde mais aura) |
+| **En** | Expansão Territorial (esfera maior), Controle Territorial (menos gasto) |
+| **Ken** | Fortificação Duradoura (menos gasto), Densidade Protetora (mais defesa) |
+| **Shu** | Revestimento Eficiente (menos gasto), Reforço Estrutural (mais benefício e menos desgaste) |
+| **Ko** | Concentração Absoluta (golpe mais forte), Preparação Refinada (carga mais rápida) |
+| **Ryu** | Transferência Rápida (troca mais rápida), Fluxo Eficiente (troca mais barata) |
 
 ### Comandos
 

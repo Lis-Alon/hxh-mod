@@ -35,25 +35,74 @@ public final class NenRules {
 	public static final double TEN_YOUTH_BASE = 0.005;
 	public static final double TEN_YOUTH_PER_MASTERY = 0.00015;
 
-	// Bonus internos das tecnicas (porcentagens), no lugar dos efeitos de pocao do Minecraft
-	public static final double KEN_DEFENSE = 0.30;
-	public static final double KEN_IRON_DEFENSE = 0.45;
-	public static final double REN_DAMAGE = 0.25;
-	public static final double REN_SURGE_DAMAGE = 0.45;
-	public static final double IN_DAMAGE = 0.15;
-	public static final double IN_SHADOW_DAMAGE = 0.30;
-	// Ko: toda a aura num ponto; o resto do corpo fica sem protecao
-	public static final double KO_DAMAGE = 0.80;
-	public static final double KO_ABSOLUTE_DAMAGE = 1.10;
+	// Ren: por intensidade (1 a 3), dano a mais, resistencia corporal e aura por segundo
+	public static final double[] REN_DAMAGE = {0.15, 0.25, 0.40};
+	public static final double[] REN_DEFENSE = {0.03, 0.05, 0.08};
+	public static final double[] REN_DRAIN = {2, 3, 5};
+	// Controle de Liberacao: desconto no gasto. Potencia Ofensiva: multiplica o bonus de dano
+	public static final double REN_CONTROL_BASE = 0.15;
+	public static final double REN_CONTROL_PER_MASTERY = 0.002;
+	public static final double REN_POWER_BASE = 0.20;
+	public static final double REN_POWER_PER_MASTERY = 0.003;
+	// Ken: por intensidade (1 a 3), reducao de dano e aura por segundo
+	public static final double[] KEN_DEFENSE = {0.20, 0.30, 0.40};
+	public static final double[] KEN_DRAIN = {2, 3, 5};
+	// Fortificacao Duradoura: desconto no gasto. Densidade Protetora: reducao a mais, com teto
+	public static final double KEN_ENDURANCE_BASE = 0.20;
+	public static final double KEN_ENDURANCE_PER_MASTERY = 0.002;
+	public static final double KEN_DENSITY_BASE = 0.05;
+	public static final double KEN_DENSITY_PER_MASTERY = 0.001;
+	public static final double KEN_DEFENSE_MAX = 0.55;
+	// In: gasto base mais o quanto esconde; capacidade em aura por segundo liberada
+	public static final double IN_DRAIN_BASE = 1;
+	public static final double IN_DRAIN_PER_HIDDEN = 0.5;
+	public static final double IN_CONTROL_BASE = 0.20;
+	public static final double IN_CONTROL_PER_MASTERY = 0.002;
+	public static final double IN_CAPACITY_BASE = 3;
+	public static final double IN_CAPACITY_PER_MASTERY = 0.07;
+	public static final double IN_SUSTAIN_BASE = 0.25;
+	public static final double IN_SUSTAIN_PER_MASTERY = 0.0025;
+	// Ko: tempo de carga, aura do golpe e dano conforme a carga (0 a 1). O resto do corpo fica sem defesa de Nen
+	public static final int KO_CHARGE_TICKS = 60;
+	public static final int KO_MIN_CHARGE_TICKS = 20;
+	public static final double KO_COST_MIN = 10;
+	public static final double KO_COST_MAX = 40;
+	public static final double KO_DAMAGE_MIN = 1.0;
+	public static final double KO_DAMAGE_MAX = 3.0;
+	public static final double KO_DAMAGE_PER_MASTERY = 0.002;
 	public static final double KO_DAMAGE_TAKEN = 0.50;
-	public static final double KO_SLOWNESS = 0.15;
-	public static final double RYU_DAMAGE = 0.35;
-	public static final double RYU_DEFENSE = 0.25;
-	public static final double RYU_MASTER_DAMAGE = 0.50;
-	public static final double RYU_MASTER_DEFENSE = 0.35;
-	public static final double RYU_SPEED = 0.10;
-	public static final double SHU_MINING = 0.60;
-	public static final double SHU_EDGE_DAMAGE = 0.15;
+	public static final int KO_APPLICATION_TRAINING = 30;
+	// Concentracao Absoluta: multiplica o dano. Preparacao Refinada: encurta a carga
+	public static final double KO_ABSOLUTE_BASE = 0.25;
+	public static final double KO_ABSOLUTE_PER_MASTERY = 0.0025;
+	public static final double KO_FOCUS_BASE = 0.20;
+	public static final double KO_FOCUS_PER_MASTERY = 0.003;
+	// Ryu: 30% a 70% da aura no ataque vira -30% a +30% de dano, e o inverso na defesa
+	public static final double RYU_SWING = 1.5;
+	public static final int RYU_TRANSITION_TICKS = 6;
+	public static final int RYU_MIN_TRANSITION_TICKS = 2;
+	public static final double RYU_SHIFT_COST = 3;
+	// Transferencia Rapida: encurta a troca. Fluxo Eficiente: desconto na troca
+	public static final double RYU_QUICK_BASE = 0.25;
+	public static final double RYU_QUICK_PER_MASTERY = 0.004;
+	public static final double RYU_FLOW_BASE = 0.25;
+	public static final double RYU_FLOW_PER_MASTERY = 0.0025;
+	// Shu: por intensidade (1 a 3), conforme o objeto
+	public static final double[] SHU_DRAIN = {1, 2, 3};
+	public static final double[] SHU_WEAPON_DAMAGE = {0.15, 0.25, 0.40};
+	public static final double[] SHU_COMMON_DAMAGE = {0.08, 0.12, 0.16};
+	public static final double[] SHU_TOOL_SPEED = {0.30, 0.60, 1.00};
+	public static final double[] SHU_SHIELD_DEFENSE = {0.10, 0.15, 0.20};
+	public static final double[] SHU_WEAR_SAVE = {0.30, 0.40, 0.50};
+	public static final double SHU_WEAR_SAVE_MAX = 0.85;
+	public static final double SHU_SHIELD_DEFENSE_MAX = 0.40;
+	// Revestimento Eficiente: desconto no gasto. Reforco Estrutural: multiplica o beneficio e poupa o desgaste
+	public static final double SHU_COAT_BASE = 0.20;
+	public static final double SHU_COAT_PER_MASTERY = 0.002;
+	public static final double SHU_POWER_BASE = 0.20;
+	public static final double SHU_POWER_PER_MASTERY = 0.003;
+	public static final double SHU_WEAR_BASE = 0.10;
+	public static final double SHU_WEAR_PER_MASTERY = 0.002;
 	// Somando tudo, o dano recebido nunca cai abaixo desta fracao
 	public static final double MIN_DAMAGE_TAKEN = 0.20;
 
@@ -116,11 +165,18 @@ public final class NenRules {
 	// Transferencia Eficiente: desconto no custo das aplicacoes
 	public static final double GYO_TRANSFER_BASE = 0.25;
 	public static final double GYO_TRANSFER_PER_MASTERY = 0.0025;
-	// En: area quadrada de deteccao, de 5x5 (1% de proficiencia) ate 20x20 (100%)
+	// En: esfera de deteccao com diametro de 5 (1% de proficiencia) ate 20 blocos (100%)
 	public static final double EN_MIN_SIZE = 5;
 	public static final double EN_MAX_SIZE = 20;
-	// Expansao Territorial aumenta a area
-	public static final double EN_WIDE_MULTIPLIER = 1.5;
+	// O jogador escolhe uma area menor para gastar menos: cada passo e 1/4 do diametro maximo
+	public static final double EN_MIN_CHOSEN_SIZE = 3;
+	public static final double EN_DRAIN_BASE = 1;
+	public static final double EN_DRAIN_PER_BLOCK = 0.1;
+	// Expansao Territorial aumenta a area. Controle Territorial: desconto no gasto
+	public static final double EN_WIDE_BASE = 0.25;
+	public static final double EN_WIDE_PER_MASTERY = 0.0025;
+	public static final double EN_CONTROL_BASE = 0.20;
+	public static final double EN_CONTROL_PER_MASTERY = 0.002;
 
 	private NenRules() {
 	}

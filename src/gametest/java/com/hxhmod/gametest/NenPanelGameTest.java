@@ -6,7 +6,10 @@ import com.hxhmod.client.GyoControl;
 import com.hxhmod.client.NenScreen;
 import com.hxhmod.client.NenTreePage;
 import com.hxhmod.item.ModItems;
+import com.hxhmod.nen.AuraVisuals;
 import com.hxhmod.nen.GyoApplications;
+import com.hxhmod.nen.KoStrike;
+import com.hxhmod.nen.ShuCoat;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenBonuses;
 import com.hxhmod.nen.NenCombat;
@@ -35,6 +38,9 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.animal.pig.Pig;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 
 import java.util.Map;
@@ -428,6 +434,181 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				check(!player.hasEffect(MobEffects.NIGHT_VISION), "o Gyo nao deveria dar visao noturna");
 				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.EN));
+			});
+
+			// Ren e Ken por intensidade; Ten, Ren e Ken nao somam e o Ko suspende a defesa
+			singleplayer.getServer().runOnServer(server -> {
+				NenData base = NenData.DEFAULT.awaken(NenType.ENHANCEMENT);
+				NenData ren1 = base.cycledIntensity(Technique.REN).cycledIntensity(Technique.REN);
+				NenData ren3 = ren1.cycledIntensity(Technique.REN).cycledIntensity(Technique.REN);
+				check(ren1.intensityOf(Technique.REN) == 1 && ren3.intensityOf(Technique.REN) == 3, "a intensidade deveria dar a volta");
+				check(ren3.renDamage() > ren1.renDamage() && ren3.auraDrain(Technique.REN) > ren1.auraDrain(Technique.REN),
+						"mais intensidade deveria dar mais dano e gastar mais");
+				check(NenData.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE,
+						NenData.CODEC.encodeStart(com.mojang.serialization.JsonOps.INSTANCE, ren3).getOrThrow()).getOrThrow().intensityOf(Technique.REN) == 3,
+						"a intensidade deveria ficar salva");
+				NenData guards = base.withActive(Set.of(Technique.TEN, Technique.REN, Technique.KEN));
+				check(Math.abs(NenBonuses.of(guards).damageTaken() - (1 - guards.kenDefense())) < 0.001,
+						"Ten, Ren e Ken deveriam valer a maior defesa, sem somar");
+				check(NenBonuses.of(base.withActive(Set.of(Technique.TEN, Technique.KEN, Technique.KO))).damageTaken() > 1,
+						"o Ko deveria suspender a defesa de Nen");
+				check(base.grant(NenUpgrade.KEN_ENDURANCE).auraDrain(Technique.KEN) < base.auraDrain(Technique.KEN),
+						"Fortificacao Duradoura deveria reduzir o gasto");
+
+				// In esconde ate a capacidade; passou disso, vaza
+				NenData hidden = base.withActive(Set.of(Technique.IN, Technique.GYO));
+				check(hidden.inLeak() == 0, "o In deveria esconder pouca aura por inteiro");
+				NenData intense = base.cycledIntensity(Technique.REN).withActive(Set.of(Technique.IN, Technique.REN, Technique.KEN, Technique.EN));
+				check(intense.inLeak() > 0 && intense.inLeak() < 1, "liberar demais deveria vazar parte da aura");
+				check(hidden.auraDrain(Technique.IN) > base.withActive(Technique.IN).auraDrain(Technique.IN),
+						"esconder mais aura deveria gastar mais");
+				check(NenBonuses.of(base.withActive(Technique.IN)).damageBonus() == 0, "o In nao deveria dar dano");
+
+				// En escolhe uma area menor, que gasta menos
+				NenData wide = base.addTraining(Technique.EN, 60000);
+				NenData small = wide.cycledIntensity(Technique.EN);
+				check(small.enSize() == 5.0 && wide.enSize() == 20.0, "o primeiro passo do En deveria ser 1/4 do tamanho");
+				check(small.auraDrain(Technique.EN) < wide.auraDrain(Technique.EN), "area menor deveria gastar menos");
+
+				// Ryu liga com o Ken e cai junto
+				NenData ryu = base.toggled(Technique.RYU);
+				check(ryu.isActive(Technique.KEN), "o Ryu deveria ligar o Ken");
+				check(!ryu.toggled(Technique.KEN).isActive(Technique.RYU), "desligar o Ken deveria desligar o Ryu");
+
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setAttached(ModAttachments.NEN, base.grant(NenUpgrade.ZETSU_STEP).withActive(Technique.ZETSU));
+				check(NenCombat.silentSteps(player), "Passos Silenciosos deveria silenciar em Zetsu");
+				check(AuraVisuals.shownTo(player, player, hidden, 10) == 10, "voce sempre ve a propria aura");
+
+				// Ko pela tecla
+				player.setAttached(ModAttachments.NEN, base.grant(Technique.KO).grant(Technique.GYO).grant(Technique.RYU)
+						.grant(Technique.KEN).grant(Technique.SHU).withAura(100));
+			});
+			context.waitTicks(5);
+			input.holdKey(InputConstants.KEY_B);
+			context.waitTicks(30);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(data.isActive(Technique.KO), "segurar a tecla deveria carregar o Ko");
+				double charge = KoStrike.charge(player, data);
+				check(charge > 0.3 && charge < 1, "a carga deveria crescer com o tempo, veio " + charge);
+				Pig target = EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
+				float hit = NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F);
+				NenData after = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(hit > 20.0F && !after.isActive(Technique.KO) && after.aura() < data.aura(),
+						"o golpe do Ko deveria causar mais de +100% e gastar a aura, veio " + hit);
+			});
+			input.releaseKey(InputConstants.KEY_B);
+			context.waitTicks(5);
+			input.holdKey(InputConstants.KEY_B);
+			context.waitTicks(5);
+			input.releaseKey(InputConstants.KEY_B);
+			context.waitTicks(5);
+			singleplayer.getServer().runOnServer(server -> {
+				check(!server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.KO),
+						"soltar a tecla deveria cancelar o Ko");
+			});
+			// Ko no ar: olhando para cima o clique nao acerta nada e a aura se perde
+			float[] pitch = new float[1];
+			context.runOnClient(client -> {
+				pitch[0] = client.player.getXRot();
+				client.player.setXRot(-80.0F);
+			});
+			int[] auraBefore = new int[1];
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withAura(100);
+				player.setAttached(ModAttachments.NEN, data);
+				auraBefore[0] = data.aura();
+			});
+			input.holdKey(InputConstants.KEY_B);
+			context.waitTicks(10);
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(3);
+			input.releaseKey(InputConstants.KEY_B);
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				NenData data = server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.NEN);
+				check(!data.isActive(Technique.KO) && data.aura() < auraBefore[0] - 5, "errar o Ko deveria gastar a aura, ficou " + data.aura());
+			});
+			context.runOnClient(client -> client.player.setXRot(pitch[0]));
+
+			// Agachado, a tecla regula a intensidade em vez de ligar
+			input.holdKey(InputConstants.KEY_LSHIFT);
+			context.waitTicks(2);
+			input.pressKey(InputConstants.KEY_R);
+			context.waitTicks(3);
+			input.releaseKey(InputConstants.KEY_LSHIFT);
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				NenData data = server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.NEN);
+				check(data.intensityOf(Technique.REN) == 3 && !data.isActive(Technique.REN),
+						"a tecla agachado deveria trocar a intensidade sem ligar o Ren");
+			});
+
+			// Ryu: a postura do jogador muda dano e defesa depois da transicao
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withActive(Set.of(Technique.RYU, Technique.KEN)).withAura(100);
+				player.setAttached(ModAttachments.NEN, data);
+				start[0] = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+			});
+			context.waitTicks(3);
+			input.holdMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+			context.waitTicks(15);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				float defended = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+				check(defended < start[0], "segurar o botao direito no Ryu deveria reduzir o dano, veio " + defended + " contra " + start[0]);
+				check(player.getAttachedOrCreate(ModAttachments.NEN).aura() < 100 || player.getAttachedOrCreate(ModAttachments.NEN).maxAura() > 100,
+						"a redistribuicao deveria custar aura");
+			});
+			input.releaseMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+			context.waitTicks(15);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				float balanced = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+				check(Math.abs(balanced - start[0]) < 0.01, "soltar deveria voltar ao equilibrio do Ken");
+
+				// Shu: o beneficio depende do objeto e trocar desfaz
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.SHU).withAura(100);
+				player.setAttached(ModAttachments.NEN, data);
+				player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_PICKAXE));
+				player.setHealth(player.getMaxHealth());
+				check(ShuCoat.kind(player.getMainHandItem()) == ShuCoat.Kind.TOOL, "picareta deveria ser ferramenta");
+				check(ShuCoat.miningBonus(player) > 0, "picareta revestida deveria quebrar mais rapido");
+				ItemStack worn = player.getMainHandItem();
+				for (int i = 0; i < 200; i++) {
+					worn.hurtAndBreak(1, player.level(), player, item -> {
+					});
+				}
+				check(worn.getDamageValue() < 170 && worn.getDamageValue() > 0, "o Shu deveria poupar o desgaste, gastou " + worn.getDamageValue());
+			});
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				check(player.getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.SHU), "segurar o mesmo objeto deveria manter o Shu");
+				check(ShuCoat.kind(new ItemStack(Items.SHIELD)) == ShuCoat.Kind.SHIELD && ShuCoat.kind(new ItemStack(Items.IRON_SWORD)) == ShuCoat.Kind.WEAPON
+						&& ShuCoat.kind(new ItemStack(Items.STICK)) == ShuCoat.Kind.COMMON, "os objetos deveriam cair no tipo certo");
+				Pig target = EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
+				float withTool = NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F);
+				player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+				check(NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F) > withTool,
+						"a espada revestida deveria causar mais dano que a picareta");
+			});
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				check(!player.getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.SHU), "trocar de objeto deveria desfazer o Shu");
+				player.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.SHU);
+				player.setAttached(ModAttachments.NEN, data);
+			});
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				check(!server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.SHU),
+						"o Shu nao deveria ficar ligado sem objeto");
 			});
 
 			// Aba do mod no criativo

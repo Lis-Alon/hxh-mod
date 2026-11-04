@@ -2,6 +2,7 @@ package com.hxhmod.client.mixin;
 
 import com.hxhmod.client.EnSense;
 import com.hxhmod.client.GyoControl;
+import com.hxhmod.client.TechniqueControl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
@@ -23,6 +24,11 @@ public abstract class MinecraftMixin {
 		if (EnSense.senses(entity) || GyoControl.sees(entity)) {
 			cir.setReturnValue(true);
 		}
+	}
+
+	@Inject(method = "startAttack", at = @At("HEAD"))
+	private void hxh$attackClick(CallbackInfoReturnable<Boolean> cir) {
+		TechniqueControl.onStartAttack((Minecraft) (Object) this);
 	}
 
 	@Inject(method = "startUseItem", at = @At("HEAD"), cancellable = true)

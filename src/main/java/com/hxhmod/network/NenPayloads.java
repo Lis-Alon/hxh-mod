@@ -2,7 +2,9 @@ package com.hxhmod.network;
 
 import com.hxhmod.HxHMod;
 import com.hxhmod.nen.GyoApplications;
+import com.hxhmod.nen.KoStrike;
 import com.hxhmod.nen.NenActions;
+import com.hxhmod.nen.RyuFlow;
 import com.hxhmod.nen.NenPose;
 import com.hxhmod.nen.NenStat;
 import com.hxhmod.nen.NenUpgrade;
@@ -74,6 +76,50 @@ public final class NenPayloads {
 		}
 	}
 
+	public record CycleIntensity(Technique technique) implements CustomPacketPayload {
+		public static final Type<CycleIntensity> TYPE = new Type<>(HxHMod.id("cycle_intensity"));
+		public static final StreamCodec<ByteBuf, CycleIntensity> CODEC =
+				Technique.STREAM_CODEC.map(CycleIntensity::new, CycleIntensity::technique);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
+	/** Tecla do Ko apertada ou solta. */
+	public record KoHold(boolean holding) implements CustomPacketPayload {
+		public static final Type<KoHold> TYPE = new Type<>(HxHMod.id("ko_hold"));
+		public static final StreamCodec<ByteBuf, KoHold> CODEC = ByteBufCodecs.BOOL.map(KoHold::new, KoHold::holding);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
+	/** Ataque no ar com o Ko carregado. */
+	public record KoMiss() implements CustomPacketPayload {
+		public static final Type<KoMiss> TYPE = new Type<>(HxHMod.id("ko_miss"));
+		public static final StreamCodec<ByteBuf, KoMiss> CODEC = StreamCodec.unit(new KoMiss());
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
+	public record SetRyuStance(RyuFlow.Stance stance) implements CustomPacketPayload {
+		public static final Type<SetRyuStance> TYPE = new Type<>(HxHMod.id("ryu_stance"));
+		public static final StreamCodec<ByteBuf, SetRyuStance> CODEC =
+				RyuFlow.Stance.STREAM_CODEC.map(SetRyuStance::new, SetRyuStance::stance);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	public record ResetUpgrades() implements CustomPacketPayload {
 		public static final Type<ResetUpgrades> TYPE = new Type<>(HxHMod.id("reset_upgrades"));
 		public static final StreamCodec<ByteBuf, ResetUpgrades> CODEC = StreamCodec.unit(new ResetUpgrades());
@@ -99,6 +145,10 @@ public final class NenPayloads {
 		PayloadTypeRegistry.serverboundPlay().register(BuyUpgrade.TYPE, BuyUpgrade.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(AllocateStats.TYPE, AllocateStats.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(GyoApplication.TYPE, GyoApplication.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(CycleIntensity.TYPE, CycleIntensity.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(KoHold.TYPE, KoHold.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(KoMiss.TYPE, KoMiss.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(SetRyuStance.TYPE, SetRyuStance.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ResetUpgrades.TYPE, ResetUpgrades.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PanelOpen.TYPE, PanelOpen.CODEC);
 
@@ -110,6 +160,13 @@ public final class NenPayloads {
 				(payload, context) -> NenActions.allocate(context.player(), payload.points()));
 		ServerPlayNetworking.registerGlobalReceiver(GyoApplication.TYPE, (payload, context) ->
 				GyoApplications.use(context.player(), payload.action(), payload.directionX(), payload.directionZ()));
+		ServerPlayNetworking.registerGlobalReceiver(CycleIntensity.TYPE, (payload, context) ->
+				NenActions.cycleIntensity(context.player(), payload.technique()));
+		ServerPlayNetworking.registerGlobalReceiver(KoHold.TYPE, (payload, context) ->
+				KoStrike.hold(context.player(), payload.holding()));
+		ServerPlayNetworking.registerGlobalReceiver(KoMiss.TYPE, (payload, context) -> KoStrike.miss(context.player()));
+		ServerPlayNetworking.registerGlobalReceiver(SetRyuStance.TYPE, (payload, context) ->
+				RyuFlow.setStance(context.player(), payload.stance()));
 		ServerPlayNetworking.registerGlobalReceiver(ResetUpgrades.TYPE,
 				(payload, context) -> NenActions.resetUpgrades(context.player()));
 		ServerPlayNetworking.registerGlobalReceiver(PanelOpen.TYPE,

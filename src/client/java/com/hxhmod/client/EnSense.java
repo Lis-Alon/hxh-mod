@@ -9,8 +9,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
- * En: a aura espalhada numa area quadrada em volta do jogador detecta toda criatura la dentro,
- * inclusive as invisiveis. O tamanho vem da proficiencia no En (5x5 ate 20x20).
+ * En: a aura espalhada numa esfera em volta do jogador detecta toda criatura la dentro, tambem acima,
+ * abaixo e atras de paredes, inclusive as invisiveis. O diametro vem da proficiencia no En (5 ate 20 blocos).
  */
 public final class EnSense {
 	private EnSense() {
@@ -25,9 +25,6 @@ public final class EnSense {
 		if (data == null || !data.isActive(Technique.EN)) {
 			return false;
 		}
-		double half = data.enSize() / 2;
-		return Math.abs(entity.getX() - player.getX()) <= half
-				&& Math.abs(entity.getZ() - player.getZ()) <= half
-				&& Math.abs(entity.getY() - player.getY()) <= half;
+		return player.distanceTo(entity) <= data.enSize() / 2;
 	}
 }

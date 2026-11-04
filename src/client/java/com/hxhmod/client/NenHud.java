@@ -20,6 +20,7 @@ public final class NenHud {
 	private static final int XP_BAR_HEIGHT = 2;
 	private static final int UNKNOWN_TYPE_COLOR = 0xFFFFFF;
 	private static final int XP_COLOR = 0xFFD8B46A;
+	private static final int KO_COLOR = 0xFFE05A3A;
 
 	private NenHud() {
 	}
@@ -51,5 +52,18 @@ public final class NenHud {
 		int xpY = barY + BAR_HEIGHT + 1;
 		int xpFilled = data.maxLevel() ? BAR_WIDTH : BAR_WIDTH * data.xpIntoLevel() / NenRules.xpToNext(data.level());
 		graphics.fill(X, xpY, X + xpFilled, xpY + XP_BAR_HEIGHT, XP_COLOR);
+
+		int nextY = xpY + XP_BAR_HEIGHT + 4;
+		if (data.isActive(Technique.KO)) {
+			graphics.text(minecraft.font, Component.translatable("nen.hxh.ko.charge"), X, nextY, 0xFFFFFFFF, true);
+			nextY += minecraft.font.lineHeight + 1;
+			graphics.fill(X - 1, nextY - 1, X + BAR_WIDTH + 1, nextY + BAR_HEIGHT + 1, 0xC0000000);
+			graphics.fill(X, nextY, X + (int) (BAR_WIDTH * TechniqueControl.koCharge(data)), nextY + BAR_HEIGHT, KO_COLOR);
+			nextY += BAR_HEIGHT + 3;
+		}
+		if (data.isActive(Technique.RYU)) {
+			graphics.text(minecraft.font, Component.translatable("nen.hxh.ryu.stance."
+					+ TechniqueControl.stance().name().toLowerCase(java.util.Locale.ROOT)), X, nextY, 0xFFFFFFFF, true);
+		}
 	}
 }

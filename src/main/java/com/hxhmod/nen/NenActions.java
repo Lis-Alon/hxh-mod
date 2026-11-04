@@ -32,6 +32,19 @@ public final class NenActions {
 		}
 	}
 
+	/** Passa para a proxima intensidade da tecnica (no En, o tamanho da area). */
+	public static void cycleIntensity(ServerPlayer player, Technique technique) {
+		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+		if (technique.maxIntensity() <= 1 || !data.isUnlocked(technique)) {
+			return;
+		}
+		NenData next = data.cycledIntensity(technique);
+		player.setAttached(ModAttachments.NEN, next);
+		player.sendOverlayMessage(technique == Technique.EN
+				? Component.translatable("nen.hxh.en.size", Math.round(next.enSize()))
+				: Component.translatable("nen.hxh.intensity", technique.displayName(), next.intensityOf(technique), technique.maxIntensity()));
+	}
+
 	public static void buy(ServerPlayer player, NenUpgrade upgrade) {
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
 		if (data.upgradeProblem(upgrade) != null) {

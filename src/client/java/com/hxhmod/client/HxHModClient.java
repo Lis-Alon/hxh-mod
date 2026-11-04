@@ -49,6 +49,7 @@ public class HxHModClient implements ClientModInitializer {
 
 		// No inicio do tick: depois dele o pulo normal ja tirou o jogador do chao
 		ClientTickEvents.START_CLIENT_TICK.register(GyoControl::tick);
+		ClientTickEvents.START_CLIENT_TICK.register(client -> TechniqueControl.tick(client, TECHNIQUE_KEYS.get(Technique.KO)));
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (OPEN_NEN_PANEL.consumeClick()) {
 				if (client.player != null && client.gui.screen() == null) {
@@ -57,7 +58,13 @@ public class HxHModClient implements ClientModInitializer {
 			}
 			TECHNIQUE_KEYS.forEach((technique, key) -> {
 				while (key.consumeClick()) {
-					if (client.player != null && ClientPlayNetworking.canSend(NenPayloads.ToggleTechnique.TYPE)) {
+					// O Ko funciona segurando a tecla (TechniqueControl); agachado, a tecla regula a intensidade
+					if (client.player == null || technique == Technique.KO || !ClientPlayNetworking.canSend(NenPayloads.ToggleTechnique.TYPE)) {
+						continue;
+					}
+					if (client.options.keyShift.isDown() && technique.maxIntensity() > 1) {
+						ClientPlayNetworking.send(new NenPayloads.CycleIntensity(technique));
+					} else {
 						ClientPlayNetworking.send(new NenPayloads.ToggleTechnique(technique));
 					}
 				}

@@ -9,12 +9,11 @@ package com.hxhmod.nen;
  * @param damageBonus dano corpo a corpo a mais (0,25 = +25%)
  * @param damageTaken multiplicador do dano recebido (0,8 = recebe 80%)
  * @param attackSpeed velocidade de ataque a mais (fracao)
- * @param moveSpeed   velocidade de movimento a mais (fracao; negativa deixa mais lento)
- * @param miningSpeed velocidade de quebrar blocos a mais (fracao)
+ * @param moveSpeed   velocidade de movimento a mais (fracao)
  */
 public record NenBonuses(double maxHealth, double flatDamage, double damageBonus, double damageTaken,
-		double attackSpeed, double moveSpeed, double miningSpeed) {
-	public static final NenBonuses NONE = new NenBonuses(0, 0, 0, 1, 0, 0, 0);
+		double attackSpeed, double moveSpeed) {
+	public static final NenBonuses NONE = new NenBonuses(0, 0, 0, 1, 0, 0);
 
 	public static NenBonuses of(NenData data) {
 		if (data == null || !data.awakened()) {
@@ -25,38 +24,26 @@ public record NenBonuses(double maxHealth, double flatDamage, double damageBonus
 		double attackSpeed = points(data, NenStat.ATTACK_SPEED);
 		double moveSpeed = points(data, NenStat.AGILITY);
 		double damageTaken = 1 - points(data, NenStat.PROTECTION);
-		double damageBonus = 0;
-		double miningSpeed = 0;
+		double damageBonus = data.isActive(Technique.REN) ? data.renDamage() : 0;
 
-		for (Technique technique : data.active()) {
-			switch (technique) {
-				case TEN -> damageTaken *= 1 - data.tenDefense();
-				case KEN -> damageTaken *= 1 - (data.has(NenUpgrade.KEN_IRON) ? NenRules.KEN_IRON_DEFENSE : NenRules.KEN_DEFENSE);
-				case REN -> damageBonus += data.has(NenUpgrade.REN_SURGE) ? NenRules.REN_SURGE_DAMAGE : NenRules.REN_DAMAGE;
-				case IN -> damageBonus += data.has(NenUpgrade.IN_SHADOW) ? NenRules.IN_SHADOW_DAMAGE : NenRules.IN_DAMAGE;
-				case KO -> {
-					damageBonus += data.has(NenUpgrade.KO_ABSOLUTE) ? NenRules.KO_ABSOLUTE_DAMAGE : NenRules.KO_DAMAGE;
-					damageTaken *= 1 + NenRules.KO_DAMAGE_TAKEN;
-					moveSpeed -= NenRules.KO_SLOWNESS;
-				}
-				case RYU -> {
-					boolean master = data.has(NenUpgrade.RYU_MASTER);
-					damageBonus += master ? NenRules.RYU_MASTER_DAMAGE : NenRules.RYU_DAMAGE;
-					damageTaken *= 1 - (master ? NenRules.RYU_MASTER_DEFENSE : NenRules.RYU_DEFENSE);
-					moveSpeed += NenRules.RYU_SPEED;
-				}
-				case SHU -> {
-					miningSpeed += NenRules.SHU_MINING;
-					if (data.has(NenUpgrade.SHU_EDGE)) {
-						damageBonus += NenRules.SHU_EDGE_DAMAGE;
-					}
-				}
-				default -> {
-				}
-			}
+		// Ten, Ren e Ken sao a mesma camada de aura: vale a maior defesa, sem somar as tres
+		double nenDefense = 0;
+		if (data.isActive(Technique.TEN)) {
+			nenDefense = Math.max(nenDefense, data.tenDefense());
 		}
+		if (data.isActive(Technique.REN)) {
+			nenDefense = Math.max(nenDefense, data.renDefense());
+		}
+		if (data.isActive(Technique.KEN)) {
+			nenDefense = Math.max(nenDefense, data.kenDefense());
+		}
+		if (data.isActive(Technique.KO)) {
+			// Toda a aura no punho: o resto do corpo fica sem defesa de Nen
+			nenDefense = -NenRules.KO_DAMAGE_TAKEN;
+		}
+		damageTaken *= 1 - nenDefense;
 		return new NenBonuses(maxHealth, flatDamage, damageBonus, Math.max(damageTaken, NenRules.MIN_DAMAGE_TAKEN),
-				attackSpeed, moveSpeed, miningSpeed);
+				attackSpeed, moveSpeed);
 	}
 
 	private static double points(NenData data, NenStat stat) {

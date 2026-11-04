@@ -19,15 +19,15 @@ import java.util.Set;
 public enum Technique implements StringRepresentable {
 	NONE("none", 0, 0),
 	TEN("ten", 1, 0),
-	KEN("ken", 3, 3),
+	KEN("ken", 3, 0),
 	ZETSU("zetsu", 1, 0),
-	IN("in", 3, 2),
-	REN("ren", 2, 3),
+	IN("in", 3, 0),
+	REN("ren", 2, 0),
 	GYO("gyo", 2, 1),
-	KO("ko", 4, 5),
-	RYU("ryu", 5, 4),
-	SHU("shu", 2, 1),
-	EN("en", 3, 2),
+	KO("ko", 4, 3),
+	RYU("ryu", 5, 2),
+	SHU("shu", 2, 0),
+	EN("en", 3, 0),
 	HATSU("hatsu", 2, 2);
 
 	public static final Codec<Technique> CODEC = StringRepresentable.fromEnum(Technique::values);
@@ -61,7 +61,21 @@ public enum Technique implements StringRepresentable {
 		return xpPerSecond;
 	}
 
-	/** Aura gasta por segundo antes dos descontos das funcionalidades. */
+	/** Quantas intensidades a tecnica tem (1 = nao da para regular). No En, cada passo e 1/4 do tamanho maximo. */
+	public int maxIntensity() {
+		return switch (this) {
+			case REN, KEN, SHU -> 3;
+			case EN -> 4;
+			default -> 1;
+		};
+	}
+
+	/** Intensidade de quem nunca escolheu: media, e o En inteiro. */
+	public int defaultIntensity() {
+		return this == EN ? 4 : Math.min(2, maxIntensity());
+	}
+
+	/** Aura gasta por segundo das tecnicas de gasto fixo; as outras calculam em {@link NenData#auraDrain}. */
 	public int baseAuraDrain() {
 		return auraDrain;
 	}
