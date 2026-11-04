@@ -10,6 +10,7 @@ import com.hxhmod.nen.AuraVisuals;
 import com.hxhmod.nen.GyoApplications;
 import com.hxhmod.nen.KoStrike;
 import com.hxhmod.nen.ShuCoat;
+import net.minecraft.world.entity.projectile.arrow.Arrow;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenBonuses;
 import com.hxhmod.nen.NenCombat;
@@ -43,6 +44,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -641,13 +643,24 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				float balanced = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
 				check(Math.abs(balanced - start[0]) < 0.01, "soltar deveria voltar ao equilibrio do Ken");
 
-				// Shu: o beneficio depende do objeto e trocar desfaz
-				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.SHU).withAura(100);
+				// Shu: toda ferramenta melhora em tudo, conforme a proficiencia, e trocar desfaz
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.SHU).withAura(100).withMastery(Technique.SHU, 100);
 				player.setAttached(ModAttachments.NEN, data);
 				player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_PICKAXE));
 				player.setHealth(player.getMaxHealth());
 				check(ShuCoat.kind(player.getMainHandItem()) == ShuCoat.Kind.TOOL, "picareta deveria ser ferramenta");
 				check(ShuCoat.miningBonus(player) > 0, "picareta revestida deveria quebrar mais rapido");
+				check(ShuCoat.attackSpeedBonus(player) > 0, "picareta revestida deveria atacar mais rapido");
+				NenData novice = data.withMastery(Technique.SHU, 0);
+				check(Math.abs(data.shuToolDamage() - 4 * novice.shuToolDamage()) < 1.0E-6
+						&& Math.abs(data.shuMiningSpeed() - 4 * novice.shuMiningSpeed()) < 1.0E-6
+						&& Math.abs(data.shuAttackSpeed() - 4 * novice.shuAttackSpeed()) < 1.0E-6
+						&& data.shuWearSave() > novice.shuWearSave(),
+						"a proficiencia deveria levar os beneficios do Shu de metade ao dobro");
+				for (var tool : List.of(Items.DIAMOND_PICKAXE, Items.IRON_SHOVEL, Items.WOODEN_HOE, Items.IRON_AXE, Items.IRON_SWORD,
+						Items.SHEARS, Items.BOW, Items.CROSSBOW, Items.TRIDENT, Items.MACE, Items.FISHING_ROD, Items.FLINT_AND_STEEL, Items.BRUSH)) {
+					check(ShuCoat.kind(new ItemStack(tool)) == ShuCoat.Kind.TOOL, tool + " deveria receber todos os beneficios do Shu");
+				}
 				ItemStack worn = player.getMainHandItem();
 				for (int i = 0; i < 200; i++) {
 					worn.hurtAndBreak(1, player.level(), player, item -> {
@@ -659,13 +672,22 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				check(player.getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.SHU), "segurar o mesmo objeto deveria manter o Shu");
-				check(ShuCoat.kind(new ItemStack(Items.SHIELD)) == ShuCoat.Kind.SHIELD && ShuCoat.kind(new ItemStack(Items.IRON_SWORD)) == ShuCoat.Kind.WEAPON
-						&& ShuCoat.kind(new ItemStack(Items.STICK)) == ShuCoat.Kind.COMMON, "os objetos deveriam cair no tipo certo");
+				check(ShuCoat.kind(new ItemStack(Items.SHIELD)) == ShuCoat.Kind.SHIELD && ShuCoat.kind(new ItemStack(Items.STICK)) == ShuCoat.Kind.COMMON,
+						"os objetos deveriam cair no tipo certo");
 				Pig target = EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
+				NenData coated = player.getAttachedOrCreate(ModAttachments.NEN);
 				float withTool = NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F);
+				player.setAttached(ModAttachments.NEN, coated.withActive(Technique.NONE));
+				float bare = NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F);
+				check(withTool > bare, "a picareta revestida deveria causar mais dano, veio " + withTool + " contra " + bare);
+
+				// A flecha do arco revestido tambem
+				player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+				player.setAttached(ModAttachments.NEN, coated);
+				Arrow arrow = EntityTypes.ARROW.create(player.level(), EntitySpawnReason.COMMAND);
+				float shot = NenCombat.incomingDamage(target, player.damageSources().arrow(arrow, player), 10.0F);
+				check(Math.abs(shot - 10.0F * (1 + coated.shuToolDamage())) < 0.01, "a flecha do arco revestido deveria ganhar o bonus, veio " + shot);
 				player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
-				check(NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F) > withTool,
-						"a espada revestida deveria causar mais dano que a picareta");
 			});
 			context.waitTicks(3);
 			singleplayer.getServer().runOnServer(server -> {

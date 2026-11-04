@@ -353,25 +353,38 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		return 1 + upgradeScale(NenUpgrade.SHU_EDGE, NenRules.SHU_POWER_BASE, NenRules.SHU_POWER_PER_MASTERY);
 	}
 
-	public double shuWeaponDamage() {
-		return byIntensity(Technique.SHU, NenRules.SHU_WEAPON_DAMAGE) * shuPower();
+	/** Quanto a proficiencia multiplica todos os beneficios do Shu. */
+	private double shuMastery() {
+		return NenRules.SHU_MASTERY_LOWEST
+				+ (NenRules.SHU_MASTERY_HIGHEST - NenRules.SHU_MASTERY_LOWEST) * mastery(Technique.SHU) / NenRules.MAX_MASTERY;
+	}
+
+	/** Dano a mais de qualquer ferramenta ou arma revestida. */
+	public double shuToolDamage() {
+		return byIntensity(Technique.SHU, NenRules.SHU_TOOL_DAMAGE) * shuMastery() * shuPower();
 	}
 
 	public double shuCommonDamage() {
-		return byIntensity(Technique.SHU, NenRules.SHU_COMMON_DAMAGE);
+		return byIntensity(Technique.SHU, NenRules.SHU_COMMON_DAMAGE) * shuMastery();
 	}
 
-	public double shuToolSpeed() {
-		return byIntensity(Technique.SHU, NenRules.SHU_TOOL_SPEED) * shuPower();
+	/** Velocidade de quebrar blocos a mais. */
+	public double shuMiningSpeed() {
+		return byIntensity(Technique.SHU, NenRules.SHU_MINING_SPEED) * shuMastery() * shuPower();
+	}
+
+	/** Velocidade de ataque a mais. */
+	public double shuAttackSpeed() {
+		return byIntensity(Technique.SHU, NenRules.SHU_ATTACK_SPEED) * shuMastery() * shuPower();
 	}
 
 	public double shuShieldDefense() {
-		return Math.min(NenRules.SHU_SHIELD_DEFENSE_MAX, byIntensity(Technique.SHU, NenRules.SHU_SHIELD_DEFENSE) * shuPower());
+		return Math.min(NenRules.SHU_SHIELD_DEFENSE_MAX, byIntensity(Technique.SHU, NenRules.SHU_SHIELD_DEFENSE) * shuMastery() * shuPower());
 	}
 
 	/** Chance de cada ponto de desgaste ser evitado. */
 	public double shuWearSave() {
-		return Math.min(NenRules.SHU_WEAR_SAVE_MAX, byIntensity(Technique.SHU, NenRules.SHU_WEAR_SAVE)
+		return Math.min(NenRules.SHU_WEAR_SAVE_MAX, byIntensity(Technique.SHU, NenRules.SHU_WEAR_SAVE) * shuMastery()
 				+ upgradeScale(NenUpgrade.SHU_EDGE, NenRules.SHU_WEAR_BASE, NenRules.SHU_WEAR_PER_MASTERY));
 	}
 

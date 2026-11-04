@@ -4,6 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -44,6 +45,8 @@ public final class NenCombat {
 				double bonus = bonuses.damageBonus() + ShuCoat.damageBonus(attacker, attackerData) + RyuFlow.damageBonus(attacker)
 						+ GyoApplications.punch(attacker) + KoStrike.strike(attacker);
 				amount = (float) ((amount + bonuses.flatDamage()) * (1 + bonus) * GyoApplications.damageDealt(attacker));
+			} else if (source.getDirectEntity() instanceof AbstractArrow) {
+				amount = (float) (amount * (1 + ShuCoat.rangedBonus(attacker, attackerData)));
 			}
 		}
 		if (!(victim instanceof ServerPlayer player)) {

@@ -67,7 +67,7 @@
 	"nen.hxh.technique.shu.meaning": "Ciclo",
 	"nen.hxh.technique.shu.origin": "Aplicação avançada do Ren",
 	"nen.hxh.technique.shu.lore": "Envolve um objeto com sua aura, como se ele fizesse parte do corpo. Até uma folha de papel fica afiada como aço.",
-	"nen.hxh.technique.shu.effect": "Reveste o objeto na mão, com intensidade 1/2/3. Arma: +15/25/40% de dano. Ferramenta: quebra 30/60/100% mais rápido. Escudo: -10/15/20% de dano recebido. Outros objetos: +8/12/16% de dano. Todos desgastam menos. Trocar de objeto desfaz. Agachado, a tecla troca a intensidade.",
+	"nen.hxh.technique.shu.effect": "Reveste o objeto na mão, com intensidade 1/2/3. Qualquer ferramenta ou arma: +15/25/40% de dano, quebra 30/60/100% mais rápido, ataca 5/10/15% mais rápido e gasta 30/40/50% menos durabilidade. Escudo: -10/15/20% de dano recebido. Outros objetos: +8/12/16% de dano. A proficiência leva esses valores de metade (0%) ao dobro (100%). Trocar de objeto desfaz. Agachado, a tecla troca a intensidade.",
 	"nen.hxh.technique.en": "En",
 	"nen.hxh.technique.en.meaning": "Território",
 	"nen.hxh.technique.en.origin": "Aplicação do Ten e do Ren",

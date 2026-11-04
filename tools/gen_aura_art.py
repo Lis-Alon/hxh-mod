@@ -71,14 +71,14 @@ def vignette(frame):
     def edge_point():
         side = random.choice('LLLRRRTB')
         if side == 'L':
-            return random.uniform(-10, 45), random.uniform(0, height)
+            return random.uniform(-10, 110), random.uniform(0, height)
         if side == 'R':
-            return width - random.uniform(-10, 45), random.uniform(0, height)
+            return width - random.uniform(-10, 110), random.uniform(0, height)
         if side == 'T':
-            return random.uniform(0, width), random.uniform(-10, 28)
-        return random.uniform(0, width), height - random.uniform(-10, 22)
+            return random.uniform(0, width), random.uniform(-10, 60)
+        return random.uniform(0, width), height - random.uniform(-10, 40)
 
-    for _ in range(84):
+    for _ in range(120):
         x, y = edge_point()
         radius = random.randint(14, 42)
         draw.ellipse((x - radius, y - radius * 1.4, x + radius, y + radius * 1.4), fill=random.randint(80, 170))
@@ -86,7 +86,7 @@ def vignette(frame):
 
     lines = Image.new('L', (width * 2, height * 2), 0)
     draw = ImageDraw.Draw(lines)
-    for _ in range(46):
+    for _ in range(60):
         x, y = edge_point()
         x, y = x * 2, y * 2
         angle = random.uniform(0, math.tau)
@@ -99,7 +99,7 @@ def vignette(frame):
             y += math.sin(angle) * 5
             # Curvas que vao para o miolo voltam para a borda
             middle = math.hypot((x - width) / width, (y - height) / height)
-            if middle < 0.72:
+            if middle < 0.55:
                 angle = math.atan2(y - height, x - width) + random.uniform(-0.7, 0.7)
         draw.line(points, fill=random.randint(120, 235), width=random.choice((2, 2, 3)))
     glow = lines.filter(ImageFilter.GaussianBlur(5)).point(lambda value: min(255, value * 2))
@@ -112,7 +112,7 @@ def vignette(frame):
     for y in range(height):
         for x in range(width):
             d = max(abs(x - width / 2) / (width / 2), abs(y - height / 2) / (height / 2) * 0.86, math.hypot((x - width / 2) / (width / 2), (y - height / 2) / (height / 2)) * 0.74)
-            pixels[x, y] = int(255 * min(1.0, max(0.0, (d - 0.56) / 0.28)))
+            pixels[x, y] = int(255 * min(1.0, max(0.0, (d - 0.42) / 0.32)))
     alpha = ImageChops.multiply(alpha, falloff)
     result = Image.new('RGBA', (width, height), (255, 255, 255, 0))
     result.putalpha(alpha)

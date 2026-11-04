@@ -67,7 +67,7 @@
 	"nen.hxh.technique.shu.meaning": "Envelop",
 	"nen.hxh.technique.shu.origin": "Advanced Ren",
 	"nen.hxh.technique.shu.lore": "Wraps an object in your aura as if it were part of your body. Even a sheet of paper becomes sharp as steel.",
-	"nen.hxh.technique.shu.effect": "Coats the held object, at intensity 1/2/3. Weapon: +15/25/40% damage. Tool: breaks 30/60/100% faster. Shield: -10/15/20% damage taken. Other objects: +8/12/16% damage. All wear less. Switching objects ends it. Press the key while sneaking to change intensity.",
+	"nen.hxh.technique.shu.effect": "Coats the held object, at intensity 1/2/3. Any tool or weapon: +15/25/40% damage, breaks 30/60/100% faster, attacks 5/10/15% faster and uses 30/40/50% less durability. Shield: -10/15/20% damage taken. Other objects: +8/12/16% damage. Proficiency takes these values from half (0%) to double (100%). Switching objects ends it. Press the key while sneaking to change intensity.",
 	"nen.hxh.technique.en": "En",
 	"nen.hxh.technique.en.meaning": "Circle",
 	"nen.hxh.technique.en.origin": "Application of Ten and Ren",

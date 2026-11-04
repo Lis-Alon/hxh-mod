@@ -89,6 +89,8 @@ O domínio da técnica muda a aparência:
 - **Domínio de 26 a 75:** aura densa e constante, com contorno bem definido.
 - **Domínio de 76 a 100:** mais volume, partículas mais numerosas e rápidas, centro mais transparente e chama mais larga. No En, a superfície passa a respirar devagar.
 
+O tamanho acompanha cada ponto de proficiência: com 100%, a aura tem cerca de 2,9 vezes a largura e 2,2 vezes a altura que tem com 0%. No En, o tamanho é a própria área de detecção.
+
 A opacidade também sobe com a intensidade liberada.
 
 Em Zetsu não aparece nada. Com In, os outros jogadores não veem a aura, a não ser que estejam com Gyo preparado, a até 16 blocos e na linha de visão. Se você liberar mais aura por segundo do que o In consegue esconder (3 a 10, conforme a proficiência), o que passar fica à mostra, mais fraco.
@@ -111,14 +113,15 @@ A aura leva 6 ticks para chegar ao destino, então trocar tarde deixa uma janela
 
 ### Shu
 
-A tecla (**H**) reveste o objeto da mão principal, ou o escudo da outra mão se a principal estiver vazia. Guardar, soltar ou trocar o objeto desfaz o revestimento. Todo objeto revestido desgasta 30/40/50% menos, conforme a intensidade.
+A tecla (**H**) reveste o objeto da mão principal, ou o escudo da outra mão se a principal estiver vazia. Guardar, soltar ou trocar o objeto desfaz o revestimento. Ferramentas e armas são reconhecidas pelo que fazem, então a regra vale para espada, machado, picareta, pá, enxada, tesoura, arco, besta, tridente, maça, vara de pesca e ferramentas de outros mods.
 
-| Objeto | Benefício por intensidade |
+| Objeto | Benefício por intensidade (1/2/3) |
 |---|---|
-| Espadas, machados, tridente e maça | +15/25/40% de dano (machados também quebram blocos mais rápido) |
-| Picaretas, pás e enxadas | Quebram blocos 30/60/100% mais rápido |
-| Escudo | -10/15/20% de dano recebido, além do bloqueio normal |
+| Qualquer ferramenta ou arma | +15/25/40% de dano, quebra blocos 30/60/100% mais rápido, ataca 5/10/15% mais rápido e gasta 30/40/50% menos durabilidade |
+| Escudo | -10/15/20% de dano recebido, além do bloqueio normal, e 30/40/50% menos desgaste |
 | Outros objetos | +8/12/16% de dano |
+
+A proficiência multiplica esses valores, de metade com 0% até o dobro com 100%. Na intensidade 3 com 100%, uma picareta dá +80% de dano, quebra 200% mais rápido, ataca 30% mais rápido e gasta 85% menos durabilidade (o limite). Flechas de um arco ou besta revestidos também recebem o bônus de dano; um tridente arremessado sai da mão e perde o revestimento. Usar o objeto, como minerar ou atirar, também treina o Shu.
 
 ### Aplicações do Gyo
 

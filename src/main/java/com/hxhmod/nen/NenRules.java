@@ -89,9 +89,13 @@ public final class NenRules {
 	public static final double RYU_FLOW_PER_MASTERY = 0.0025;
 	// Shu: por intensidade (1 a 3), conforme o objeto
 	public static final double[] SHU_DRAIN = {1, 2, 3};
-	public static final double[] SHU_WEAPON_DAMAGE = {0.15, 0.25, 0.40};
+	public static final double[] SHU_TOOL_DAMAGE = {0.15, 0.25, 0.40};
 	public static final double[] SHU_COMMON_DAMAGE = {0.08, 0.12, 0.16};
-	public static final double[] SHU_TOOL_SPEED = {0.30, 0.60, 1.00};
+	public static final double[] SHU_MINING_SPEED = {0.30, 0.60, 1.00};
+	public static final double[] SHU_ATTACK_SPEED = {0.05, 0.10, 0.15};
+	// Os valores do Shu vao de metade (proficiencia 0%) ao dobro (100%)
+	public static final double SHU_MASTERY_LOWEST = 0.5;
+	public static final double SHU_MASTERY_HIGHEST = 2.0;
 	public static final double[] SHU_SHIELD_DEFENSE = {0.10, 0.15, 0.20};
 	public static final double[] SHU_WEAR_SAVE = {0.30, 0.40, 0.50};
 	public static final double SHU_WEAR_SAVE_MAX = 0.85;

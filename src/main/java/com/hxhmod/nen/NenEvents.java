@@ -164,7 +164,8 @@ public final class NenEvents {
 	private static int pertinentBonus(ServerPlayer player, Technique active, boolean still) {
 		return switch (active) {
 			case TEN, KEN -> NenCombat.hurtRecently(player) ? 1 : 0;
-			case REN, SHU, RYU -> NenCombat.attackedRecently(player) ? 1 : 0;
+			case REN, RYU -> NenCombat.attackedRecently(player) ? 1 : 0;
+			case SHU -> NenCombat.attackedRecently(player) || ShuCoat.usedRecently(player) ? 1 : 0;
 			case ZETSU -> still ? 1 : 0;
 			default -> 0;
 		};

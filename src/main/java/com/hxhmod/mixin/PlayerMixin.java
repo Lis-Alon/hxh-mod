@@ -18,7 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class PlayerMixin {
 	@Inject(method = "getCurrentItemAttackStrengthDelay", at = @At("RETURN"), cancellable = true)
 	private void hxh$nenAttackSpeed(CallbackInfoReturnable<Float> cir) {
-		double bonus = NenBonuses.of(((Player) (Object) this).getAttached(ModAttachments.NEN)).attackSpeed();
+		Player player = (Player) (Object) this;
+		double bonus = NenBonuses.of(player.getAttached(ModAttachments.NEN)).attackSpeed() + ShuCoat.attackSpeedBonus(player);
 		if (bonus > 0) {
 			cir.setReturnValue((float) (cir.getReturnValue() / (1 + bonus)));
 		}
