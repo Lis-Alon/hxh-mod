@@ -8,24 +8,23 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 /**
  * Shu: a aura reveste o objeto segurado. Qualquer ferramenta ou arma melhora em tudo (dano, velocidade de quebrar,
  * velocidade de ataque e durabilidade), de metade ate o dobro dos valores, conforme a proficiencia.
- * Guardar, soltar ou trocar o objeto desfaz o revestimento.
+ * O revestimento acompanha o que estiver na mao: trocar de objeto nao desliga o Shu, e de mao vazia ele so nao faz efeito.
  */
 public final class ShuCoat {
 	public enum Kind {
 		NONE, TOOL, SHIELD, COMMON
 	}
 
-	/** Objeto revestido e o slot da hotbar em que ele estava. */
-	private record Coated(ItemStack stack, int slot) {
-	}
-
-	private static final Map<ServerPlayer, Coated> COATED = new WeakHashMap<>();
+	// Quem ja segurou um objeto desde que ligou o Shu; ligar sem nada na mao nao pega
+	private static final Set<ServerPlayer> COATED = Collections.newSetFromMap(new WeakHashMap<>());
 	// Ultimo tick em que o objeto revestido gastou durabilidade (treino pertinente de quem minera ou atira)
 	private static final Map<ServerPlayer, Integer> LAST_USED = new WeakHashMap<>();
 
@@ -54,22 +53,12 @@ public final class ShuCoat {
 			COATED.remove(player);
 			return;
 		}
-		ItemStack held = held(player);
-		int slot = player.getInventory().getSelectedSlot();
-		Coated coated = COATED.get(player);
-		if (held.isEmpty()) {
-			end(player, data, "nen.hxh.shu.empty");
-		} else if (coated == null) {
-			COATED.put(player, new Coated(held.copy(), slot));
-		} else if (coated.slot != slot || !ItemStack.isSameItem(coated.stack, held)) {
-			end(player, data, "nen.hxh.shu.faded");
+		if (!held(player).isEmpty()) {
+			COATED.add(player);
+		} else if (!COATED.contains(player)) {
+			player.setAttached(ModAttachments.NEN, data.toggled(Technique.SHU));
+			player.sendOverlayMessage(Component.translatable("nen.hxh.shu.empty"));
 		}
-	}
-
-	private static void end(ServerPlayer player, NenData data, String messageKey) {
-		COATED.remove(player);
-		player.setAttached(ModAttachments.NEN, data.toggled(Technique.SHU));
-		player.sendOverlayMessage(Component.translatable(messageKey));
 	}
 
 	/** Dano a mais do golpe com o objeto revestido. */

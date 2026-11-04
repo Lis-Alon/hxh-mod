@@ -86,6 +86,12 @@ public final class AuraRender {
 	private static final float LOW_MASTERY = 0.25F;
 	private static final float HIGH_MASTERY = 0.75F;
 	private static final float SLOW = 0.028F;
+	// Em primeira pessoa a aura fica colada nos olhos: bem menos, mais fraca e sem crescer com o dominio
+	private static final float FIRST_PERSON_FADE = 0.4F;
+	private static final int FIRST_PERSON_MOTE_DIVISOR = 8;
+	private static final float VIGNETTE_SPREAD = 1.2F;
+	private static final float VIGNETTE_MIN_OPACITY = 0.14F;
+	private static final float VIGNETTE_MAX_OPACITY = 0.3F;
 	private static final int VIGNETTE_FRAMES = 3;
 	private static final int VIGNETTE_WIDTH = 640;
 	private static final int VIGNETTE_HEIGHT = 360;
@@ -124,6 +130,7 @@ public final class AuraRender {
 	/** Fica ligado so enquanto o objeto segurado esta sendo enviado para desenho. */
 	private static View coating;
 	private static float coatingTime;
+	private static boolean coatingFirstPerson;
 	/** Ligado enquanto a aba Aura pede o estado de desenho do personagem. */
 	private static View previewing;
 
@@ -290,7 +297,7 @@ public final class AuraRender {
 			pose.pushPose();
 			pose.translate((float) relative.x, (float) relative.y, (float) relative.z);
 			if (show.en()) {
-				dome(pose, collector, view, relative, time, seed);
+				dome(pose, collector, view, relative, time, seed, isCamera);
 			}
 			if (show.level() > 0) {
 				if (!isCamera && !player.isInvisible()) {
@@ -409,10 +416,14 @@ public final class AuraRender {
 		int level = show.level();
 		float mastery = show.mastery() / 100F;
 		int tier = tier(mastery);
-		int count = (level == AuraShow.BURST ? new int[] {10, 26, 44} : level == AuraShow.FLAMES ? new int[] {6, 16, 28} : new int[] {3, 8, 14})[tier];
+		int all = (level == AuraShow.BURST ? new int[] {10, 26, 44} : level == AuraShow.FLAMES ? new int[] {6, 16, 28} : new int[] {3, 8, 14})[tier];
+		int count = isCamera ? all / FIRST_PERSON_MOTE_DIVISOR : all;
+		if (count == 0) {
+			return;
+		}
 		float reach = (level == AuraShow.BURST ? 1.5F : level == AuraShow.FLAMES ? 1.2F : 0.85F) * volume(mastery);
 		float period = Mth.lerp(mastery, 150, 70);
-		float alpha = view.visibility() * Mth.lerp(mastery, 0.6F, 1);
+		float alpha = view.visibility() * Mth.lerp(mastery, 0.6F, 1) * (isCamera ? FIRST_PERSON_FADE : 1);
 		twoPasses(pose, collector, MOTE, MOTE_SHINE, (entry, buffer, strength) -> {
 			for (int i = 0; i < count; i++) {
 				float life = (time / (period * (0.75F + 0.5F * hash(i, 13))) + hash(i, 17)) % 1;
@@ -422,7 +433,7 @@ public final class AuraRender {
 				float x = Mth.cos(angle) * away;
 				float z = Mth.sin(angle) * away;
 				float y = (hash(i, 29) * 0.8F + life * (level == AuraShow.SOFT ? 1.5F : 2.6F)) * stature(mastery);
-				float size = (0.05F + 0.07F * hash(i, 31)) * (isCamera ? 1 : (level == AuraShow.SOFT ? 1.4F : 2) * Mth.lerp(mastery, 1, 1.4F));
+				float size = (0.05F + 0.07F * hash(i, 31)) * (isCamera ? 0.6F : (level == AuraShow.SOFT ? 1.4F : 2) * Mth.lerp(mastery, 1, 1.4F));
 				int color = level == AuraShow.SOFT || i % 3 == 0 ? view.primary() : view.secondary();
 				billboard(entry, buffer, facing, x, y, z, size, color, Mth.sin(life * Mth.PI) * alpha * strength);
 			}
@@ -452,7 +463,7 @@ public final class AuraRender {
 	}
 
 	/** Esfera do En centrada nos pes: a metade de baixo fica sob o chao e sobra a cupula. */
-	private static void dome(PoseStack pose, SubmitNodeCollector collector, View view, Vec3 relative, float time, float seed) {
+	private static void dome(PoseStack pose, SubmitNodeCollector collector, View view, Vec3 relative, float time, float seed, boolean isCamera) {
 		float mastery = view.show().enMastery() / 100F;
 		// Pouco dominio: a superficie treme; muito: ela respira devagar, com mais presenca
 		float breathing = 1 + 0.015F * mastery * Mth.sin(time * 0.04F);
@@ -461,7 +472,7 @@ public final class AuraRender {
 		float visibility = view.visibility() * Mth.lerp(mastery, 0.62F, 1.1F) * (1 - flicker);
 		// Da camera ate o centro da esfera, para o brilho da borda; por dentro fica mais transparente
 		Vector3f eye = new Vector3f((float) -relative.x, (float) -relative.y, (float) -relative.z);
-		float inside = eye.length() < radius ? 0.7F : 1;
+		float inside = eye.length() < radius ? (isCamera ? FIRST_PERSON_FADE : 0.7F) : 1;
 		float repeatU = Math.max(1, Math.round(Mth.TWO_PI * radius / DOME_TILE));
 		// A textura e duas vezes mais larga que alta
 		float repeatV = Math.max(1, Math.round(Mth.TWO_PI * radius / DOME_TILE));
@@ -478,7 +489,7 @@ public final class AuraRender {
 			}
 		});
 		// Labaredas lentas subindo do chao, junto da borda; mais numerosas com mais dominio
-		int flames = Math.max(5, Math.round(radius * Mth.lerp(mastery, 1.6F, 4)));
+		int flames = Math.max(5, Math.round(radius * Mth.lerp(mastery, 1.6F, 4))) / (isCamera ? FIRST_PERSON_MOTE_DIVISOR / 2 : 1);
 		twoPasses(pose, collector, WISP, WISP_SHINE, (entry, buffer, strength) -> {
 			for (int i = 0; i < flames; i++) {
 				float angle = seed + hash(i, 37) * Mth.TWO_PI;
@@ -549,10 +560,19 @@ public final class AuraRender {
 		float mastery = show.mastery() / 100F;
 		float share = armShare(show);
 		int layers = new int[] {2, 3, 4}[tier(mastery)];
-		float opacity = (level == AuraShow.SOFT ? 0.62F : 0.78F) * Mth.lerp(Math.min(1, mastery * 2), 0.6F, 1) * view.visibility() * Math.min(1.3F, share);
+		float opacity = (level == AuraShow.SOFT ? 0.62F : 0.78F) * Mth.lerp(Math.min(1, mastery * 2), 0.6F, 1) * view.visibility() * Math.min(1.3F, share)
+				* (firstPerson ? FIRST_PERSON_FADE : 1);
 		float speed = SLOW * (1 + 0.8F * mastery);
 		float flicker = flicker(mastery);
-		float size = volume(mastery) * Mth.sqrt(share) * (firstPerson ? 1.25F : 1);
+		float size = firstPerson ? Mth.sqrt(share) : volume(mastery) * Mth.sqrt(share);
+		if (firstPerson) {
+			// So fios e quase nenhuma particula: tao perto dos olhos, o contorno de chama tomaria a tela
+			armWisps(pose, collector, view, center, size, opacity * (1 - flicker * 0.5F), time, 1 + tier(mastery) / 2);
+			if (tier(mastery) > 0) {
+				armMotes(pose, collector, view, center, time, tier(mastery), 0.3F, 0.35F);
+			}
+			return;
+		}
 		twoPasses(pose, collector, RIM, RIM_SHINE, (entry, buffer, strength) -> {
 			for (int layer = 0; layer < layers; layer++) {
 				float inner = 1 - (float) layer / layers * 0.35F;
@@ -562,14 +582,14 @@ public final class AuraRender {
 				flame.halfHeight = 0.5F * Mth.lerp(inner, 0.92F, 1) * Mth.lerp(mastery, 1, 1.5F);
 				flame.tongue = 0;
 				flame.wave = (0.035F + 0.03F * mastery) * growth(mastery);
-				flame.rim = (firstPerson ? 0.11F : 0.07F) * Mth.lerp(mastery, 0.8F, 2.4F);
+				flame.rim = 0.07F * Mth.lerp(mastery, 0.8F, 2.4F);
 				flame.fill = tier(mastery) == 2 ? 0.55F : 0.8F;
 				flame.color = level != AuraShow.SOFT && layer % 2 == 0 ? view.secondary() : view.primary();
 				flame.alpha = opacity * strength * Mth.lerp(inner, 0.6F, 1);
 				flame.seed = side * 3 + layer * 2.1F;
 				flame.time = time * speed;
 				flame.flicker = flicker;
-				flame.behind = firstPerson ? 0.05F : 0.14F;
+				flame.behind = 0.14F;
 				flame.emit(entry, buffer, view.preview());
 			}
 		});
@@ -577,10 +597,7 @@ public final class AuraRender {
 			// O anel que gira devagar em volta do antebraco
 			swirl(pose, collector, view, center, -0.1F, 0.85F, 0.22F * size, 3, time, 59 + side);
 		}
-		if (firstPerson) {
-			armWisps(pose, collector, view, center, size, opacity * (1 - flicker * 0.5F), time, tier(mastery) + 3);
-		}
-		armMotes(pose, collector, view, center, time, firstPerson ? tier(mastery) + 1 : tier(mastery) * 2 + 2, firstPerson ? 0.3F : 0.22F, firstPerson ? 0.45F : 1);
+		armMotes(pose, collector, view, center, time, tier(mastery) * 2 + 2, 0.22F, 1);
 	}
 
 	/** Em primeira pessoa o braco vem quase na direcao dos olhos: fios lentos deitados sobre ele mostram a aura. */
@@ -654,7 +671,7 @@ public final class AuraRender {
 		int tier = tier(mastery);
 		float flicker = flicker(mastery);
 		// Perto dos olhos ela cresce menos, para nao tampar a mira
-		float radius = firstPerson ? (0.14F + 0.2F * charge) * Mth.lerp(mastery, 0.85F, 1.9F) : (0.2F + 0.36F * charge) * volume(mastery);
+		float radius = firstPerson ? (0.14F + 0.2F * charge) * Mth.lerp(mastery, 0.85F, 1.2F) : (0.2F + 0.36F * charge) * volume(mastery);
 		// Logo depois do punho: o miolo branco nao fica escondido atras da mao
 		float y = 0.66F + radius * 0.75F;
 		int primary = view.primary();
@@ -665,7 +682,7 @@ public final class AuraRender {
 		collector.submitCustomGeometry(pose, GLOW, (entry, buffer) -> {
 			Vector3f viewer = viewer(entry, view.preview());
 			Vector3f middle = new Vector3f(center, y, 0);
-			billboard(entry, buffer, middle, viewer, radius * 5.5F * pulse, primary, 0.5F * visibility);
+			billboard(entry, buffer, middle, viewer, radius * (firstPerson ? 3.8F : 5.5F) * pulse, primary, (firstPerson ? 0.25F : 0.5F) * visibility);
 			billboard(entry, buffer, middle, viewer, radius * 3.2F * pulse, mixWhite(primary, 0.5F), 0.6F * visibility);
 			billboard(entry, buffer, middle, viewer, radius * 2F * pulse, WHITE, 0.85F * visibility);
 		});
@@ -688,7 +705,7 @@ public final class AuraRender {
 			}
 		});
 		twoPasses(pose, collector, WISP, WISP_SHINE, (entry, buffer, strength) -> {
-			for (int i = 0; i < 2 + tier * 3; i++) {
+			for (int i = 0; i < (firstPerson ? 1 + tier : 2 + tier * 3); i++) {
 				float tilt = hash(i, 107) * Mth.TWO_PI;
 				Ribbon ribbon = new Ribbon();
 				ribbon.axis.set(Mth.cos(tilt), 0.6F, Mth.sin(tilt)).normalize();
@@ -712,7 +729,7 @@ public final class AuraRender {
 		twoPasses(pose, collector, MOTE, MOTE_SHINE, (entry, buffer, strength) -> {
 			Vector3f viewer = viewer(entry, view.preview());
 			Vector3f position = new Vector3f();
-			int count = Math.round((8 + charge * 14) * Mth.lerp(mastery, 0.4F, 1.3F));
+			int count = Math.round((8 + charge * 14) * Mth.lerp(mastery, 0.4F, 1.3F)) / (firstPerson ? FIRST_PERSON_MOTE_DIVISOR / 2 : 1);
 			for (int i = 0; i < count; i++) {
 				float life = (time / (35 + 35 * hash(i, 113)) + hash(i, 127)) % 1;
 				float yaw = hash(i, 131) * Mth.TWO_PI;
@@ -761,14 +778,14 @@ public final class AuraRender {
 		int width = graphics.guiWidth();
 		int height = graphics.guiHeight();
 		float mastery = view.show().gyoMastery() / 100F;
-		float opacity = Mth.lerp(mastery, 0.5F, 1) * (1 - flicker(mastery) * 0.4F * (0.5F + 0.5F * Mth.sin(now() * 0.25F)));
+		float opacity = Mth.lerp(mastery, VIGNETTE_MIN_OPACITY, VIGNETTE_MAX_OPACITY) * (1 - flicker(mastery) * 0.4F * (0.5F + 0.5F * Mth.sin(now() * 0.25F)));
 		// Tres quadros que vao se misturando: a fumaca muda de forma devagar, sem quadros visiveis
 		float position = now() / VIGNETTE_FRAME_TICKS % VIGNETTE_FRAMES;
 		int first = (int) position;
 		float blend = position - first;
-		float spread = Mth.lerp(mastery, 1.15F, 1);
-		blitVignette(graphics, first, width, height, spread, view.primary(), opacity * (1 - blend));
-		blitVignette(graphics, (first + 1) % VIGNETTE_FRAMES, width, height, spread, view.primary(), opacity * blend);
+		// Esticada para fora da tela: sobra so a beirada das chamas
+		blitVignette(graphics, first, width, height, VIGNETTE_SPREAD, view.primary(), opacity * (1 - blend));
+		blitVignette(graphics, (first + 1) % VIGNETTE_FRAMES, width, height, VIGNETTE_SPREAD, view.primary(), opacity * blend);
 	}
 
 	private static void blitVignette(GuiGraphicsExtractor graphics, int frame, int width, int height, float spread, int color, float alpha) {
@@ -810,6 +827,7 @@ public final class AuraRender {
 		View view = ownView();
 		boolean held = !stack.isEmpty() && (mainHand || stack.is(Items.SHIELD));
 		coating = view != null && held && coats(view.show()) ? view : null;
+		coatingFirstPerson = true;
 		coatingTime = now();
 	}
 
@@ -818,6 +836,7 @@ public final class AuraRender {
 		View view = state instanceof AvatarRenderState avatar ? avatar.getData(VIEW) : null;
 		boolean held = arm == state.mainArm || stack.is(Items.SHIELD);
 		coating = view != null && held && coats(view.show()) ? view : null;
+		coatingFirstPerson = false;
 		coatingTime = state.ageInTicks;
 	}
 
@@ -857,9 +876,15 @@ public final class AuraRender {
 				}
 			});
 		}
-		int layers = shu ? new int[] {2, 3, 4}[tier(mastery)] : 2;
-		float size = volume(mastery) * (shu ? 1.1F : 0.9F) * Mth.sqrt(armShare(show));
-		float opacity = (shu ? 0.85F : 0.5F) * visibility * Mth.lerp(Math.min(1, mastery * 2), 0.6F, 1) * Math.min(1.3F, armShare(show));
+		// Em primeira pessoa o brilho do objeto ja mostra o Shu; Ten e Ren nao passam mais por ele
+		boolean firstPerson = coatingFirstPerson;
+		if (firstPerson && !shu) {
+			return;
+		}
+		int layers = firstPerson ? 1 : shu ? new int[] {2, 3, 4}[tier(mastery)] : 2;
+		float size = firstPerson ? 0.7F : volume(mastery) * (shu ? 1.1F : 0.9F) * Mth.sqrt(armShare(show));
+		float opacity = (shu ? 0.85F : 0.5F) * visibility * Mth.lerp(Math.min(1, mastery * 2), 0.6F, 1) * Math.min(1.3F, armShare(show))
+				* (firstPerson ? FIRST_PERSON_FADE : 1);
 		float flicker = flicker(mastery);
 		twoPasses(pose, collector, RIM, RIM_SHINE, (entry, buffer, strength) -> {
 			for (int layer = 0; layer < layers; layer++) {
@@ -869,10 +894,10 @@ public final class AuraRender {
 				flame.center.set(0.56F, 0.56F, 0.5F);
 				flame.axis.set(0.7071F, 0.7071F, 0);
 				flame.halfWidth = 0.24F * size * inner;
-				flame.halfHeight = 0.72F * Mth.lerp(inner, 0.92F, 1) * Mth.lerp(mastery, 1, 1.5F);
+				flame.halfHeight = 0.72F * Mth.lerp(inner, 0.92F, 1) * (firstPerson ? 0.85F : Mth.lerp(mastery, 1, 1.5F));
 				flame.round = true;
-				flame.wave = (0.03F + 0.03F * mastery) * growth(mastery);
-				flame.rim = 0.11F * Mth.lerp(mastery, 0.8F, 2);
+				flame.wave = firstPerson ? 0.02F : (0.03F + 0.03F * mastery) * growth(mastery);
+				flame.rim = firstPerson ? 0.07F : 0.11F * Mth.lerp(mastery, 0.8F, 2);
 				flame.fill = 0.8F;
 				flame.color = !shu && show.level() > AuraShow.SOFT && layer == 0 ? view.secondary() : view.primary();
 				flame.alpha = opacity * strength * Mth.lerp(inner, 0.6F, 1);

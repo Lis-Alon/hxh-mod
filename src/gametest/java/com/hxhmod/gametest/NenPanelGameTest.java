@@ -835,7 +835,7 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				float balanced = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
 				check(Math.abs(balanced - start[0]) < 0.01, "soltar deveria voltar ao equilibrio do Ken");
 
-				// Shu: toda ferramenta melhora em tudo, conforme a proficiencia, e trocar desfaz
+				// Shu: toda ferramenta melhora em tudo, conforme a proficiencia, e trocar nao desliga
 				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.SHU).withAura(100).withMastery(Technique.SHU, 100);
 				player.setAttached(ModAttachments.NEN, data);
 				player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_PICKAXE));
@@ -884,15 +884,31 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			context.waitTicks(3);
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
-				check(!player.getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.SHU), "trocar de objeto deveria desfazer o Shu");
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(data.isActive(Technique.SHU), "trocar de arma nao deveria desligar o Shu");
+				check(ShuCoat.attackSpeedBonus(player) > 0, "a arma nova deveria receber o Shu na hora");
+				// Trocar de slot e passar por um espaco vazio tambem nao desliga
+				player.getInventory().setSelectedSlot((player.getInventory().getSelectedSlot() + 1) % 9);
 				player.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-				NenData data = player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.SHU);
-				player.setAttached(ModAttachments.NEN, data);
 			});
 			context.waitTicks(3);
 			singleplayer.getServer().runOnServer(server -> {
-				check(!server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.SHU),
-						"o Shu nao deveria ficar ligado sem objeto");
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(data.isActive(Technique.SHU), "a mao vazia nao deveria desligar o Shu que ja estava ligado");
+				check(ShuCoat.attackSpeedBonus(player) == 0, "de mao vazia o Shu nao deveria dar bonus");
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.NONE));
+			});
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.SHU));
+			});
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				check(!player.getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.SHU), "ligar o Shu sem objeto na mao nao deveria pegar");
+				player.getInventory().setSelectedSlot((player.getInventory().getSelectedSlot() + 8) % 9);
 			});
 
 			// Passivas do Reforco: so para quem revelou o tipo; compra pela arvore

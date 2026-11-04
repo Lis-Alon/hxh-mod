@@ -107,11 +107,11 @@ Ren, Ken e Shu têm três intensidades, e o En tem quatro tamanhos de área. Ape
 
 A aura é uma chama lenta em volta do que a técnica está reforçando. As cores são escolhidas na aba **Aura** do painel, e todos os jogadores veem a sua escolha:
 
-- **Ten:** um halo macio que acompanha o corpo, os braços e, de leve, o objeto segurado. Em primeira pessoa, os dois braços ficam à mostra, envoltos em fios de aura.
+- **Ten:** um halo macio que acompanha o corpo, os braços e, de leve, o objeto segurado. Em primeira pessoa, os dois braços ficam à mostra, com poucos fios de aura e bem menos partículas do que os outros jogadores veem, para não atrapalhar a visão.
 - **Ren e Ken:** chamas nas duas cores, atrás e em volta do corpo, com um anel girando no antebraço. As línguas sobem mais a cada intensidade do Ren; na máxima, passam bem acima da cabeça.
 - **Shu:** só o objeto segurado brilha na cor principal, envolto na chama.
 - **Ko:** toda a aura vai para uma esfera branca e colorida no punho, que cresce com a carga e ilumina o chão. O braço principal vai à frente e o resto do corpo fica sem aura.
-- **Gyo:** em primeira pessoa, chamas nas bordas da tela e o que estava escondido ganha contorno; visto de fora, uma chama pequena em volta da cabeça.
+- **Gyo:** em primeira pessoa, chamas fracas só na beirada da tela e o que estava escondido ganha contorno; visto de fora, uma chama pequena em volta da cabeça.
 - **En:** uma esfera translúcida do tamanho da área de detecção, com labaredas perto do chão. Quem você detecta com Gyo ou En também ganha uma chama fina em volta.
 - **Ryu:** a aura muda de lugar com a postura. No ataque, enfraquece no corpo e cresce nos braços e no objeto; na defesa, é o contrário.
 
@@ -145,7 +145,7 @@ A aura leva 6 ticks para chegar ao destino, então trocar tarde deixa uma janela
 
 ### Shu
 
-A tecla (**H**) reveste o objeto da mão principal, ou o escudo da outra mão se a principal estiver vazia. Guardar, soltar ou trocar o objeto desfaz o revestimento. Ferramentas e armas são reconhecidas pelo que fazem, então a regra vale para espada, machado, picareta, pá, enxada, tesoura, arco, besta, tridente, maça, vara de pesca e ferramentas de outros mods.
+A tecla (**H**) reveste o objeto da mão principal, ou o escudo da outra mão se a principal estiver vazia. O revestimento acompanha o que estiver na mão: trocar de arma ou ferramenta não desliga o Shu, e o objeto novo recebe o benefício na hora. De mão vazia ele fica ligado e gastando aura, só que sem efeito; só não dá para ligar com a mão vazia. Ferramentas e armas são reconhecidas pelo que fazem, então a regra vale para espada, machado, picareta, pá, enxada, tesoura, arco, besta, tridente, maça, vara de pesca e ferramentas de outros mods.
 
 | Objeto | Benefício por intensidade (1/2/3) |
 |---|---|
@@ -153,7 +153,7 @@ A tecla (**H**) reveste o objeto da mão principal, ou o escudo da outra mão se
 | Escudo | -10/15/20% de dano recebido, além do bloqueio normal, e 30/40/50% menos desgaste |
 | Outros objetos | +8/12/16% de dano |
 
-A proficiência multiplica esses valores, de metade com 0% até o dobro com 100%. Na intensidade 3 com 100%, uma picareta dá +80% de dano, quebra 200% mais rápido, ataca 30% mais rápido e gasta 85% menos durabilidade (o limite). Flechas de um arco ou besta revestidos também recebem o bônus de dano; um tridente arremessado sai da mão e perde o revestimento. Usar o objeto, como minerar ou atirar, também treina o Shu.
+A proficiência multiplica esses valores, de metade com 0% até o dobro com 100%. Na intensidade 3 com 100%, uma picareta dá +80% de dano, quebra 200% mais rápido, ataca 30% mais rápido e gasta 85% menos durabilidade (o limite). Flechas de um arco ou besta revestidos também recebem o bônus de dano; um tridente arremessado sai da mão e não leva o bônus. Usar o objeto, como minerar ou atirar, também treina o Shu.
 
 ### Aplicações do Gyo
 

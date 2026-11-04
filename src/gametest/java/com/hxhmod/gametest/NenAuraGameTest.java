@@ -140,6 +140,7 @@ public class NenAuraGameTest implements FabricClientGameTest {
 			compare(context, singleplayer, "ken", CameraType.THIRD_PERSON_BACK, Technique.KEN, Set.of(Technique.TEN, Technique.KEN), 1);
 			compare(context, singleplayer, "ren_2", CameraType.THIRD_PERSON_BACK, Technique.REN, Set.of(Technique.TEN, Technique.REN), 2);
 			compare(context, singleplayer, "ren_3", CameraType.THIRD_PERSON_BACK, Technique.REN, Set.of(Technique.TEN, Technique.REN), 3);
+			compare(context, singleplayer, "ren_3_first", CameraType.FIRST_PERSON, Technique.REN, Set.of(Technique.TEN, Technique.REN), 3);
 			compare(context, singleplayer, "shu", CameraType.FIRST_PERSON, Technique.SHU, Set.of(Technique.SHU), 1);
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
