@@ -20,6 +20,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Util;
 
@@ -70,12 +71,6 @@ public class NenScreen extends Screen {
 	private static final int BAR_BACK = 0xFF262A36;
 	private static final int XP_COLOR = 0xFFD8B46A;
 	private static final FontDescription SERIF = new FontDescription.Resource(HxHMod.id("serif"));
-	private static final int SKY_ROW = 0x6014161C;
-	private static final int SKY_ROW_HOVER = 0x90262830;
-	private static final int SKY_ROW_LINE = 0x28FFFFFF;
-	private static final int SKY_ROW_SELECTED_TOP = 0xC0584A2E;
-	private static final int SKY_ROW_SELECTED_BOTTOM = 0xC0302818;
-	private static final int SKY_BUTTON_OFF = 0xFF3C3A36;
 
 	private enum Page {
 		LEVEL("screen.hxh.nen.page.level"),
@@ -227,33 +222,30 @@ public class NenScreen extends Screen {
 		// Icone e titulo grande, como na referencia
 		int iconX = left + MARGIN;
 		int iconY = top + 6;
-		graphics.fill(iconX, iconY, iconX + 18, iconY + 18, GOLD_DIM);
-		graphics.fill(iconX + 1, iconY + 1, iconX + 17, iconY + 17, 0xFF2A1E2E);
-		graphics.centeredText(font, Component.literal("念"), iconX + 9, iconY + 5, GOLD);
-
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(iconX + 26, iconY + (starry() ? 2 : 3));
-		if (starry()) {
-			graphics.pose().scale(1.75F, 1.75F);
-			graphics.text(font, serif(upper(page.title())), 0, 0, TEXT, false);
-		} else {
+		NenArt.shared(graphics, "emblem", iconX, iconY);
+		if (!NenArt.text(graphics, "title_" + page.name().toLowerCase(Locale.ROOT), iconX + 26, top + 4)) {
+			graphics.pose().pushMatrix();
+			graphics.pose().translate(iconX + 26, iconY + 3);
 			graphics.pose().scale(1.5F, 1.5F);
 			graphics.text(font, serif(page.title()), 0, 0, TEXT, false);
+			graphics.pose().popMatrix();
 		}
-		graphics.pose().popMatrix();
 
 		// Abas no canto direito
 		int x = left + panelWidth - MARGIN - 10;
 		addClickable(x - 2, top + 8, 14, 14, true, this::onClose);
-		graphics.text(font, Component.literal("×"), x + 2, top + 11, hovered(x - 2, top + 8, 14, 14, mouseX, mouseY) ? GOLD : TEXT, false);
+		NenArt.shared(graphics, hovered(x - 2, top + 8, 14, 14, mouseX, mouseY) ? "close_on" : "close", x + 1, top + 10);
 		for (int i = Page.values().length - 1; i >= 0; i--) {
 			Page tab = Page.values()[i];
 			Component label = serif(tab.title());
-			int labelWidth = font.width(label);
+			String tabKey = "tab_" + tab.name().toLowerCase(Locale.ROOT);
+			int labelWidth = NenArt.width(tabKey, font.width(label));
 			x -= labelWidth + 16;
 			boolean current = tab == page;
 			boolean hover = hovered(x - 4, top + 6, labelWidth + 8, 18, mouseX, mouseY);
-			graphics.text(font, label, x, top + 11, current || hover ? GOLD : TEXT, false);
+			if (!NenArt.text(graphics, tabKey + (current || hover ? "_on" : ""), x, top + 8)) {
+				graphics.text(font, label, x, top + 11, current || hover ? GOLD : TEXT, false);
+			}
 			if (current) {
 				graphics.fill(x, top + 22, x + labelWidth, top + (starry() ? 23 : 24), GOLD);
 			}
@@ -285,14 +277,14 @@ public class NenScreen extends Screen {
 
 		// Nivel, pontos e progresso para o proximo nivel
 		int available = data.pointsAvailable() - pendingTotal();
-		Component level = Component.translatable("screen.hxh.nen.level", data.level());
+		Component level = levelFont(Component.translatable("screen.hxh.nen.level", data.level()));
 		graphics.text(font, level, x + 4, y, TEXT, false);
-		graphics.text(font, Component.translatable("screen.hxh.nen.points", available), x + 16 + font.width(level), y,
+		graphics.text(font, levelFont(Component.translatable("screen.hxh.nen.points", available)), x + 16 + font.width(level), y,
 				available > 0 ? GOLD : TEXT, false);
-		Component progress = data.maxLevel()
+		Component progress = levelFont(data.maxLevel()
 				? Component.translatable("screen.hxh.nen.max_level")
 				: Component.translatable("screen.hxh.nen.xp_progress", data.xpIntoLevel(), NenRules.xpToNext(data.level()),
-						percent(data.xpIntoLevel(), NenRules.xpToNext(data.level())));
+						percent(data.xpIntoLevel(), NenRules.xpToNext(data.level()))));
 		graphics.text(font, progress, x + columnWidth - font.width(progress), y, DIM, false);
 		bar(graphics, x + 4, y + 12, columnWidth - 4, 3, data.maxLevel() ? 1 : data.xpIntoLevel(),
 				data.maxLevel() ? 1 : NenRules.xpToNext(data.level()), XP_COLOR);
@@ -335,7 +327,7 @@ public class NenScreen extends Screen {
 
 		int current = data.statPoints(stat);
 		int next = current + pending.getOrDefault(stat, 0);
-		graphics.text(font, stat.displayName(), x + 8, y + 4, TEXT, false);
+		graphics.text(font, levelFont(stat.displayName()), x + 8, y + 4, TEXT, false);
 
 		// Valores colados na direita, deixando espaco para nomes compridos
 		int nextX = x + width - 22;
@@ -381,8 +373,8 @@ public class NenScreen extends Screen {
 		// Explicacao do atributo selecionado
 		NenStat stat = NenStat.values()[selectedStat];
 		y += 8;
-		graphics.text(font, stat.displayName().copy().withColor(GOLD), x, y, GOLD, false);
-		wrapped(graphics, stat.description(), x, y + 11, width, DIM, 4);
+		graphics.text(font, levelFont(stat.displayName()), x, y, GOLD, false);
+		wrapped(graphics, levelFont(stat.description()), x, y + 11, width, DIM, 4);
 	}
 
 	/** "+1,5 +25%": dano fixo dos pontos e bonus em porcentagem das tecnicas. */
@@ -401,7 +393,7 @@ public class NenScreen extends Screen {
 
 	private int valueLine(GuiGraphicsExtractor graphics, Component name, String current, String next, int x, int y, int width) {
 		row(graphics, x, y, width, ROW_HEIGHT - 3, false);
-		graphics.text(font, name, x + 6, y + 3, TEXT, false);
+		graphics.text(font, levelFont(name), x + 6, y + 3, TEXT, false);
 		Component values = Component.literal(current + " → ").append(
 				Component.literal(next).withColor(next.equals(current) ? TEXT : GOOD));
 		graphics.text(font, values, x + width - 6 - font.width(values), y + 3, TEXT, false);
@@ -665,18 +657,47 @@ public class NenScreen extends Screen {
 
 	// ------------------------------------------------------------- Pecas
 
-	/** Fonte dos titulos e botoes. Os textos pequenos ficam na fonte do jogo: na Cinzel o numero 1 parece um I. */
 	private static Component serif(Component text) {
 		return text.copy().withStyle(style -> style.withFont(SERIF));
 	}
 
-	private static Component upper(Component text) {
-		return Component.literal(text.getString().toUpperCase(Locale.ROOT));
+	/**
+	 * Na pagina de Nivel o texto usa a Cinzel, menos os numeros, que ficam na fonte do jogo
+	 * porque o 1 da Cinzel parece um I. Em escala 2 ou menor a Cinzel nao tem pixels para ficar
+	 * legivel nesse tamanho, entao tudo fica na fonte do jogo. Nas outras paginas nao muda nada.
+	 */
+	private Component levelFont(Component text) {
+		if (!starry() || minecraft.getWindow().getGuiScale() <= 2) {
+			return text;
+		}
+		MutableComponent result = Component.empty();
+		String string = text.getString();
+		int start = 0;
+		for (int i = 1; i <= string.length(); i++) {
+			if (i == string.length() || numeric(string.charAt(i)) != numeric(string.charAt(start))) {
+				Component part = Component.literal(string.substring(start, i));
+				result.append(numeric(string.charAt(start)) ? part : serif(part));
+				start = i;
+			}
+		}
+		return result;
+	}
+
+	private static boolean numeric(char character) {
+		return Character.isDigit(character) || "+-−×%/".indexOf(character) >= 0;
+	}
+
+	/** Nome da imagem deste texto: o fim da chave de traducao ("screen.hxh.nen.confirm" vira "confirm"). */
+	private static String artKey(Component text) {
+		if (text.getContents() instanceof TranslatableContents contents) {
+			String key = contents.getKey();
+			return key.substring(key.lastIndexOf('.') + 1);
+		}
+		return "";
 	}
 
 	private void sectionTitle(GuiGraphicsExtractor graphics, Component title, int x, int y, int width) {
-		if (starry()) {
-			graphics.text(font, serif(Component.literal("✦ ").append(upper(title))), x, y, GOLD, false);
+		if (starry() && NenArt.text(graphics, "section_" + artKey(title), x, y - 2)) {
 			graphics.fill(x, y + 10, x + width, y + 11, GOLD_DIM);
 			return;
 		}
@@ -690,13 +711,7 @@ public class NenScreen extends Screen {
 
 	private void row(GuiGraphicsExtractor graphics, int x, int y, int width, int height, boolean selected, boolean hover) {
 		if (starry()) {
-			if (selected) {
-				graphics.fillGradient(x, y, x + width, y + height, SKY_ROW_SELECTED_TOP, SKY_ROW_SELECTED_BOTTOM);
-				outline(graphics, x, y, width, height, GOLD);
-			} else {
-				graphics.fill(x, y, x + width, y + height, hover ? SKY_ROW_HOVER : SKY_ROW);
-				graphics.fill(x, y + height - 1, x + width, y + height, SKY_ROW_LINE);
-			}
+			NenArt.frame(graphics, selected ? "frame_row_selected" : hover ? "frame_row_hover" : "frame_row", x, y, width, height, 5);
 			return;
 		}
 		int topColor = selected ? ROW_SELECTED_TOP : hover ? ROW_HOVER_TOP : ROW_TOP;
@@ -711,8 +726,13 @@ public class NenScreen extends Screen {
 			boolean enabled, int mouseX, int mouseY, Runnable action) {
 		boolean hover = enabled && hovered(x, y, width, height, mouseX, mouseY);
 		if (starry()) {
-			ornateButton(graphics, x, y, width, height, enabled, hover);
-			graphics.centeredText(font, serif(label), x + width / 2, y + (height - 8) / 2, enabled ? (hover ? GOLD : TEXT) : DIM);
+			String state = !enabled ? "_off" : hover ? "_on" : "";
+			NenArt.frame(graphics, "frame_button" + state, x, y, width, height, 6);
+			String key = "button_" + artKey(label);
+			int labelWidth = NenArt.width(key, 0);
+			if (!NenArt.text(graphics, key + state, x + (width - labelWidth) / 2, y + (height - 14) / 2)) {
+				graphics.centeredText(font, serif(label), x + width / 2, y + (height - 8) / 2, enabled ? (hover ? GOLD : TEXT) : DIM);
+			}
 			addClickable(x, y, width, height, enabled, action);
 			return;
 		}
@@ -721,26 +741,6 @@ public class NenScreen extends Screen {
 		graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, hover ? 0xFF2A2418 : 0xFF0B0C11);
 		graphics.centeredText(font, label, x + width / 2, y + (height - 8) / 2, enabled ? (hover ? GOLD : TEXT) : LOCKED);
 		addClickable(x, y, width, height, enabled, action);
-	}
-
-	/** Moldura dupla com cantos marcados, como na referencia da pagina de Nivel. */
-	private static void ornateButton(GuiGraphicsExtractor graphics, int x, int y, int width, int height, boolean enabled, boolean hover) {
-		int edge = hover ? GOLD : enabled ? GOLD_DIM : SKY_BUTTON_OFF;
-		graphics.fillGradient(x, y, x + width, y + height, hover ? 0xE02E271A : 0xD01A1A20, hover ? 0xE0191510 : 0xD00C0C11);
-		outline(graphics, x, y, width, height, edge);
-		outline(graphics, x + 2, y + 2, width - 4, height - 4, (edge & 0xFFFFFF) | 0x70000000);
-		for (int cornerX : new int[] {x, x + width - 3}) {
-			for (int cornerY : new int[] {y, y + height - 3}) {
-				graphics.fill(cornerX, cornerY, cornerX + 3, cornerY + 3, edge);
-			}
-		}
-	}
-
-	private static void outline(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
-		graphics.fill(x, y, x + width, y + 1, color);
-		graphics.fill(x, y + height - 1, x + width, y + height, color);
-		graphics.fill(x, y + 1, x + 1, y + height - 1, color);
-		graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
 	}
 
 	/** Largura do botao para caber o texto, com um minimo para os botoes ficarem alinhados. */
@@ -773,7 +773,7 @@ public class NenScreen extends Screen {
 	private void footer(GuiGraphicsExtractor graphics, Component hint) {
 		int y = top + panelHeight - 13;
 		graphics.fill(left + MARGIN, y - 4, left + panelWidth - MARGIN, y - 3, GOLD_DIM);
-		graphics.text(font, hint, left + MARGIN, y, DIM, false);
+		graphics.text(font, levelFont(hint), left + MARGIN, y, DIM, false);
 	}
 
 	void addClickable(int x, int y, int width, int height, boolean enabled, Runnable action) {

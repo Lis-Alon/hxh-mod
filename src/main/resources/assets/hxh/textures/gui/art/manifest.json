@@ -1,0 +1,208 @@
+{
+	"sizes": {
+		"en_us/button_confirm": [
+			54,
+			14
+		],
+		"en_us/button_confirm_off": [
+			54,
+			14
+		],
+		"en_us/button_confirm_on": [
+			54,
+			14
+		],
+		"en_us/button_reset": [
+			35,
+			14
+		],
+		"en_us/button_reset_off": [
+			35,
+			14
+		],
+		"en_us/button_reset_on": [
+			35,
+			14
+		],
+		"en_us/section_attributes": [
+			114,
+			13
+		],
+		"en_us/section_aura_stats": [
+			44,
+			13
+		],
+		"en_us/section_base_stats": [
+			72,
+			13
+		],
+		"en_us/tab_level": [
+			52,
+			14
+		],
+		"en_us/tab_level_on": [
+			52,
+			14
+		],
+		"en_us/tab_status": [
+			42,
+			14
+		],
+		"en_us/tab_status_on": [
+			42,
+			14
+		],
+		"en_us/tab_techniques": [
+			72,
+			14
+		],
+		"en_us/tab_techniques_on": [
+			72,
+			14
+		],
+		"en_us/tab_tree": [
+			29,
+			14
+		],
+		"en_us/tab_tree_on": [
+			29,
+			14
+		],
+		"en_us/title_level": [
+			83,
+			23
+		],
+		"en_us/title_status": [
+			67,
+			23
+		],
+		"en_us/title_techniques": [
+			96,
+			23
+		],
+		"en_us/title_tree": [
+			45,
+			23
+		],
+		"pt_br/button_confirm": [
+			69,
+			14
+		],
+		"pt_br/button_confirm_off": [
+			69,
+			14
+		],
+		"pt_br/button_confirm_on": [
+			69,
+			14
+		],
+		"pt_br/button_reset": [
+			49,
+			14
+		],
+		"pt_br/button_reset_off": [
+			49,
+			14
+		],
+		"pt_br/button_reset_on": [
+			49,
+			14
+		],
+		"pt_br/section_attributes": [
+			73,
+			13
+		],
+		"pt_br/section_aura_stats": [
+			44,
+			13
+		],
+		"pt_br/section_base_stats": [
+			80,
+			13
+		],
+		"pt_br/tab_level": [
+			35,
+			14
+		],
+		"pt_br/tab_level_on": [
+			35,
+			14
+		],
+		"pt_br/tab_status": [
+			42,
+			14
+		],
+		"pt_br/tab_status_on": [
+			42,
+			14
+		],
+		"pt_br/tab_techniques": [
+			56,
+			14
+		],
+		"pt_br/tab_techniques_on": [
+			56,
+			14
+		],
+		"pt_br/tab_tree": [
+			47,
+			14
+		],
+		"pt_br/tab_tree_on": [
+			47,
+			14
+		],
+		"pt_br/title_level": [
+			55,
+			23
+		],
+		"pt_br/title_status": [
+			67,
+			23
+		],
+		"pt_br/title_techniques": [
+			91,
+			23
+		],
+		"pt_br/title_tree": [
+			76,
+			23
+		],
+		"shared/close": [
+			9,
+			9
+		],
+		"shared/close_on": [
+			9,
+			9
+		],
+		"shared/emblem": [
+			18,
+			18
+		],
+		"shared/frame_button": [
+			24,
+			16
+		],
+		"shared/frame_button_off": [
+			24,
+			16
+		],
+		"shared/frame_button_on": [
+			24,
+			16
+		],
+		"shared/frame_row": [
+			24,
+			14
+		],
+		"shared/frame_row_hover": [
+			24,
+			14
+		],
+		"shared/frame_row_selected": [
+			24,
+			14
+		]
+	}
+}
