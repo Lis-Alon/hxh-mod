@@ -2,10 +2,13 @@ package com.hxhmod.gametest;
 
 import com.hxhmod.block.ModBlocks;
 import com.hxhmod.client.EnSense;
+import com.hxhmod.client.GyoControl;
 import com.hxhmod.client.NenScreen;
 import com.hxhmod.client.NenTreePage;
 import com.hxhmod.item.ModItems;
+import com.hxhmod.nen.GyoApplications;
 import com.hxhmod.nen.ModAttachments;
+import com.hxhmod.nen.NenBonuses;
 import com.hxhmod.nen.NenCombat;
 import com.hxhmod.nen.NenData;
 import com.hxhmod.nen.NenStat;
@@ -294,6 +297,69 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				check(player.getAttachedOrCreate(ModAttachments.NEN).level() == 30, "/nen level 30 deveria ir para o nivel 30");
 			});
 
+			// Gyo preparado: a proxima acao vira a aplicacao e termina a preparacao
+			double[] start = new double[3];
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.GYO).withAura(100));
+				start[0] = player.getY();
+			});
+			context.waitTicks(5);
+			input.holdKeyFor(InputConstants.KEY_SPACE, 2);
+			context.waitTicks(6);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(!data.isActive(Technique.GYO), "o pulo deveria gastar a preparacao do Gyo");
+				check(player.getY() - start[0] > 1.5, "o super pulo deveria subir mais que um pulo normal, subiu " + (player.getY() - start[0]));
+				start[1] = player.getHealth();
+			});
+			context.waitTicks(60);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				check(player.getHealth() >= start[1], "a queda do super pulo nao deveria machucar");
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.GYO).withAura(100));
+				start[0] = player.getX();
+				start[2] = player.getZ();
+			});
+			context.waitTicks(5);
+			input.holdKeyFor(InputConstants.KEY_LCONTROL, 2);
+			context.waitTicks(10);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(!data.isActive(Technique.GYO), "o Ctrl deveria gastar a preparacao do Gyo");
+				double moved = Math.hypot(player.getX() - start[0], player.getZ() - start[2]);
+				check(moved > 2, "o super dash deveria andar mais de 2 blocos, andou " + moved);
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.GYO).withAura(100));
+			});
+			context.waitTicks(40);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				check(player.getAttachedOrCreate(ModAttachments.NEN).isActive(Technique.GYO), "esperar nao deveria gastar a preparacao");
+			});
+			input.pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(!data.isActive(Technique.GYO) && GyoApplications.guarding(player), "o botao direito deveria virar super defesa");
+				float guarded = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+				check(guarded < 10.0F * NenBonuses.of(data).damageTaken(), "a super defesa deveria reduzir o dano, veio " + guarded);
+
+				// Super soco: so quando o golpe acerta, e soma com os outros bonus
+				player.setAttached(ModAttachments.NEN, data.withActive(Technique.GYO).withAura(100));
+				NenData prepared = player.getAttachedOrCreate(ModAttachments.NEN);
+				Pig target = EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
+				double normal = (10.0F + NenBonuses.of(prepared).flatDamage()) * (1 + NenBonuses.of(prepared).damageBonus());
+				float punched = NenCombat.incomingDamage(target, player.damageSources().playerAttack(player), 10.0F);
+				NenData after = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(punched > normal && !after.isActive(Technique.GYO) && after.aura() == 100 - prepared.gyoCost(),
+						"o golpe com Gyo deveria ser super soco e gastar a aura, veio " + punched);
+				player.setAttached(ModAttachments.NEN, after.withActive(Technique.NONE));
+			});
+
 			// En: area de 5x5 com 1% de proficiencia ate 20x20 com 100%; um porco invisivel ao lado aparece com contorno
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
@@ -336,6 +402,33 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			});
 			check(sensed[0] && !sensed[1], "o En de 5x5 deveria sentir o porco a 2 blocos e nao o de 8");
 			context.takeScreenshot("nen_11_en_invisible_pig");
+
+			// Visao do Gyo: so o oculto, so para quem usa, e sem efeitos do jogo
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).grant(Technique.GYO).withActive(Technique.GYO).withAura(100));
+			});
+			context.waitTicks(10);
+			boolean[] seen = context.computeOnClient(client -> {
+				boolean hidden = false;
+				boolean visible = false;
+				for (Entity entity : client.level.entitiesForRendering()) {
+					if (entity instanceof Pig pig) {
+						if (pig.isInvisible()) {
+							hidden = GyoControl.sees(pig);
+						} else {
+							visible = GyoControl.sees(pig);
+						}
+					}
+				}
+				return new boolean[] {hidden, visible};
+			});
+			check(seen[0] && !seen[1], "o Gyo deveria ver o porco invisivel e nao destacar o visivel");
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				check(!player.hasEffect(MobEffects.NIGHT_VISION), "o Gyo nao deveria dar visao noturna");
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withActive(Technique.EN));
+			});
 
 			// Aba do mod no criativo
 			singleplayer.getServer().runOnServer(server ->

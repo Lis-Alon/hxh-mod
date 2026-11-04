@@ -36,7 +36,9 @@ public final class NenCombat {
 			}
 			if (source.getDirectEntity() == attacker) {
 				NenBonuses bonuses = NenBonuses.of(attackerData);
-				amount = (float) ((amount + bonuses.flatDamage()) * (1 + bonuses.damageBonus()));
+				// Soma com os outros bonus para nao multiplicar o Ren com o super soco
+				double bonus = bonuses.damageBonus() + GyoApplications.punch(attacker);
+				amount = (float) ((amount + bonuses.flatDamage()) * (1 + bonus) * GyoApplications.damageDealt(attacker));
 			}
 		}
 		if (!(victim instanceof ServerPlayer player)) {
@@ -44,7 +46,9 @@ public final class NenCombat {
 		}
 		LAST_HURT.put(player, player.tickCount);
 		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-		amount = (float) (amount * NenBonuses.of(data).damageTaken());
+		// A super defesa soma com as outras defesas, mas o piso continua valendo
+		double taken = NenBonuses.of(data).damageTaken() * GyoApplications.damageTaken(player);
+		amount = (float) (amount * Math.max(NenRules.MIN_DAMAGE_TAKEN, taken));
 		if (data.isActive(Technique.ZETSU) && releasingAura(source)) {
 			amount = (float) (amount * NenRules.ZETSU_NEN_DAMAGE_MULTIPLIER);
 		}

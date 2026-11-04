@@ -89,6 +89,33 @@ public final class NenRules {
 
 	// Raio em que o Gyo revela quem esta invisivel (blocos)
 	public static final int GYO_REVEAL_RADIUS = 16;
+	// Aplicacoes do Gyo: custo de aura por uso, treino extra (segundos) e potencia conforme a proficiencia
+	public static final int GYO_COST = 10;
+	public static final int GYO_APPLICATION_TRAINING = 20;
+	public static final double GYO_PUNCH_BASE = 0.50;
+	public static final double GYO_PUNCH_PER_MASTERY = 0.005;
+	public static final double GYO_GUARD_BASE = 0.40;
+	public static final double GYO_GUARD_PER_MASTERY = 0.002;
+	public static final double GYO_GUARD_MAX = 0.80;
+	public static final int GYO_GUARD_TICKS = 30;
+	public static final double GYO_GUARD_OFFENSE_LOSS = 0.25;
+	public static final double GYO_JUMP_BASE = 0.75;
+	public static final double GYO_JUMP_PER_MASTERY = 0.0035;
+	public static final double GYO_JUMP_MAX = 1.40;
+	public static final int GYO_SAFE_LANDING_TICKS = 100;
+	public static final double GYO_DASH_BASE = 1.40;
+	public static final double GYO_DASH_PER_MASTERY = 0.008;
+	public static final double GYO_DASH_MAX = 3.00;
+	public static final double GYO_DASH_LIFT = 0.15;
+	// O resto do corpo fica com menos aura logo depois do soco, do pulo ou do dash
+	public static final double GYO_EXPOSED_DAMAGE = 0.25;
+	public static final int GYO_EXPOSED_TICKS = 20;
+	// Concentracao Precisa: multiplica a potencia das aplicacoes
+	public static final double GYO_PRECISE_BASE = 0.25;
+	public static final double GYO_PRECISE_PER_MASTERY = 0.0025;
+	// Transferencia Eficiente: desconto no custo das aplicacoes
+	public static final double GYO_TRANSFER_BASE = 0.25;
+	public static final double GYO_TRANSFER_PER_MASTERY = 0.0025;
 	// En: area quadrada de deteccao, de 5x5 (1% de proficiencia) ate 20x20 (100%)
 	public static final double EN_MIN_SIZE = 5;
 	public static final double EN_MAX_SIZE = 20;

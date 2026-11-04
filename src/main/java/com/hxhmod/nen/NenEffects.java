@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -25,24 +24,11 @@ public final class NenEffects {
 	}
 
 	/**
-	 * Ver no escuro e revelar invisiveis (Gyo) e invisibilidade (In).
-	 * O En e so do lado do cliente: contorno nas criaturas dentro da area, visto apenas por quem usa.
+	 * Invisibilidade (In). A visao do Gyo e o En sao so do lado do cliente: contorno visto apenas por quem usa.
 	 */
 	public static void applyTechniques(ServerPlayer player, NenData data) {
-		if (data.isActive(Technique.GYO)) {
-			effect(player, MobEffects.NIGHT_VISION, 0);
-			revealInvisible(player, NenRules.GYO_REVEAL_RADIUS);
-		}
 		if (data.isActive(Technique.IN)) {
 			effect(player, MobEffects.INVISIBILITY, 0);
-		}
-	}
-
-	/** Gyo: faz brilhar quem esta invisivel por perto. */
-	private static void revealInvisible(ServerPlayer player, int radius) {
-		for (LivingEntity entity : player.level().getEntitiesOfClass(LivingEntity.class,
-				player.getBoundingBox().inflate(radius), entity -> entity != player && entity.isInvisible())) {
-			entity.addEffect(new MobEffectInstance(MobEffects.GLOWING, EFFECT_DURATION_TICKS, 0, true, false));
 		}
 	}
 

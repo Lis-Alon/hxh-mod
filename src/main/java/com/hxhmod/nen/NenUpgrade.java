@@ -25,6 +25,7 @@ public enum NenUpgrade implements StringRepresentable {
 	IN_SHADOW("in_shadow", Technique.IN, 4, 45),
 	REN_CONTROL("ren_control", Technique.REN, 2, 12),
 	REN_SURGE("ren_surge", Technique.REN, 3, 20),
+	GYO_PRECISE("gyo_precise", Technique.GYO, 3, 25),
 	GYO_INSTINCT("gyo_instinct", Technique.GYO, 3, 30),
 	KO_ABSOLUTE("ko_absolute", Technique.KO, 5, 60),
 	KO_FOCUS("ko_focus", Technique.KO, 4, 50),

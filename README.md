@@ -56,7 +56,7 @@ Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x
 | **Zetsu** (Corte) | despertar | Mobs percebem menos você, aura volta mais rápido (mais ainda parado), mas sem defesa de Nen |
 | **Ren** (Prática) | despertar | +25% de dano corpo a corpo |
 | **Hatsu** (Liberação) | despertar | Treina a aura do seu tipo (a habilidade especial vem em breve) |
-| **Gyo** (Coagular) | Ten 20% | Visão noturna e revela invisíveis |
+| **Gyo** (Coagular) | Ten 20% | A tecla prepara o Gyo; a próxima ação vira super soco, super defesa, super pulo ou super dash (veja abaixo) |
 | **In** (Ocultar) | Zetsu 50% | Invisibilidade e +15% de dano corpo a corpo |
 | **En** (Território) | Ten 40% + Ren 40% | Detecta toda criatura numa área de 5x5 (1%) até 20x20 (100%), mesmo invisível; só você vê o contorno |
 | **Shu** (Ciclo) | Ten 50% | Quebra blocos 60% mais rápido |
@@ -65,6 +65,19 @@ Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x
 | **Ryu** (Fluxo) | Gyo 40% + Ken 40% | +35% de dano, -25% de dano recebido e +10% de velocidade |
 
 ![En detectando um porco invisível](docs/en-invisivel.png)
+
+### Aplicações do Gyo
+
+Aperte a tecla do Gyo (**G**) para preparar: gasta 1 de aura por segundo e você vê o contorno de quem está invisível por perto (até 16 blocos, na linha de visão). Só você vê esse contorno. A próxima ação gasta 10 de aura, usa a aplicação e termina a preparação; apertar **G** de novo cancela. Andar, olhar em volta e minerar não gastam a preparação.
+
+| Ação | Aplicação | Efeito (proficiência 0% → 100%) |
+|---|---|---|
+| Acertar um golpe | Super Soco | +50% → +100% de dano |
+| Botão direito | Super Defesa | -40% → -60% de dano recebido por 1,5 s, com 25% menos dano causado. Enquanto prepara, o botão direito não usa itens nem blocos |
+| Pular | Super Pulo | Impulso bem maior, só a partir do chão; a queda desse pulo não machuca |
+| Ctrl | Super Dash | Arrancada para onde você está andando, ou para onde olha se estiver parado; funciona no ar |
+
+Depois do soco, do pulo ou do dash, o resto do corpo fica com menos aura: você recebe +25% de dano por 1 segundo.
 
 ### Sub-habilidades
 
@@ -76,7 +89,7 @@ Compradas com pontos na aba Árvore, com os nomes do documento de design. "Em br
 | **Zetsu** | Supressão Refinada, Descanso Profundo, Passos Silenciosos |
 | **Ren** | Controle de Liberação, Potência Ofensiva |
 | **Hatsu** | Eficiência de Aura (-5% no gasto de aura), duas passivas exclusivas do tipo (em breve) |
-| **Gyo** | Concentração Precisa (em breve), Transferência Eficiente |
+| **Gyo** | Concentração Precisa (aplicações 25% a 50% mais fortes), Transferência Eficiente (custam 25% a 50% menos aura) |
 | **In** | Controle de Ocultação, Ocultação Sustentada |
 | **En** | Expansão Territorial, Controle Territorial |
 | **Ken** | Fortificação Duradoura, Densidade Protetora |

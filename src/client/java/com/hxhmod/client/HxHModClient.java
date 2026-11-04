@@ -47,6 +47,8 @@ public class HxHModClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		HudElementRegistry.addLast(HxHMod.id("nen_aura"), NenHud::render);
 
+		// No inicio do tick: depois dele o pulo normal ja tirou o jogador do chao
+		ClientTickEvents.START_CLIENT_TICK.register(GyoControl::tick);
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (OPEN_NEN_PANEL.consumeClick()) {
 				if (client.player != null && client.gui.screen() == null) {

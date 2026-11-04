@@ -27,6 +27,9 @@ public final class NenActions {
 			return;
 		}
 		player.setAttached(ModAttachments.NEN, next);
+		if (technique == Technique.GYO && next.isActive(technique)) {
+			player.sendOverlayMessage(Component.translatable("nen.hxh.gyo.prepared"));
+		}
 	}
 
 	public static void buy(ServerPlayer player, NenUpgrade upgrade) {

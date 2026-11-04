@@ -177,6 +177,42 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		return NenRules.ZETSU_VISIBILITY_BASE - NenRules.ZETSU_VISIBILITY_PER_MASTERY * mastery(Technique.ZETSU);
 	}
 
+	/** Custo de aura de uma aplicacao do Gyo, com o desconto da Transferencia Eficiente. */
+	public int gyoCost() {
+		double discount = has(NenUpgrade.GYO_INSTINCT)
+				? NenRules.GYO_TRANSFER_BASE + NenRules.GYO_TRANSFER_PER_MASTERY * mastery(Technique.GYO) : 0;
+		return (int) Math.round(NenRules.GYO_COST * (1 - discount));
+	}
+
+	/** Multiplicador da Concentracao Precisa sobre a potencia das aplicacoes. */
+	private double gyoPower() {
+		return 1 + (has(NenUpgrade.GYO_PRECISE)
+				? NenRules.GYO_PRECISE_BASE + NenRules.GYO_PRECISE_PER_MASTERY * mastery(Technique.GYO) : 0);
+	}
+
+	/** Bonus de dano do super soco (fracao). */
+	public double gyoPunch() {
+		return (NenRules.GYO_PUNCH_BASE + NenRules.GYO_PUNCH_PER_MASTERY * mastery(Technique.GYO)) * gyoPower();
+	}
+
+	/** Reducao de dano da super defesa (fracao), sem chegar a invulnerabilidade. */
+	public double gyoGuard() {
+		return Math.min(NenRules.GYO_GUARD_MAX,
+				(NenRules.GYO_GUARD_BASE + NenRules.GYO_GUARD_PER_MASTERY * mastery(Technique.GYO)) * gyoPower());
+	}
+
+	/** Impulso vertical do super pulo. */
+	public double gyoJump() {
+		return Math.min(NenRules.GYO_JUMP_MAX,
+				(NenRules.GYO_JUMP_BASE + NenRules.GYO_JUMP_PER_MASTERY * mastery(Technique.GYO)) * gyoPower());
+	}
+
+	/** Velocidade do super dash. */
+	public double gyoDash() {
+		return Math.min(NenRules.GYO_DASH_MAX,
+				(NenRules.GYO_DASH_BASE + NenRules.GYO_DASH_PER_MASTERY * mastery(Technique.GYO)) * gyoPower());
+	}
+
 	/** Lado (blocos) da area quadrada do En, centrada no jogador. */
 	public double enSize() {
 		int mastery = Math.max(1, mastery(Technique.EN));
@@ -195,9 +231,6 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		}
 		if (technique == Technique.REN && has(NenUpgrade.REN_CONTROL)) {
 			drain -= 1;
-		}
-		if (technique == Technique.GYO && has(NenUpgrade.GYO_INSTINCT)) {
-			drain = 0;
 		}
 		if (technique == Technique.KO && has(NenUpgrade.KO_FOCUS)) {
 			drain -= 2;

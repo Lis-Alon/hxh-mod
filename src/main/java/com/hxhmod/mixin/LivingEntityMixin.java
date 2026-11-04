@@ -1,9 +1,11 @@
 package com.hxhmod.mixin;
 
+import com.hxhmod.nen.GyoApplications;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenBonuses;
 import com.hxhmod.nen.NenCombat;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,6 +19,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /** Liga os status internos do Nen ao dano, a vida maxima, a velocidade e a percepcao dos mobs. */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
+	@Inject(method = "causeFallDamage", at = @At("HEAD"), cancellable = true)
+	private void hxh$safeLanding(double distance, float multiplier, DamageSource source, CallbackInfoReturnable<Boolean> cir) {
+		if ((Object) this instanceof ServerPlayer player && GyoApplications.consumeSafeLanding(player)) {
+			cir.setReturnValue(false);
+		}
+	}
+
 	@ModifyVariable(method = "hurtServer", at = @At("HEAD"), argsOnly = true)
 	private float hxh$nenDamage(float amount, ServerLevel level, DamageSource source) {
 		return NenCombat.incomingDamage((LivingEntity) (Object) this, source, amount);

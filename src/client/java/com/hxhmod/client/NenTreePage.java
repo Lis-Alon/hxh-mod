@@ -91,7 +91,7 @@ public final class NenTreePage {
 
 			technique(Technique.GYO, 245, 25), technique(Technique.IN, 245, 80),
 			technique(Technique.EN, 245, 140), technique(Technique.KEN, 245, 190), technique(Technique.SHU, 245, 255),
-			soon(Technique.GYO, "gyo_precise", 292, 10, "target"), upgrade(NenUpgrade.GYO_INSTINCT, 292, 40, "arrows"),
+			upgrade(NenUpgrade.GYO_PRECISE, 292, 10, "target"), upgrade(NenUpgrade.GYO_INSTINCT, 292, 40, "arrows"),
 			upgrade(NenUpgrade.IN_CONTROL, 292, 65, "mask"), upgrade(NenUpgrade.IN_SHADOW, 292, 95, "hourglass"),
 			upgrade(NenUpgrade.EN_WIDE, 292, 125, "expand"), upgrade(NenUpgrade.EN_CONTROL, 292, 155, "compass"),
 			upgrade(NenUpgrade.KEN_ENDURANCE, 292, 175, "shield"), upgrade(NenUpgrade.KEN_IRON, 292, 205, "shield_plus"),

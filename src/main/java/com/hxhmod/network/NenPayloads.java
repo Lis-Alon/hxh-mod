@@ -1,6 +1,7 @@
 package com.hxhmod.network;
 
 import com.hxhmod.HxHMod;
+import com.hxhmod.nen.GyoApplications;
 import com.hxhmod.nen.NenActions;
 import com.hxhmod.nen.NenPose;
 import com.hxhmod.nen.NenStat;
@@ -58,6 +59,21 @@ public final class NenPayloads {
 	}
 
 	/** Painel aberto ou fechado: com ele aberto o personagem senta em posicao de meditacao. */
+	/** Proxima acao com o Gyo preparado; a direcao so vale para o dash. */
+	public record GyoApplication(GyoApplications.Action action, float directionX, float directionZ) implements CustomPacketPayload {
+		public static final Type<GyoApplication> TYPE = new Type<>(HxHMod.id("gyo_application"));
+		public static final StreamCodec<ByteBuf, GyoApplication> CODEC = StreamCodec.composite(
+				GyoApplications.Action.STREAM_CODEC, GyoApplication::action,
+				ByteBufCodecs.FLOAT, GyoApplication::directionX,
+				ByteBufCodecs.FLOAT, GyoApplication::directionZ,
+				GyoApplication::new);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	public record ResetUpgrades() implements CustomPacketPayload {
 		public static final Type<ResetUpgrades> TYPE = new Type<>(HxHMod.id("reset_upgrades"));
 		public static final StreamCodec<ByteBuf, ResetUpgrades> CODEC = StreamCodec.unit(new ResetUpgrades());
@@ -82,6 +98,7 @@ public final class NenPayloads {
 		PayloadTypeRegistry.serverboundPlay().register(ToggleTechnique.TYPE, ToggleTechnique.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(BuyUpgrade.TYPE, BuyUpgrade.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(AllocateStats.TYPE, AllocateStats.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(GyoApplication.TYPE, GyoApplication.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ResetUpgrades.TYPE, ResetUpgrades.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PanelOpen.TYPE, PanelOpen.CODEC);
 
@@ -91,6 +108,8 @@ public final class NenPayloads {
 				(payload, context) -> NenActions.buy(context.player(), payload.upgrade()));
 		ServerPlayNetworking.registerGlobalReceiver(AllocateStats.TYPE,
 				(payload, context) -> NenActions.allocate(context.player(), payload.points()));
+		ServerPlayNetworking.registerGlobalReceiver(GyoApplication.TYPE, (payload, context) ->
+				GyoApplications.use(context.player(), payload.action(), payload.directionX(), payload.directionZ()));
 		ServerPlayNetworking.registerGlobalReceiver(ResetUpgrades.TYPE,
 				(payload, context) -> NenActions.resetUpgrades(context.player()));
 		ServerPlayNetworking.registerGlobalReceiver(PanelOpen.TYPE,
