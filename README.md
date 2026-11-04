@@ -73,13 +73,23 @@ Ren, Ken e Shu têm três intensidades, e o En tem quatro tamanhos de área. Ape
 
 ### Aura visível
 
-A aura aparece em faixas de energia, com quadradinhos de luz subindo. As cores são escolhidas na aba **Aura** do painel, e todos os jogadores veem a sua escolha:
+A aura é uma chama lenta em volta do que a técnica está reforçando. As cores são escolhidas na aba **Aura** do painel, e todos os jogadores veem a sua escolha:
 
-- **Ten, Ren na intensidade 1 e outras técnicas:** faixas suaves em volta do corpo e dos braços. Em primeira pessoa, os dois braços ficam à mostra enquanto a aura está ligada.
-- **Ren na intensidade 2 e Ken:** chamas em volta do corpo.
-- **Ren na intensidade máxima e Ko:** chamas maiores e mais altas.
-- **En:** uma esfera translúcida do tamanho da área de detecção, com labaredas perto do chão.
-- **Shu:** o objeto segurado brilha na cor principal e fica envolto pelas faixas.
+- **Ten:** um halo macio que acompanha o corpo, os braços e, de leve, o objeto segurado. Em primeira pessoa, os dois braços ficam à mostra, envoltos em fios de aura.
+- **Ren e Ken:** chamas nas duas cores, atrás e em volta do corpo, com um anel girando no antebraço. As línguas sobem mais a cada intensidade do Ren; na máxima, passam bem acima da cabeça.
+- **Shu:** só o objeto segurado brilha na cor principal, envolto na chama.
+- **Ko:** toda a aura vai para uma esfera branca e colorida no punho, que cresce com a carga e ilumina o chão. O braço principal vai à frente e o resto do corpo fica sem aura.
+- **Gyo:** em primeira pessoa, chamas nas bordas da tela e o que estava escondido ganha contorno; visto de fora, uma chama pequena em volta da cabeça.
+- **En:** uma esfera translúcida do tamanho da área de detecção, com labaredas perto do chão. Quem você detecta com Gyo ou En também ganha uma chama fina em volta.
+- **Ryu:** a aura muda de lugar com a postura. No ataque, enfraquece no corpo e cresce nos braços e no objeto; na defesa, é o contrário.
+
+O domínio da técnica muda a aparência:
+
+- **Domínio de 0 a 25:** aura fina, instável e colada ao corpo, com poucas partículas.
+- **Domínio de 26 a 75:** aura densa e constante, com contorno bem definido.
+- **Domínio de 76 a 100:** mais volume, partículas mais numerosas e rápidas, centro mais transparente e chama mais larga. No En, a superfície passa a respirar devagar.
+
+A opacidade também sobe com a intensidade liberada.
 
 Em Zetsu não aparece nada. Com In, os outros jogadores não veem a aura, a não ser que estejam com Gyo preparado, a até 16 blocos e na linha de visão. Se você liberar mais aura por segundo do que o In consegue esconder (3 a 10, conforme a proficiência), o que passar fica à mostra, mais fraco.
 

@@ -1,5 +1,6 @@
 package com.hxhmod.client.mixin;
 
+import com.hxhmod.client.AuraRender;
 import com.hxhmod.client.MeditationPose;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
@@ -15,6 +16,8 @@ public abstract class PlayerModelMixin {
 	private void hxh$meditate(AvatarRenderState state, CallbackInfo ci) {
 		if (Boolean.TRUE.equals(state.getData(MeditationPose.MEDITATING))) {
 			MeditationPose.apply((PlayerModel) (Object) this);
+			return;
 		}
+		AuraRender.poseArms((PlayerModel) (Object) this, state);
 	}
 }

@@ -5,6 +5,8 @@ import com.hxhmod.nen.AuraColors;
 import com.hxhmod.nen.AuraShow;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenData;
+import com.hxhmod.nen.NenRules;
+import com.hxhmod.nen.RyuFlow;
 import com.hxhmod.nen.NenType;
 import com.hxhmod.nen.Technique;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
@@ -19,12 +21,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 /** Prints da aura em cada tecnica, ao entardecer como nas referencias, e o estado enviado aos clientes. */
 public class NenAuraGameTest implements FabricClientGameTest {
 	private static final int SHOW_TICKS = 40;
-	private static final int SUNSET = 11600;
+	private static final int SUNSET = 12150;
 
 	@Override
 	public void runTest(ClientGameTestContext context) {
@@ -36,25 +39,83 @@ public class NenAuraGameTest implements FabricClientGameTest {
 				server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), "time set " + SUNSET);
 			});
 
-			// Primeira pessoa
+			// Ten: uma visao de cada faixa de dominio
 			shot(context, singleplayer, "aura_1_first_ten", CameraType.FIRST_PERSON,
-					data -> data.withActive(Set.of(Technique.TEN)), 1);
-			shot(context, singleplayer, "aura_2_first_shu", CameraType.FIRST_PERSON,
-					data -> data.withActive(Set.of(Technique.TEN, Technique.SHU)), 1);
+					data -> mastered(data, Technique.TEN, 60).withActive(Set.of(Technique.TEN)), 1);
+			shot(context, singleplayer, "aura_2a_ten_low", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.TEN, 10).withActive(Set.of(Technique.TEN)), 1);
+			expect(singleplayer, "Ten com dominio 10 mostra aura suave", show -> show.level() == AuraShow.SOFT && show.mastery() == 10);
+			shot(context, singleplayer, "aura_2b_ten_mid", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.TEN, 50).withActive(Set.of(Technique.TEN)), 1);
+			shot(context, singleplayer, "aura_2c_ten_high", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.TEN, 100).withActive(Set.of(Technique.TEN)), 1);
 
-			// Terceira pessoa
-			shot(context, singleplayer, "aura_3_third_ten", CameraType.THIRD_PERSON_BACK,
-					data -> data.withActive(Set.of(Technique.TEN)), 1);
-			shot(context, singleplayer, "aura_4_third_ren", CameraType.THIRD_PERSON_BACK,
-					data -> data.withActive(Set.of(Technique.TEN, Technique.REN)), 2);
-			shot(context, singleplayer, "aura_5_third_burst", CameraType.THIRD_PERSON_BACK,
-					data -> data.withActive(Set.of(Technique.TEN, Technique.REN)), 3);
-			shot(context, singleplayer, "aura_6_third_shu", CameraType.THIRD_PERSON_FRONT,
-					data -> data.withActive(Set.of(Technique.TEN, Technique.SHU)), 1);
-			shot(context, singleplayer, "aura_7_en_outside", CameraType.THIRD_PERSON_FRONT,
-					data -> data.addTraining(Technique.EN, 60000).withActive(Set.of(Technique.TEN, Technique.EN)), 1);
-			shot(context, singleplayer, "aura_8_en_inside", CameraType.FIRST_PERSON,
-					data -> data.addTraining(Technique.EN, 60000).withActive(Set.of(Technique.TEN, Technique.EN)), 4);
+			// Ren: do basico ao maximo
+			shot(context, singleplayer, "aura_3a_ren_low", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.REN, 10).withActive(Set.of(Technique.TEN, Technique.REN)), 3);
+			shot(context, singleplayer, "aura_3b_ren_medium", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.REN, 50).withActive(Set.of(Technique.TEN, Technique.REN)), 2);
+			shot(context, singleplayer, "aura_3c_ren_max", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.REN, 100).withActive(Set.of(Technique.TEN, Technique.REN)), 3);
+			expect(singleplayer, "Ren maximo mostra as chamas altas com o dominio do Ren", show -> show.level() == AuraShow.BURST && show.mastery() == 100);
+
+			// Shu: reveste so o objeto
+			shot(context, singleplayer, "aura_4a_shu_first", CameraType.FIRST_PERSON,
+					data -> mastered(data, Technique.SHU, 60).withActive(Set.of(Technique.SHU)), 1);
+			expect(singleplayer, "Shu sozinho fica so no objeto", show -> show.level() == 0 && show.shuMastery() == 60);
+			shot(context, singleplayer, "aura_4b_shu_third", CameraType.THIRD_PERSON_FRONT,
+					data -> mastered(data, Technique.SHU, 60).withActive(Set.of(Technique.SHU)), 1);
+
+			shot(context, singleplayer, "aura_4c_shu_back", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.SHU, 100).withActive(Set.of(Technique.SHU)), 1);
+
+			// Gyo: chamas nas bordas e o que estava invisivel aparece
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withSuppressedOutput(),
+						"summon pig " + player.getX() + " " + player.getY() + " " + (player.getZ() + 6)
+								+ " {NoAI:1b,active_effects:[{id:\"minecraft:invisibility\",duration:2000,show_particles:0b}]}");
+			});
+			shot(context, singleplayer, "aura_5a_gyo_first", CameraType.FIRST_PERSON,
+					data -> mastered(data, Technique.GYO, 80).withActive(Set.of(Technique.GYO)), 1);
+			shot(context, singleplayer, "aura_5b_gyo_third", CameraType.THIRD_PERSON_FRONT,
+					data -> mastered(data, Technique.GYO, 80).withActive(Set.of(Technique.GYO)), 1);
+			expect(singleplayer, "Gyo sozinho nao poe aura no corpo", show -> show.level() == 0 && show.gyoMastery() == 80);
+			singleplayer.getServer().runOnServer(server -> server.getCommands().performPrefixedCommand(
+					server.createCommandSourceStack().withSuppressedOutput(), "kill @e[type=pig]"));
+
+			// Ko: tudo no punho, crescendo com a carga
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+			});
+			shot(context, singleplayer, "aura_6a_ko_third", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.KO, 60).withActive(Set.of(Technique.KO)), 1);
+			expect(singleplayer, "Ko leva toda a aura para o punho", show -> show.level() == 0 && show.ko());
+			shot(context, singleplayer, "aura_6b_ko_first", CameraType.FIRST_PERSON,
+					data -> mastered(data, Technique.KO, 60).withActive(Set.of(Technique.KO)), 1);
+			singleplayer.getServer().runOnServer(server -> server.getPlayerList().getPlayers().getFirst()
+					.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_SWORD)));
+
+			// Ryu: a mesma aura com a densidade indo para os bracos e o objeto
+			shot(context, singleplayer, "aura_7a_ryu_balanced", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.KEN, 60).withActive(Set.of(Technique.TEN, Technique.REN, Technique.KEN, Technique.RYU)), 2);
+
+			ryuStance(singleplayer, RyuFlow.Stance.ATTACK);
+			shot(context, singleplayer, "aura_7b_ryu_attack", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.KEN, 60).withActive(Set.of(Technique.TEN, Technique.REN, Technique.KEN, Technique.RYU)), 2);
+			expect(singleplayer, "Ryu em ataque manda mais aura para os bracos", show -> show.offense() > 0.5F);
+			ryuStance(singleplayer, RyuFlow.Stance.DEFEND);
+			shot(context, singleplayer, "aura_7c_ryu_defend", CameraType.THIRD_PERSON_BACK,
+					data -> mastered(data, Technique.KEN, 60).withActive(Set.of(Technique.TEN, Technique.REN, Technique.KEN, Technique.RYU)), 2);
+			expect(singleplayer, "Ryu em defesa manda mais aura para o corpo", show -> show.offense() < 0.5F);
+			ryuStance(singleplayer, RyuFlow.Stance.BALANCED);
+
+			// En: da esfera tremendo a esfera firme
+			shot(context, singleplayer, "aura_8a_en_low", CameraType.THIRD_PERSON_FRONT,
+					data -> mastered(data, Technique.EN, 100).withActive(Set.of(Technique.TEN, Technique.EN)), 1);
+			shot(context, singleplayer, "aura_8b_en_inside", CameraType.FIRST_PERSON,
+					data -> mastered(data, Technique.EN, 100).withActive(Set.of(Technique.TEN, Technique.EN)), 4);
 
 			// Aba Aura: clicar numa cor pronta chega ao servidor e muda a aura no mundo
 			shot(context, singleplayer, "aura_9_page_setup", CameraType.THIRD_PERSON_BACK,
@@ -128,7 +189,7 @@ public class NenAuraGameTest implements FabricClientGameTest {
 			context.waitTicks(30);
 			context.takeScreenshot("aura_d_fire_world");
 			shot(context, singleplayer, "aura_e_fire_en", CameraType.THIRD_PERSON_FRONT,
-					data -> data.addTraining(Technique.EN, 60000).withActive(Set.of(Technique.TEN, Technique.EN)), 1);
+					data -> mastered(data, Technique.EN, 100).withActive(Set.of(Technique.TEN, Technique.EN)), 1);
 
 			// Zetsu nao mostra nada
 			singleplayer.getServer().runOnServer(server -> {
@@ -144,6 +205,25 @@ public class NenAuraGameTest implements FabricClientGameTest {
 			});
 			context.runOnClient(client -> client.options.setCameraType(CameraType.FIRST_PERSON));
 		}
+	}
+
+	/** O que os outros jogadores recebem sobre a aura de quem esta no teste. */
+	private static void expect(TestSingleplayerContext singleplayer, String rule, Predicate<AuraShow> check) {
+		singleplayer.getServer().runOnServer(server -> {
+			AuraShow show = server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.AURA_SHOW);
+			if (!check.test(show)) {
+				throw new AssertionError(rule + " deveria valer, mas chegou " + show);
+			}
+		});
+	}
+
+	private static void ryuStance(TestSingleplayerContext singleplayer, RyuFlow.Stance stance) {
+		singleplayer.getServer().runOnServer(server -> RyuFlow.setStance(server.getPlayerList().getPlayers().getFirst(), stance));
+	}
+
+	/** Treina a tecnica ate este dominio. */
+	private static NenData mastered(NenData data, Technique technique, int mastery) {
+		return data.addTraining(technique, (int) (mastery * mastery * NenRules.MASTERY_SECONDS_FACTOR) + 1);
 	}
 
 	private static NenData aware() {

@@ -46,6 +46,7 @@ public class HxHModClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		HudElementRegistry.addLast(HxHMod.id("nen_aura"), NenHud::render);
+		HudElementRegistry.addFirst(HxHMod.id("gyo_vignette"), AuraRender::gyoVignette);
 		AuraRender.register();
 
 		// No inicio do tick: depois dele o pulo normal ja tirou o jogador do chao

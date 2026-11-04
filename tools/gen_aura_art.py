@@ -7,7 +7,7 @@ import math
 import os
 import random
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 OUT = 'src/main/resources/assets/hxh/textures/aura'
 random.seed(23)
@@ -41,20 +41,83 @@ def wisp():
     smooth(OUT + '/wisp.png')
 
 
-def flame():
-    """Lencol macio do corpo das chamas: sem bordas marcadas, com estrias leves ao longo."""
+def rim():
+    """Corte da chama, de dentro (v=0) para fora (v=1): veu que cresce, borda forte e um halo curto."""
     width, height = 256, 64
-    noise = value_noise(width, height, 8, 12)
+    noise = value_noise(width, height, 10, 8)
     image = Image.new('RGBA', (width, height), (255, 255, 255, 0))
     pixels = image.load()
     for x in range(width):
         for y in range(height):
             v = y / (height - 1)
-            body = math.sin(math.pi * v) ** 1.6
-            alpha = body * (0.55 + 0.45 * noise(x, y))
+            n = noise(x, y)
+            veil = 0.62 * (min(v, 0.74) / 0.74) ** 1.5 * (0.5 + 0.5 * n)
+            edge = 0.5 * math.exp(-((v - 0.74) / 0.075) ** 2)
+            halo = 0.32 * math.exp(-((v - 0.78) / 0.16) ** 2)
+            fade = min(1.0, (1 - v) * 6)
+            alpha = min(1.0, veil + edge * (0.7 + 0.3 * n) + halo) * fade
             pixels[x, y] = (255, 255, 255, int(255 * alpha))
-    image.save(OUT + '/flame.png')
-    smooth(OUT + '/flame.png')
+    image.save(OUT + '/rim.png')
+    smooth(OUT + '/rim.png')
+
+
+def vignette(frame):
+    """Chamas lentas nas bordas da tela para o Gyo: fumaca e fios curvos, com o miolo livre."""
+    width, height = 640, 360
+    random.seed(100 + frame)
+    smoke = Image.new('L', (width, height), 0)
+    draw = ImageDraw.Draw(smoke)
+
+    def edge_point():
+        side = random.choice('LLLRRRTB')
+        if side == 'L':
+            return random.uniform(-10, 45), random.uniform(0, height)
+        if side == 'R':
+            return width - random.uniform(-10, 45), random.uniform(0, height)
+        if side == 'T':
+            return random.uniform(0, width), random.uniform(-10, 28)
+        return random.uniform(0, width), height - random.uniform(-10, 22)
+
+    for _ in range(84):
+        x, y = edge_point()
+        radius = random.randint(14, 42)
+        draw.ellipse((x - radius, y - radius * 1.4, x + radius, y + radius * 1.4), fill=random.randint(80, 170))
+    smoke = smoke.filter(ImageFilter.GaussianBlur(14))
+
+    lines = Image.new('L', (width * 2, height * 2), 0)
+    draw = ImageDraw.Draw(lines)
+    for _ in range(46):
+        x, y = edge_point()
+        x, y = x * 2, y * 2
+        angle = random.uniform(0, math.tau)
+        turn = random.uniform(-0.05, 0.05)
+        points = []
+        for _ in range(random.randint(30, 70)):
+            points.append((x, y))
+            angle += turn + random.uniform(-0.03, 0.03)
+            x += math.cos(angle) * 5
+            y += math.sin(angle) * 5
+            # Curvas que vao para o miolo voltam para a borda
+            middle = math.hypot((x - width) / width, (y - height) / height)
+            if middle < 0.72:
+                angle = math.atan2(y - height, x - width) + random.uniform(-0.7, 0.7)
+        draw.line(points, fill=random.randint(120, 235), width=random.choice((2, 2, 3)))
+    glow = lines.filter(ImageFilter.GaussianBlur(5)).point(lambda value: min(255, value * 2))
+    lines = ImageChops.lighter(lines.filter(ImageFilter.GaussianBlur(0.9)), glow).resize((width, height), Image.LANCZOS)
+
+    alpha = ImageChops.add(smoke, lines)
+    # Protege o centro da tela, com uma queda suave
+    falloff = Image.new('L', (width, height), 255)
+    pixels = falloff.load()
+    for y in range(height):
+        for x in range(width):
+            d = max(abs(x - width / 2) / (width / 2), abs(y - height / 2) / (height / 2) * 0.86, math.hypot((x - width / 2) / (width / 2), (y - height / 2) / (height / 2)) * 0.74)
+            pixels[x, y] = int(255 * min(1.0, max(0.0, (d - 0.56) / 0.28)))
+    alpha = ImageChops.multiply(alpha, falloff)
+    result = Image.new('RGBA', (width, height), (255, 255, 255, 0))
+    result.putalpha(alpha)
+    result.save(f'{OUT}/vignette_{frame}.png', optimize=True)
+    smooth(f'{OUT}/vignette_{frame}.png')
 
 
 def glow():
@@ -130,7 +193,10 @@ def dome():
 
 
 wisp()
-flame()
+rim()
+for frame in range(3):
+    vignette(frame)
+random.seed(23)
 glow()
 mote()
 dome()

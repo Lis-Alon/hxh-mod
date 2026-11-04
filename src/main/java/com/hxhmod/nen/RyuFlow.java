@@ -60,7 +60,7 @@ public final class RyuFlow {
 		STANCE.put(player, stance);
 	}
 
-	private static double offense(ServerPlayer player) {
+	static double offense(ServerPlayer player) {
 		return OFFENSE.getOrDefault(player, Stance.BALANCED.offense);
 	}
 

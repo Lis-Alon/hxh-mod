@@ -13,7 +13,7 @@ public final class AuraVisuals {
 	}
 
 	static void publish(ServerPlayer player, NenData data) {
-		AuraShow show = AuraShow.of(data);
+		AuraShow show = AuraShow.of(data, KoStrike.charge(player, data), RyuFlow.offense(player));
 		if (!show.equals(player.getAttachedOrCreate(ModAttachments.AURA_SHOW))) {
 			player.setAttached(ModAttachments.AURA_SHOW, show);
 		}
