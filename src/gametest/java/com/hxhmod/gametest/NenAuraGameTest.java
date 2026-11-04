@@ -1,5 +1,7 @@
 package com.hxhmod.gametest;
 
+import com.hxhmod.client.NenScreen;
+import com.hxhmod.nen.AuraColors;
 import com.hxhmod.nen.AuraShow;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenData;
@@ -7,7 +9,9 @@ import com.hxhmod.nen.NenType;
 import com.hxhmod.nen.Technique;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
+import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.CameraType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -51,6 +55,80 @@ public class NenAuraGameTest implements FabricClientGameTest {
 					data -> data.addTraining(Technique.EN, 60000).withActive(Set.of(Technique.TEN, Technique.EN)), 1);
 			shot(context, singleplayer, "aura_8_en_inside", CameraType.FIRST_PERSON,
 					data -> data.addTraining(Technique.EN, 60000).withActive(Set.of(Technique.TEN, Technique.EN)), 4);
+
+			// Aba Aura: clicar numa cor pronta chega ao servidor e muda a aura no mundo
+			shot(context, singleplayer, "aura_9_page_setup", CameraType.THIRD_PERSON_BACK,
+					data -> data.withActive(Set.of(Technique.TEN, Technique.REN)), 3);
+			context.runOnClient(client -> client.options.setCameraType(CameraType.FIRST_PERSON));
+			context.setScreen(NenScreen::new);
+			context.waitTicks(5);
+			TestInput input = context.getInput();
+			for (int i = 0; i < 3; i++) {
+				input.pressKey(InputConstants.KEY_TAB);
+				context.waitTicks(2);
+			}
+			context.waitTicks(20);
+			context.takeScreenshot("aura_a_page");
+			int fire = AuraColors.Preset.FIRE.ordinal();
+			int[] center = context.computeOnClient(client -> ((NenScreen) client.gui.screen()).auraPresetCenter(fire));
+			int scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
+			input.setCursorPos(center[0] * scale, center[1] * scale);
+			context.waitTicks(2);
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(15);
+			context.takeScreenshot("aura_b_page_fire");
+			singleplayer.getServer().runOnServer(server -> {
+				AuraColors saved = server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.AURA_COLORS);
+				if (!saved.equals(AuraColors.Preset.FIRE.colors())) {
+					throw new AssertionError("o clique na cor pronta deveria mudar a cor no servidor, ficou " + saved);
+				}
+				AuraColors dark = new AuraColors(0xFF000000, 0x100000).sanitized();
+				if (dark.primary() >>> 24 != 0 || (dark.secondary() >> 16 & 0xFF) < 90) {
+					throw new AssertionError("cor escura deveria ser clareada, ficou " + dark);
+				}
+			});
+
+			// Arrastar a matiz: so chega ao servidor ao soltar, e a cor principal vira verde
+			int[] from = context.computeOnClient(client -> ((NenScreen) client.gui.screen()).auraHuePoint(0.1F));
+			int[] to = context.computeOnClient(client -> ((NenScreen) client.gui.screen()).auraHuePoint(0.33F));
+			input.setCursorPos(from[0] * scale, from[1] * scale);
+			context.waitTicks(2);
+			input.holdMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(2);
+			input.setCursorPos(to[0] * scale, to[1] * scale);
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				AuraColors during = server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.AURA_COLORS);
+				if (!during.equals(AuraColors.Preset.FIRE.colors())) {
+					throw new AssertionError("durante o arraste a cor nao deveria ir ao servidor");
+				}
+			});
+			input.releaseMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(10);
+			context.takeScreenshot("aura_b2_page_slider");
+			singleplayer.getServer().runOnServer(server -> {
+				AuraColors after = server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.AURA_COLORS);
+				int color = after.primary();
+				if ((color >> 8 & 0xFF) <= (color >> 16 & 0xFF) || after.secondary() != AuraColors.Preset.FIRE.colors().secondary()) {
+					throw new AssertionError("arrastar a matiz deveria deixar a principal verde e manter a secundaria, ficou " + after);
+				}
+			});
+			input.setCursorPos(center[0] * scale, center[1] * scale);
+			context.waitTicks(2);
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(5);
+
+			input.resizeWindow(1920, 1080);
+			context.waitTicks(10);
+			context.takeScreenshot("aura_c_page_1080");
+			input.resizeWindow(854, 480);
+			context.waitTicks(5);
+			context.setScreen(() -> null);
+			context.runOnClient(client -> client.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+			context.waitTicks(30);
+			context.takeScreenshot("aura_d_fire_world");
+			shot(context, singleplayer, "aura_e_fire_en", CameraType.THIRD_PERSON_FRONT,
+					data -> data.addTraining(Technique.EN, 60000).withActive(Set.of(Technique.TEN, Technique.EN)), 1);
 
 			// Zetsu nao mostra nada
 			singleplayer.getServer().runOnServer(server -> {

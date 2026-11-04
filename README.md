@@ -24,6 +24,7 @@ Todos os itens do mod ficam na aba **Hunter x Hunter** do inventário do criativ
 | Aba | O que tem |
 |---|---|
 | **Nível** | Nível, pontos, XP para o próximo nível, distribuição de atributos (atual → novo) e status base |
+| **Aura** | Escolhe as duas cores da aura: 12 cores prontas ou ajuste de matiz, saturação e brilho, com o personagem mostrando o resultado. |
 | **Técnicas** | Não é uma aba: abre pelo botão Técnicas da Árvore ou clicando numa técnica, e Tab volta para a Árvore. Mostra cada técnica, com o que ela é, o que faz no jogo, proficiência ou requisitos, botão de ativar e funcionalidades para desbloquear |
 | **Árvore** | Ocupa a tela toda: emblema do Nen, técnicas e sub-habilidades ligadas pelos requisitos, com a proficiência de cada técnica (nas que faltam aprender, quanto dos requisitos já foi cumprido). Passe o mouse para ver os detalhes, clique numa sub-habilidade para comprar e numa técnica para abrir. Tem "Mostrar nomes" e "Resetar", que devolve os pontos das sub-habilidades compradas |
 | **Status** | Registro do treino: tipo, vidência, XP total, pontos e tempo treinado em cada técnica |
@@ -72,13 +73,13 @@ Ren, Ken e Shu têm três intensidades, e o En tem quatro tamanhos de área. Ape
 
 ### Aura visível
 
-A aura aparece em faixas de energia ciano e douradas, com quadradinhos de luz subindo:
+A aura aparece em faixas de energia, com quadradinhos de luz subindo. As cores são escolhidas na aba **Aura** do painel, e todos os jogadores veem a sua escolha:
 
 - **Ten, Ren na intensidade 1 e outras técnicas:** faixas suaves em volta do corpo e dos braços. Em primeira pessoa, os dois braços ficam à mostra enquanto a aura está ligada.
 - **Ren na intensidade 2 e Ken:** chamas em volta do corpo.
 - **Ren na intensidade máxima e Ko:** chamas maiores e mais altas.
-- **En:** uma esfera translúcida do tamanho da área de detecção, com labaredas azuis perto do chão.
-- **Shu:** o objeto segurado fica azul brilhante e envolto pelas faixas.
+- **En:** uma esfera translúcida do tamanho da área de detecção, com labaredas perto do chão.
+- **Shu:** o objeto segurado brilha na cor principal e fica envolto pelas faixas.
 
 Em Zetsu não aparece nada. Com In, os outros jogadores não veem a aura, a não ser que estejam com Gyo preparado, a até 16 blocos e na linha de visão. Se você liberar mais aura por segundo do que o In consegue esconder (3 a 10, conforme a proficiência), o que passar fica à mostra, mais fraco.
 

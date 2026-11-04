@@ -108,7 +108,7 @@ def value_noise(width, height, cells_x, cells_y):
 
 
 def dome():
-    """Superficie do En: vidro azul com manchas claras em pixels grandes, sem filtro suave."""
+    """Superficie do En em cinza (o jogo tinge): vidro com manchas claras em pixels grandes, sem filtro suave."""
     width, height = 128, 64
     coarse = value_noise(width, height, 8, 4)
     medium = value_noise(width, height, 20, 10)
@@ -119,13 +119,13 @@ def dome():
         for x in range(width):
             n = coarse(x, y) * 0.5 + medium(x, y) * 0.32 + fine(x, y) * 0.18
             if n > 0.62:
-                pixels[x, y] = (205, 245, 255, 190)
+                pixels[x, y] = (255, 255, 255, 190)
             elif n > 0.55:
-                pixels[x, y] = (120, 215, 255, 130)
+                pixels[x, y] = (225, 225, 225, 130)
             elif n > 0.47:
-                pixels[x, y] = (62, 165, 245, 74)
+                pixels[x, y] = (190, 190, 190, 74)
             else:
-                pixels[x, y] = (36, 120, 225, 44)
+                pixels[x, y] = (150, 150, 150, 44)
     image.save(OUT + '/en_dome.png')
 
 

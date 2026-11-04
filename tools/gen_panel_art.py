@@ -170,7 +170,7 @@ def main():
         def t(key):
             return texts[f'screen.hxh.nen.{key}']
 
-        for page in ('level', 'techniques', 'tree', 'status'):
+        for page in ('level', 'techniques', 'tree', 'status', 'aura'):
             name = t(f'page.{page}')
             # Titulo longo encolhe para nao encostar nas abas na menor tela (854x480)
             title = name.upper()
@@ -179,7 +179,7 @@ def main():
             text_image(lang, f'title_{page}', title, CREAM, size, 23, 18, 500)
             text_image(lang, f'tab_{page}', name, CREAM, 11, 14, 11, 600)
             text_image(lang, f'tab_{page}_on', name, GOLD, 11, 14, 11, 600)
-        for key in ('attributes', 'base_stats', 'aura_stats', 'records', 'training', 'dormant', 'features'):
+        for key in ('attributes', 'base_stats', 'aura_stats', 'records', 'training', 'dormant', 'features', 'aura_presets', 'aura_custom'):
             text_image(lang, f'section_{key}', t(key).upper(), GOLD, 10, 13, 10, 600, star=True)
         for key in ('confirm', 'reset', 'activate', 'deactivate', 'change_intensity'):
             text_image(lang, f'button_{key}', t(key), CREAM, 11, 14, 11, 600)

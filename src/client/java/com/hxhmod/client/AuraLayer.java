@@ -19,6 +19,9 @@ public class AuraLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 		if (view == null) {
 			return;
 		}
+		if (view.preview()) {
+			AuraRender.previewBody(pose, collector, view, state.ageInTicks);
+		}
 		PlayerModel model = getParentModel();
 		pose.pushPose();
 		model.root().translateAndRotate(pose);

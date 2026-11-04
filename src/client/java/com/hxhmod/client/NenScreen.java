@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.DoubleConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -51,7 +52,7 @@ public class NenScreen extends Screen {
 	private static final int TECH_ROW_HEIGHT = 16;
 	private static final int TECH_LIST_WIDTH = 112;
 	private static final int SHIFT_STEP = 5;
-	private static final int PREVIEW_WIDTH = 84;
+	static final int PREVIEW_WIDTH = 84;
 	private static final int DETAIL_SCROLL_STEP = 12;
 	private static final int GOLD = 0xFFD8B46A;
 	private static final int GOLD_DIM = 0xFF6E5A35;
@@ -68,7 +69,8 @@ public class NenScreen extends Screen {
 		LEVEL("screen.hxh.nen.page.level"),
 		TECHNIQUES("screen.hxh.nen.page.techniques"),
 		TREE("screen.hxh.nen.page.tree"),
-		STATUS("screen.hxh.nen.page.status");
+		STATUS("screen.hxh.nen.page.status"),
+		AURA("screen.hxh.nen.page.aura");
 
 		private final String key;
 
@@ -91,9 +93,10 @@ public class NenScreen extends Screen {
 	private final Map<NenStat, Integer> pending = new EnumMap<>(NenStat.class);
 	private final List<Clickable> clickables = new ArrayList<>();
 	/** Tecnicas nao tem aba: abrem pelo botao da arvore e pelos nos dela. */
-	private static final List<Page> TABS = List.of(Page.LEVEL, Page.TREE, Page.STATUS);
+	private static final List<Page> TABS = List.of(Page.LEVEL, Page.TREE, Page.STATUS, Page.AURA);
 
 	private final NenTreePage tree = new NenTreePage(this);
+	private final NenAuraPage aura = new NenAuraPage(this);
 	private Page page = Page.LEVEL;
 	private int selectedStat;
 	private int selectedTechnique;
@@ -111,6 +114,8 @@ public class NenScreen extends Screen {
 	private int top;
 	private int panelWidth;
 	private int panelHeight;
+	/** Posicao do clique em andamento. */
+	private double pressX;
 
 	public NenScreen() {
 		super(Component.translatable("screen.hxh.nen.title"));
@@ -144,6 +149,8 @@ public class NenScreen extends Screen {
 
 	@Override
 	public void removed() {
+		// Fechou com uma barra ainda presa: a cor na tela e a que vale
+		aura.release();
 		sendPanelOpen(false);
 		super.removed();
 	}
@@ -201,6 +208,8 @@ public class NenScreen extends Screen {
 			case TREE -> tree.render(graphics, font, data, left + 2, top + HEADER_HEIGHT + 3, panelWidth - 4,
 					panelHeight - HEADER_HEIGHT - 6, mouseX, mouseY);
 			case STATUS -> renderStatusPage(graphics, data, mouseX, mouseY);
+			case AURA -> aura.render(graphics, font, left + MARGIN, top + HEADER_HEIGHT + 8, panelWidth - 2 * MARGIN,
+					panelHeight - HEADER_HEIGHT - 30, mouseX, mouseY);
 		}
 	}
 
@@ -686,7 +695,7 @@ public class NenScreen extends Screen {
 		return "";
 	}
 
-	private void sectionTitle(GuiGraphicsExtractor graphics, Component title, int x, int y, int width) {
+	void sectionTitle(GuiGraphicsExtractor graphics, Component title, int x, int y, int width) {
 		if (NenArt.text(graphics, "section_" + artKey(title), x, y - 2)) {
 			graphics.fill(x, y + 10, x + width, y + 11, GOLD_DIM);
 			return;
@@ -699,7 +708,7 @@ public class NenScreen extends Screen {
 		row(graphics, x, y, width, height, selected, false);
 	}
 
-	private void row(GuiGraphicsExtractor graphics, int x, int y, int width, int height, boolean selected, boolean hover) {
+	void row(GuiGraphicsExtractor graphics, int x, int y, int width, int height, boolean selected, boolean hover) {
 		NenArt.frame(graphics, selected ? "frame_row_selected" : hover ? "frame_row_hover" : "frame_row", x, y, width, height, 5);
 	}
 
@@ -743,10 +752,25 @@ public class NenScreen extends Screen {
 		return y;
 	}
 
-	private void footer(GuiGraphicsExtractor graphics, Component hint) {
+	void footer(GuiGraphicsExtractor graphics, Component hint) {
 		int y = top + panelHeight - 13;
 		graphics.fill(left + MARGIN, y - 4, left + panelWidth - MARGIN, y - 3, GOLD_DIM);
 		graphics.text(font, panelFont(hint), left + MARGIN, y, DIM, false);
+	}
+
+	/** Area que recebe a posicao do mouse no clique, como as barras da aba Aura. */
+	void addPressable(int x, int y, int width, int height, DoubleConsumer action) {
+		addClickable(x, y, width, height, true, () -> action.accept(pressX));
+	}
+
+	/** Centro de uma cor pronta na aba Aura. */
+	public int[] auraPresetCenter(int index) {
+		return aura.presetCenter(index);
+	}
+
+	/** Ponto na barra de matiz da aba Aura. */
+	public int[] auraHuePoint(float fraction) {
+		return aura.huePoint(fraction);
 	}
 
 	void addClickable(int x, int y, int width, int height, boolean enabled, Runnable action) {
@@ -765,7 +789,7 @@ public class NenScreen extends Screen {
 		clickables.add(new Clickable(x, y, width, height, enabled, action, rightAction));
 	}
 
-	private static boolean hovered(int x, int y, int width, int height, int mouseX, int mouseY) {
+	static boolean hovered(int x, int y, int width, int height, int mouseX, int mouseY) {
 		return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
 	}
 
@@ -826,6 +850,7 @@ public class NenScreen extends Screen {
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		boolean right = event.button() == InputConstants.MOUSE_BUTTON_RIGHT;
+		pressX = event.x();
 		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT || right) {
 			// Percorre de tras para frente: o que foi desenhado por ultimo fica por cima
 			for (int i = clickables.size() - 1; i >= 0; i--) {
@@ -845,6 +870,16 @@ public class NenScreen extends Screen {
 			}
 		}
 		return super.mouseClicked(event, doubleClick);
+	}
+
+	@Override
+	public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+		return aura.drag(event.x()) || super.mouseDragged(event, dragX, dragY);
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event) {
+		return aura.release() || super.mouseReleased(event);
 	}
 
 	@Override

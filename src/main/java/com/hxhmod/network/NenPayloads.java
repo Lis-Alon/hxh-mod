@@ -1,8 +1,10 @@
 package com.hxhmod.network;
 
 import com.hxhmod.HxHMod;
+import com.hxhmod.nen.AuraColors;
 import com.hxhmod.nen.GyoApplications;
 import com.hxhmod.nen.KoStrike;
+import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenActions;
 import com.hxhmod.nen.RyuFlow;
 import com.hxhmod.nen.NenPose;
@@ -130,6 +132,20 @@ public final class NenPayloads {
 		}
 	}
 
+	/** Cores escolhidas na aba Aura. */
+	public record SetAuraColors(int primary, int secondary) implements CustomPacketPayload {
+		public static final Type<SetAuraColors> TYPE = new Type<>(HxHMod.id("set_aura_colors"));
+		public static final StreamCodec<ByteBuf, SetAuraColors> CODEC = StreamCodec.composite(
+				ByteBufCodecs.INT, SetAuraColors::primary,
+				ByteBufCodecs.INT, SetAuraColors::secondary,
+				SetAuraColors::new);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	public record PanelOpen(boolean open) implements CustomPacketPayload {
 		public static final Type<PanelOpen> TYPE = new Type<>(HxHMod.id("panel_open"));
 		public static final StreamCodec<ByteBuf, PanelOpen> CODEC = ByteBufCodecs.BOOL.map(PanelOpen::new, PanelOpen::open);
@@ -151,6 +167,7 @@ public final class NenPayloads {
 		PayloadTypeRegistry.serverboundPlay().register(SetRyuStance.TYPE, SetRyuStance.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ResetUpgrades.TYPE, ResetUpgrades.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PanelOpen.TYPE, PanelOpen.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(SetAuraColors.TYPE, SetAuraColors.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(ToggleTechnique.TYPE,
 				(payload, context) -> NenActions.toggle(context.player(), payload.technique()));
@@ -169,6 +186,8 @@ public final class NenPayloads {
 				RyuFlow.setStance(context.player(), payload.stance()));
 		ServerPlayNetworking.registerGlobalReceiver(ResetUpgrades.TYPE,
 				(payload, context) -> NenActions.resetUpgrades(context.player()));
+		ServerPlayNetworking.registerGlobalReceiver(SetAuraColors.TYPE, (payload, context) -> context.player().setAttached(
+				ModAttachments.AURA_COLORS, new AuraColors(payload.primary(), payload.secondary()).sanitized()));
 		ServerPlayNetworking.registerGlobalReceiver(PanelOpen.TYPE,
 				(payload, context) -> NenPose.setPanelOpen(context.player(), payload.open()));
 	}

@@ -27,6 +27,14 @@ public final class ModAttachments {
 					.initializer(() -> AuraShow.NONE)
 					.syncWith(AuraShow.STREAM_CODEC, AttachmentSyncPredicate.all()));
 
+	// Cores escolhidas na aba Aura; salvas no mundo, mantidas ao morrer e enviadas a todos, que precisam delas para desenhar
+	public static final AttachmentType<AuraColors> AURA_COLORS = AttachmentRegistry.create(HxHMod.id("aura_colors"),
+			builder -> builder
+					.initializer(() -> AuraColors.DEFAULT)
+					.persistent(AuraColors.CODEC)
+					.copyOnDeath()
+					.syncWith(AuraColors.STREAM_CODEC, AttachmentSyncPredicate.all()));
+
 	private ModAttachments() {
 	}
 

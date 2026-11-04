@@ -88,6 +88,14 @@
 			114,
 			13
 		],
+		"en_us/section_aura_custom": [
+			76,
+			13
+		],
+		"en_us/section_aura_presets": [
+			57,
+			13
+		],
 		"en_us/section_aura_stats": [
 			44,
 			13
@@ -111,6 +119,14 @@
 		"en_us/section_training": [
 			168,
 			13
+		],
+		"en_us/tab_aura": [
+			33,
+			14
+		],
+		"en_us/tab_aura_on": [
+			33,
+			14
 		],
 		"en_us/tab_level": [
 			52,
@@ -143,6 +159,10 @@
 		"en_us/tab_tree_on": [
 			29,
 			14
+		],
+		"en_us/title_aura": [
+			53,
+			23
 		],
 		"en_us/title_level": [
 			83,
@@ -284,6 +304,14 @@
 			73,
 			13
 		],
+		"pt_br/section_aura_custom": [
+			94,
+			13
+		],
+		"pt_br/section_aura_presets": [
+			101,
+			13
+		],
 		"pt_br/section_aura_stats": [
 			44,
 			13
@@ -307,6 +335,14 @@
 		"pt_br/section_training": [
 			142,
 			13
+		],
+		"pt_br/tab_aura": [
+			33,
+			14
+		],
+		"pt_br/tab_aura_on": [
+			33,
+			14
 		],
 		"pt_br/tab_level": [
 			35,
@@ -339,6 +375,10 @@
 		"pt_br/tab_tree_on": [
 			47,
 			14
+		],
+		"pt_br/title_aura": [
+			53,
+			23
 		],
 		"pt_br/title_level": [
 			55,

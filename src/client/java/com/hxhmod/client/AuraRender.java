@@ -1,6 +1,7 @@
 package com.hxhmod.client;
 
 import com.hxhmod.HxHMod;
+import com.hxhmod.nen.AuraColors;
 import com.hxhmod.nen.AuraShow;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenData;
@@ -53,16 +54,23 @@ import org.joml.Vector3f;
  * O In some com a aura para os outros (alfa pelo vazamento), menos para quem esta com o Gyo.
  */
 public final class AuraRender {
-	/** O que o jogador que esta olhando percebe da aura de um jogador. */
-	public record View(AuraShow show, float visibility) {
+	/**
+	 * O que o jogador que esta olhando percebe da aura de um jogador.
+	 *
+	 * @param preview desenho da aba Aura: o corpo sai junto do modelo, porque ali nao ha mundo em volta
+	 */
+	public record View(AuraShow show, float visibility, int primary, int secondary, boolean preview) {
 	}
 
 	public static final RenderStateDataKey<View> VIEW = RenderStateDataKey.create(() -> "hxh:aura_view");
 
-	private static final int CYAN = 0x38B4FF;
-	private static final int GOLD = 0xFFA41E;
-	private static final int EN_FLAME = 0x58B8FF;
-	private static final int COAT_COLOR = 0xFF1C8CD2;
+	private static final AuraShow PREVIEW_SHOW = new AuraShow(AuraShow.FLAMES, false, 0, 1);
+	/** Altura e posicao dos pes no espaco do modelo do jogador. */
+	private static final float MODEL_HEIGHT = 1.8F;
+	private static final float MODEL_FEET = 1.501F;
+	private static final float COAT_STRENGTH = 0.75F;
+	private static final float SHINE = 0.5F;
+	private static final float DOME_WHITE_MIX = 0.3F;
 	private static final float MIN_VISIBLE = 0.03F;
 	private static final float MAX_DISTANCE = 64;
 	private static final int FULL_BRIGHT = 0xF000F0;
@@ -90,16 +98,20 @@ public final class AuraRender {
 			.withCull(false)
 			.build());
 
-	private static final RenderType WISP = glowType("aura_wisp", WISP_TEXTURE);
+	// Faixas, chamas e particulas misturam em vez de somar: somando, um vermelho contra o ceu azul ficaria rosa
+	private static final RenderType WISP = solidColorType("aura_wisp", WISP_TEXTURE);
+	private static final RenderType WISP_SHINE = glowType("aura_wisp_shine", WISP_TEXTURE);
 	private static final RenderType GLOW = glowType("aura_halo", GLOW_TEXTURE);
-	private static final RenderType FLAME = glowType("aura_flame", FLAME_TEXTURE);
-	private static final RenderType MOTE = glowType("aura_mote", MOTE_TEXTURE);
+	private static final RenderType FLAME = solidColorType("aura_flame", FLAME_TEXTURE);
+	private static final RenderType MOTE = solidColorType("aura_mote", MOTE_TEXTURE);
+	private static final RenderType MOTE_SHINE = glowType("aura_mote_shine", MOTE_TEXTURE);
 	private static final RenderType COAT = glowType("aura_coat", TextureAtlas.LOCATION_ITEMS);
-	private static final RenderType DOME = RenderType.create("aura_dome",
-			RenderSetup.builder(GLASS_PIPELINE).withTexture("Sampler0", DOME_TEXTURE).createRenderSetup());
+	private static final RenderType DOME = solidColorType("aura_dome", DOME_TEXTURE);
 
 	/** Fica ligado so enquanto o objeto revestido esta sendo enviado para desenho. */
 	private static View coating;
+	/** Ligado enquanto a aba Aura pede o estado de desenho do personagem. */
+	private static View previewing;
 	private static float coatingTime;
 
 	private AuraRender() {
@@ -111,6 +123,10 @@ public final class AuraRender {
 
 	private static RenderType glowType(String name, Identifier texture) {
 		return RenderType.create(name, RenderSetup.builder(GLOW_PIPELINE).withTexture("Sampler0", texture).createRenderSetup());
+	}
+
+	private static RenderType solidColorType(String name, Identifier texture) {
+		return RenderType.create(name, RenderSetup.builder(GLASS_PIPELINE).withTexture("Sampler0", texture).createRenderSetup());
 	}
 
 	public static void register() {
@@ -133,7 +149,11 @@ public final class AuraRender {
 			return null;
 		}
 		float visibility = seesAll(target) ? 1 : show.leak();
-		return visibility < MIN_VISIBLE ? null : new View(show, visibility);
+		if (visibility < MIN_VISIBLE) {
+			return null;
+		}
+		AuraColors colors = target.getAttachedOrElse(ModAttachments.AURA_COLORS, AuraColors.DEFAULT);
+		return new View(show, visibility, colors.primary(), colors.secondary(), false);
 	}
 
 	private static boolean seesAll(Player target) {
@@ -148,7 +168,26 @@ public final class AuraRender {
 	}
 
 	public static void extract(Avatar entity, AvatarRenderState state) {
-		state.setData(VIEW, entity instanceof Player player ? view(player) : null);
+		boolean preview = previewing != null && entity == Minecraft.getInstance().player;
+		state.setData(VIEW, preview ? previewing : entity instanceof Player player ? view(player) : null);
+	}
+
+	public static void beginPreview(AuraColors colors) {
+		previewing = new View(PREVIEW_SHOW, 1, colors.primary(), colors.secondary(), true);
+	}
+
+	public static void endPreview() {
+		previewing = null;
+	}
+
+	/** Corpo e particulas na previa. A pose vem no espaco do modelo, com y para baixo a partir do quadril. */
+	public static void previewBody(PoseStack pose, SubmitNodeCollector collector, View view, float time) {
+		pose.pushPose();
+		pose.translate(0, MODEL_FEET, 0);
+		pose.scale(1, -1, 1);
+		body(pose, collector, view, null, time, 0, MODEL_HEIGHT);
+		motes(pose, collector, view, new Quaternionf(), time, 0, false);
+		pose.popPose();
 	}
 
 	private static float now() {
@@ -191,7 +230,7 @@ public final class AuraRender {
 			if (!isCamera && !player.isInvisible()) {
 				body(pose, collector, view, camera, time, seed, player.getBbHeight());
 			}
-			motes(pose, collector, view, camera, time, seed, isCamera);
+			motes(pose, collector, view, cameraRotation(camera), time, seed, isCamera);
 			pose.popPose();
 		}
 	}
@@ -200,12 +239,14 @@ public final class AuraRender {
 	private static void body(PoseStack pose, SubmitNodeCollector collector, View view, CameraRenderState camera, float time, float seed, float height) {
 		int level = view.show().level();
 		float alpha = view.visibility();
-		if (level >= AuraShow.FLAMES) {
+		int primary = view.primary();
+		int secondary = view.secondary();
+		if (level >= AuraShow.FLAMES && camera != null) {
 			Quaternionf facing = cameraRotation(camera);
 			float size = level == AuraShow.BURST ? 3.3F : 2.6F;
 			collector.submitCustomGeometry(pose, GLOW, (entry, buffer) -> {
-				billboard(entry, buffer, facing, 0, height * 0.55F, 0, size, CYAN, 0.22F * alpha);
-				billboard(entry, buffer, facing, 0, height * 0.42F, 0, size * 0.72F, GOLD, 0.2F * alpha);
+				billboard(entry, buffer, facing, 0, height * 0.55F, 0, size, primary, 0.22F * alpha);
+				billboard(entry, buffer, facing, 0, height * 0.42F, 0, size * 0.72F, secondary, 0.2F * alpha);
 			});
 		}
 		float tall = level == AuraShow.BURST ? 1.5F : level == AuraShow.FLAMES ? 1.22F : 1.04F;
@@ -214,9 +255,9 @@ public final class AuraRender {
 			// Corpo da chama: lencois largos e macios; o dourado por dentro e o ciano por fora
 			int sheets = level == AuraShow.BURST ? 20 : 12;
 			float width = level == AuraShow.BURST ? 1.15F : 0.85F;
-			float strength = level == AuraShow.BURST ? 0.3F : 0.26F;
+			float strength = level == AuraShow.BURST ? 0.42F : 0.36F;
 			collector.submitCustomGeometry(pose, FLAME, (entry, buffer) ->
-					strands(entry, buffer, sheets, height * tall, radius, width, strength * alpha, time, seed, 0.085F, 0.42F, 0.9F, 0.2F, true, 0));
+					strands(entry, buffer, sheets, height * tall, radius, width, strength * alpha, time, seed, 0.085F, 0.42F, 0.9F, 0.2F, true, 0, primary, secondary));
 		}
 		int lines = level == AuraShow.BURST ? 16 : level == AuraShow.FLAMES ? 10 : 8;
 		float lineWidth = level == AuraShow.SOFT ? 0.26F : 0.3F;
@@ -226,11 +267,14 @@ public final class AuraRender {
 		float flare = level == AuraShow.SOFT ? 0.25F : 0.8F;
 		float wobble = level == AuraShow.SOFT ? 0.1F : 0.2F;
 		collector.submitCustomGeometry(pose, WISP, (entry, buffer) ->
-				strands(entry, buffer, lines, height * tall, radius * 1.08F, lineWidth, lineAlpha, time, seed, speed, turns, flare, wobble, level != AuraShow.SOFT, 100));
+				strands(entry, buffer, lines, height * tall, radius * 1.08F, lineWidth, lineAlpha, time, seed, speed, turns, flare, wobble, level != AuraShow.SOFT, 100, primary, secondary));
+		// As mesmas faixas somadas por cima, fracas, dao o brilho no miolo sem lavar a cor
+		collector.submitCustomGeometry(pose, WISP_SHINE, (entry, buffer) ->
+				strands(entry, buffer, lines, height * tall, radius * 1.08F, lineWidth, lineAlpha * SHINE, time, seed, speed, turns, flare, wobble, level != AuraShow.SOFT, 100, primary, secondary));
 	}
 
 	private static void strands(PoseStack.Pose entry, VertexConsumer buffer, int count, float length, float radius, float width, float alpha,
-			float time, float seed, float speed, float turns, float flare, float wobble, boolean taper, int salt) {
+			float time, float seed, float speed, float turns, float flare, float wobble, boolean taper, int salt, int primary, int secondary) {
 		for (int i = 0; i < count; i++) {
 			float shift = hash(i, 7 + salt);
 			boolean gold = i % 5 >= 3;
@@ -244,7 +288,7 @@ public final class AuraRender {
 			ribbon.turns = turns * (i % 2 == 0 ? 1 : -1);
 			ribbon.phase = seed + shift * Mth.TWO_PI + time * speed * (i % 2 == 0 ? 1 : -1);
 			ribbon.width = width * (0.7F + 0.5F * hash(i, 11 + salt));
-			ribbon.color = gold ? GOLD : CYAN;
+			ribbon.color = gold ? secondary : primary;
 			ribbon.alpha = alpha;
 			ribbon.wobble = wobble;
 			ribbon.time = time + shift * 40;
@@ -255,27 +299,30 @@ public final class AuraRender {
 	}
 
 	/** Quadradinhos de luz subindo em volta do jogador. */
-	private static void motes(PoseStack pose, SubmitNodeCollector collector, View view, CameraRenderState camera, float time, float seed, boolean isCamera) {
+	private static void motes(PoseStack pose, SubmitNodeCollector collector, View view, Quaternionf facing, float time, float seed, boolean isCamera) {
 		int level = view.show().level();
 		int count = level == AuraShow.BURST ? 44 : level == AuraShow.FLAMES ? 26 : 16;
 		float reach = level == AuraShow.BURST ? 1.5F : 1.1F;
 		float alpha = view.visibility();
-		Quaternionf facing = cameraRotation(camera);
-		collector.submitCustomGeometry(pose, MOTE, (entry, buffer) -> {
-			for (int i = 0; i < count; i++) {
-				float period = 50 + 60 * hash(i, 13);
-				float life = (time / period + hash(i, 17)) % 1;
-				float angle = seed + hash(i, 19) * Mth.TWO_PI + life * 1.6F;
-				// Na primeira pessoa ficam longe dos olhos: de perto um quadradinho tomaria a tela
-				float away = isCamera ? 1.4F + reach * 1.3F * hash(i, 23) : 0.35F + reach * hash(i, 23);
-				float x = Mth.cos(angle) * away;
-				float z = Mth.sin(angle) * away;
-				float y = hash(i, 29) * 0.8F + life * 2.3F;
-				float size = (0.07F + 0.09F * hash(i, 31)) * (isCamera ? 1.3F : 2.2F);
-				float fade = Mth.sin(life * Mth.PI);
-				billboard(entry, buffer, facing, x, y, z, size, i % 3 == 0 ? CYAN : GOLD, fade * alpha);
-			}
-		});
+		collector.submitCustomGeometry(pose, MOTE_SHINE, (entry, buffer) -> moteQuads(entry, buffer, count, reach, alpha * SHINE, time, seed, isCamera, facing, view));
+		collector.submitCustomGeometry(pose, MOTE, (entry, buffer) -> moteQuads(entry, buffer, count, reach, alpha, time, seed, isCamera, facing, view));
+	}
+
+	private static void moteQuads(PoseStack.Pose entry, VertexConsumer buffer, int count, float reach, float alpha, float time, float seed,
+			boolean isCamera, Quaternionf facing, View view) {
+		for (int i = 0; i < count; i++) {
+			float period = 50 + 60 * hash(i, 13);
+			float life = (time / period + hash(i, 17)) % 1;
+			float angle = seed + hash(i, 19) * Mth.TWO_PI + life * 1.6F;
+			// Na primeira pessoa ficam longe dos olhos: de perto um quadradinho tomaria a tela
+			float away = isCamera ? 1.4F + reach * 1.3F * hash(i, 23) : 0.35F + reach * hash(i, 23);
+			float x = Mth.cos(angle) * away;
+			float z = Mth.sin(angle) * away;
+			float y = hash(i, 29) * 0.8F + life * 2.3F;
+			float size = (0.07F + 0.09F * hash(i, 31)) * (isCamera ? 1.3F : 2.2F);
+			float fade = Mth.sin(life * Mth.PI);
+			billboard(entry, buffer, facing, x, y, z, size, i % 3 == 0 ? view.primary() : view.secondary(), fade * alpha);
+		}
 	}
 
 	private static Quaternionf cameraRotation(CameraRenderState camera) {
@@ -288,18 +335,19 @@ public final class AuraRender {
 		float visibility = view.visibility();
 		// Da camera ate o centro da esfera, para o brilho da borda; por dentro fica mais transparente
 		Vector3f eye = new Vector3f((float) -relative.x, (float) -relative.y, (float) -relative.z);
-		float inside = eye.length() < radius ? 0.5F : 1;
+		float inside = eye.length() < radius ? 0.7F : 1;
 		float repeatU = Math.max(1, Math.round(Mth.TWO_PI * radius / DOME_TILE));
 		// A textura e duas vezes mais larga que alta
 		float repeatV = Math.max(1, Math.round(Mth.TWO_PI * radius / DOME_TILE));
 		float scroll = time * 0.0009F;
+		int tint = mixWhite(view.primary(), DOME_WHITE_MIX);
 		collector.submitCustomGeometry(pose, DOME, (entry, buffer) -> {
 			for (int row = 0; row < DOME_ROWS; row++) {
 				for (int column = 0; column < DOME_COLUMNS; column++) {
-					domeVertex(entry, buffer, column, row, radius, eye, repeatU, repeatV, scroll, inside * visibility);
-					domeVertex(entry, buffer, column, row + 1, radius, eye, repeatU, repeatV, scroll, inside * visibility);
-					domeVertex(entry, buffer, column + 1, row + 1, radius, eye, repeatU, repeatV, scroll, inside * visibility);
-					domeVertex(entry, buffer, column + 1, row, radius, eye, repeatU, repeatV, scroll, inside * visibility);
+					domeVertex(entry, buffer, column, row, radius, eye, repeatU, repeatV, scroll, inside * visibility, tint);
+					domeVertex(entry, buffer, column, row + 1, radius, eye, repeatU, repeatV, scroll, inside * visibility, tint);
+					domeVertex(entry, buffer, column + 1, row + 1, radius, eye, repeatU, repeatV, scroll, inside * visibility, tint);
+					domeVertex(entry, buffer, column + 1, row, radius, eye, repeatU, repeatV, scroll, inside * visibility, tint);
 				}
 			}
 		});
@@ -319,7 +367,7 @@ public final class AuraRender {
 				ribbon.turns = 0.3F;
 				ribbon.phase = hash(i, 47) * Mth.TWO_PI + time * 0.05F;
 				ribbon.width = 0.5F;
-				ribbon.color = EN_FLAME;
+				ribbon.color = view.primary();
 				ribbon.alpha = 0.55F * visibility * inside;
 				ribbon.wobble = 0.15F;
 				ribbon.time = time + hash(i, 53) * 40;
@@ -331,7 +379,7 @@ public final class AuraRender {
 	}
 
 	private static void domeVertex(PoseStack.Pose entry, VertexConsumer buffer, int column, int row, float radius, Vector3f eye,
-			float repeatU, float repeatV, float scroll, float alpha) {
+			float repeatU, float repeatV, float scroll, float alpha, int tint) {
 		float u = (float) column / DOME_COLUMNS;
 		float v = (float) row / DOME_ROWS;
 		float theta = u * Mth.TWO_PI;
@@ -349,7 +397,7 @@ public final class AuraRender {
 		float facing = Math.abs(nx * toEyeX + ny * toEyeY + nz * toEyeZ) / distance;
 		float rim = 1 - facing;
 		float shade = 0.42F + 0.58F * rim * rim;
-		vertex(entry, buffer, x, y, z, 0xFFFFFF, Math.min(1, shade * alpha), u * repeatU + scroll, v * repeatV);
+		vertex(entry, buffer, x, y, z, tint, Math.min(1, shade * alpha), u * repeatU + scroll, v * repeatV);
 	}
 
 	// ---- Bracos ----
@@ -364,7 +412,7 @@ public final class AuraRender {
 		int strands = level == AuraShow.BURST ? 9 : level == AuraShow.FLAMES ? 7 : 5;
 		float alpha = view.visibility() * (level == AuraShow.SOFT ? 0.55F : 0.68F);
 		float center = -side / 16F;
-		collector.submitCustomGeometry(pose, WISP, (entry, buffer) -> {
+		bothPasses(pose, collector, (entry, buffer, strength) -> {
 			for (int i = 0; i < strands; i++) {
 				float shift = hash(i, 59 + side);
 				Ribbon ribbon = new Ribbon();
@@ -377,8 +425,8 @@ public final class AuraRender {
 				ribbon.turns = (0.9F + 0.7F * hash(i, 67)) * (i % 2 == 0 ? 1 : -1);
 				ribbon.phase = shift * Mth.TWO_PI + time * 0.06F * (i % 2 == 0 ? 1 : -1);
 				ribbon.width = level == AuraShow.SOFT ? 0.17F : 0.25F;
-				ribbon.color = i % 5 < 3 ? CYAN : GOLD;
-				ribbon.alpha = alpha;
+				ribbon.color = i % 5 < 3 ? view.primary() : view.secondary();
+				ribbon.alpha = alpha * strength;
 				ribbon.wobble = 0.05F;
 				ribbon.time = time + shift * 30;
 				ribbon.taper = false;
@@ -393,7 +441,7 @@ public final class AuraRender {
 				float angle = hash(i, 79) * Mth.TWO_PI + life * 3;
 				float out = 0.2F + 0.22F * hash(i, 83);
 				billboard(entry, buffer, none, center + Mth.cos(angle) * out, 0.65F - life * 0.95F, Mth.sin(angle) * out,
-						0.1F + 0.07F * hash(i, 89), i % 3 == 0 ? CYAN : GOLD, Mth.sin(life * Mth.PI) * view.visibility());
+						0.1F + 0.07F * hash(i, 89), i % 3 == 0 ? view.primary() : view.secondary(), Mth.sin(life * Mth.PI) * view.visibility());
 			}
 		});
 	}
@@ -448,7 +496,7 @@ public final class AuraRender {
 		if (!quads.isEmpty()) {
 			collector.submitCustomGeometry(pose, COAT, (entry, buffer) -> {
 				QuadInstance instance = new QuadInstance();
-				instance.setColor(Mth.ceil(visibility * 255) << 24 | COAT_COLOR & 0xFFFFFF);
+				instance.setColor(Mth.ceil(visibility * 255) << 24 | scaled(view.primary(), COAT_STRENGTH));
 				instance.setLightCoords(FULL_BRIGHT);
 				instance.setOverlayCoords(OverlayTexture.NO_OVERLAY);
 				for (BakedQuad quad : quads.all()) {
@@ -458,7 +506,7 @@ public final class AuraRender {
 				}
 			});
 		}
-		collector.submitCustomGeometry(pose, WISP, (entry, buffer) -> {
+		bothPasses(pose, collector, (entry, buffer, strength) -> {
 			for (int i = 0; i < 7; i++) {
 				float shift = hash(i, 97);
 				Ribbon ribbon = new Ribbon();
@@ -472,8 +520,8 @@ public final class AuraRender {
 				ribbon.turns = (0.8F + 0.5F * hash(i, 103)) * (i % 2 == 0 ? 1 : -1);
 				ribbon.phase = shift * Mth.TWO_PI + time * 0.07F * (i % 2 == 0 ? 1 : -1);
 				ribbon.width = 0.19F;
-				ribbon.color = i % 5 < 3 ? CYAN : GOLD;
-				ribbon.alpha = 0.85F * visibility;
+				ribbon.color = i % 5 < 3 ? view.primary() : view.secondary();
+				ribbon.alpha = 0.85F * visibility * strength;
 				ribbon.wobble = 0.05F;
 				ribbon.time = time + shift * 30;
 				ribbon.taper = true;
@@ -562,6 +610,16 @@ public final class AuraRender {
 		}
 	}
 
+	private interface Strands {
+		void draw(PoseStack.Pose entry, VertexConsumer buffer, float strength);
+	}
+
+	/** Faixas com a cor certa e, por cima, as mesmas somadas de leve, para brilhar sem lavar a cor. */
+	private static void bothPasses(PoseStack pose, SubmitNodeCollector collector, Strands strands) {
+		collector.submitCustomGeometry(pose, WISP, (entry, buffer) -> strands.draw(entry, buffer, 1));
+		collector.submitCustomGeometry(pose, WISP_SHINE, (entry, buffer) -> strands.draw(entry, buffer, SHINE));
+	}
+
 	/** Quadrado virado para a camera (na pose do mundo) ou para a rotacao pedida. */
 	private static void billboard(PoseStack.Pose entry, VertexConsumer buffer, Quaternionf rotation, float x, float y, float z, float size, int color, float alpha) {
 		Vector3f right = rotation.transform(new Vector3f(size / 2, 0, 0));
@@ -579,6 +637,25 @@ public final class AuraRender {
 				.setOverlay(OverlayTexture.NO_OVERLAY)
 				.setLight(FULL_BRIGHT)
 				.setNormal(entry, 0, 1, 0);
+	}
+
+	private static int mixWhite(int color, float amount) {
+		return channels(color, value -> value + (255 - value) * amount);
+	}
+
+	private static int scaled(int color, float amount) {
+		return channels(color, value -> value * amount);
+	}
+
+	private static int channels(int color, Channel channel) {
+		int red = (int) channel.apply(color >> 16 & 0xFF);
+		int green = (int) channel.apply(color >> 8 & 0xFF);
+		int blue = (int) channel.apply(color & 0xFF);
+		return red << 16 | green << 8 | blue;
+	}
+
+	private interface Channel {
+		float apply(float value);
 	}
 
 	/** Numero fixo entre 0 e 1 para cada faixa e cada propriedade: a aura muda sem precisar guardar estado. */
