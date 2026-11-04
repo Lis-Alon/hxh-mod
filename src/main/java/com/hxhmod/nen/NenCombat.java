@@ -70,6 +70,9 @@ public final class NenCombat {
 			return 1.0;
 		}
 		double visibility = data.zetsuVisibility();
+		if (data.has(NenUpgrade.ZETSU_SUPPRESS)) {
+			visibility *= NenRules.ZETSU_SUPPRESSION_VISIBILITY;
+		}
 		if (player.isShiftKeyDown() && data.has(NenUpgrade.ZETSU_STEP)) {
 			visibility *= NenRules.ZETSU_SILENT_STEP_VISIBILITY;
 		}

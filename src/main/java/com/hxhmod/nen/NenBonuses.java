@@ -35,7 +35,7 @@ public record NenBonuses(double maxHealth, double flatDamage, double damageBonus
 				case REN -> damageBonus += data.has(NenUpgrade.REN_SURGE) ? NenRules.REN_SURGE_DAMAGE : NenRules.REN_DAMAGE;
 				case IN -> damageBonus += data.has(NenUpgrade.IN_SHADOW) ? NenRules.IN_SHADOW_DAMAGE : NenRules.IN_DAMAGE;
 				case KO -> {
-					damageBonus += NenRules.KO_DAMAGE;
+					damageBonus += data.has(NenUpgrade.KO_ABSOLUTE) ? NenRules.KO_ABSOLUTE_DAMAGE : NenRules.KO_DAMAGE;
 					damageTaken *= 1 + NenRules.KO_DAMAGE_TAKEN;
 					moveSpeed -= NenRules.KO_SLOWNESS;
 				}

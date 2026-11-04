@@ -44,6 +44,7 @@ public final class NenRules {
 	public static final double IN_SHADOW_DAMAGE = 0.30;
 	// Ko: toda a aura num ponto; o resto do corpo fica sem protecao
 	public static final double KO_DAMAGE = 0.80;
+	public static final double KO_ABSOLUTE_DAMAGE = 1.10;
 	public static final double KO_DAMAGE_TAKEN = 0.50;
 	public static final double KO_SLOWNESS = 0.15;
 	public static final double RYU_DAMAGE = 0.35;
@@ -67,6 +68,10 @@ public final class NenRules {
 	public static final double ZETSU_VISIBILITY_BASE = 0.60;
 	public static final double ZETSU_VISIBILITY_PER_MASTERY = 0.0025;
 	public static final double ZETSU_SILENT_STEP_VISIBILITY = 0.6;
+	// Supressao Refinada: menos vazamento de aura em Zetsu
+	public static final double ZETSU_SUPPRESSION_VISIBILITY = 0.85;
+	// Eficiencia de Aura (Hatsu): desconto fixo no gasto de todas as tecnicas
+	public static final double HATSU_EFFICIENCY_DISCOUNT = 0.05;
 	// Segundos que um ataque denuncia a posicao de quem esta em Zetsu
 	public static final int ZETSU_EXPOSED_SECONDS = 5;
 	// Sem a defesa de Nen: golpes de quem esta com aura liberada causam mais dano
@@ -87,9 +92,8 @@ public final class NenRules {
 	// En: area quadrada de deteccao, de 5x5 (1% de proficiencia) ate 20x20 (100%)
 	public static final double EN_MIN_SIZE = 5;
 	public static final double EN_MAX_SIZE = 20;
-	// Funcionalidades do En aumentam a area
+	// Expansao Territorial aumenta a area
 	public static final double EN_WIDE_MULTIPLIER = 1.5;
-	public static final double EN_VAST_MULTIPLIER = 2.0;
 
 	private NenRules() {
 	}

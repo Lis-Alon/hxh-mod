@@ -57,6 +57,13 @@ public final class NenActions {
 		celebrate(player);
 	}
 
+	/** Botao Resetar da arvore: devolve os pontos das funcionalidades compradas. */
+	public static void resetUpgrades(ServerPlayer player) {
+		NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+		player.setAttached(ModAttachments.NEN, data.resetUpgrades());
+		player.sendSystemMessage(Component.translatable("nen.hxh.upgrades_reset"));
+	}
+
 	private static void celebrate(ServerPlayer player) {
 		player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.6F, 1.4F);

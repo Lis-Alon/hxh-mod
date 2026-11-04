@@ -181,9 +181,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	public double enSize() {
 		int mastery = Math.max(1, mastery(Technique.EN));
 		double size = NenRules.EN_MIN_SIZE + (NenRules.EN_MAX_SIZE - NenRules.EN_MIN_SIZE) * (mastery - 1) / (NenRules.MAX_MASTERY - 1);
-		if (has(NenUpgrade.EN_VAST)) {
-			size *= NenRules.EN_VAST_MULTIPLIER;
-		} else if (has(NenUpgrade.EN_WIDE)) {
+		if (has(NenUpgrade.EN_WIDE)) {
 			size *= NenRules.EN_WIDE_MULTIPLIER;
 		}
 		return size;
@@ -204,6 +202,15 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		if (technique == Technique.KO && has(NenUpgrade.KO_FOCUS)) {
 			drain -= 2;
 		}
+		if (technique == Technique.IN && has(NenUpgrade.IN_CONTROL)) {
+			drain -= 1;
+		}
+		if (technique == Technique.SHU && has(NenUpgrade.SHU_COAT)) {
+			drain -= 1;
+		}
+		if (technique == Technique.EN && has(NenUpgrade.EN_CONTROL)) {
+			drain -= 1;
+		}
 		if (technique == Technique.RYU && has(NenUpgrade.RYU_FLOW)) {
 			drain -= 1;
 		}
@@ -217,6 +224,11 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 	/** Aura gasta por segundo somando todas as tecnicas ligadas. */
 	public int totalDrain() {
 		return active.stream().mapToInt(this::auraDrain).sum();
+	}
+
+	/** Gasto por segundo com a Eficiencia de Aura, que desconta uma unica vez sobre o total (pode ser fracionado). */
+	public double netDrain() {
+		return totalDrain() * (has(NenUpgrade.HATSU_EFFICIENCY) ? 1 - NenRules.HATSU_EFFICIENCY_DISCOUNT : 1);
 	}
 
 	public int training(Technique technique) {
@@ -419,6 +431,12 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 				without(active, technique, Technique.class), xp, training, stats,
 				without(unlocked, technique, Technique.class), result.upgrades, bonusPoints,
 				without(granted, technique, Technique.class), result.grantedUpgrades, with(blocked, technique, Technique.class));
+	}
+
+	/** Tira as funcionalidades compradas, devolvendo os pontos; as liberadas por comando ficam. */
+	public NenData resetUpgrades() {
+		return new NenData(awakened, type, revealed, aura, meditation, divination, active, xp, training, stats, unlocked,
+				Set.copyOf(grantedUpgrades), bonusPoints, granted, grantedUpgrades, blocked);
 	}
 
 	public NenData lock(NenUpgrade upgrade) {

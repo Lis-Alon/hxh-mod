@@ -82,17 +82,18 @@ public final class NenEvents {
 		NenData result = data.withActive(active);
 
 		// A aura volta sempre e as tecnicas ligadas gastam juntas
-		double regen = result.auraRegen(still) + AURA_REMAINDER.getOrDefault(player, 0.0);
-		int whole = (int) regen;
-		AURA_REMAINDER.put(player, regen - whole);
-		int drain = result.totalDrain();
-		if (result.aura() + whole < drain) {
+		double regen = result.auraRegen(still);
+		double balance = regen - result.netDrain() + AURA_REMAINDER.getOrDefault(player, 0.0);
+		int whole = (int) Math.floor(balance);
+		if (result.aura() + whole < 0) {
 			// Sem aura para manter: desliga o que gasta e fica so com o que nao gasta (Ten)
 			active.removeIf(technique -> result.auraDrain(technique) > 0);
 			player.sendOverlayMessage(Component.translatable("nen.hxh.aura_depleted"));
-			return result.withActive(active).withAura(result.aura() + whole);
+			AURA_REMAINDER.put(player, 0.0);
+			return result.withActive(active).withAura(result.aura() + (int) regen);
 		}
-		NenData updated = result.withAura(result.aura() + whole - drain);
+		AURA_REMAINDER.put(player, balance - whole);
+		NenData updated = result.withAura(result.aura() + whole);
 
 		if (!active.isEmpty()) {
 			NenEffects.applyTechniques(player, updated);

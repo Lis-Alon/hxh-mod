@@ -3,6 +3,7 @@ package com.hxhmod.gametest;
 import com.hxhmod.block.ModBlocks;
 import com.hxhmod.client.EnSense;
 import com.hxhmod.client.NenScreen;
+import com.hxhmod.client.NenTreePage;
 import com.hxhmod.item.ModItems;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenCombat;
@@ -10,6 +11,7 @@ import com.hxhmod.nen.NenData;
 import com.hxhmod.nen.NenStat;
 import com.hxhmod.nen.NenPose;
 import com.hxhmod.nen.NenType;
+import com.hxhmod.nen.NenUpgrade;
 import com.hxhmod.nen.Technique;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.creativetab.v1.FabricCreativeModeInventoryScreen;
@@ -139,28 +141,39 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			context.waitTicks(2);
 			context.takeScreenshot("nen_5_techniques_gyo");
 
-			// Arvore de tecnicas, com o mouse em cima do Ken para mostrar os requisitos no rodape
+			// Arvore de tecnicas: janela pequena e Full HD, mouse em cima do Ken e compra de uma sub-habilidade pelo clique
 			input.pressKey(InputConstants.KEY_TAB);
-			context.waitTicks(2);
-			context.takeScreenshot("nen_5b_tree");
-			double[] ken = context.computeOnClient(client -> {
-				int scale = client.getWindow().getGuiScale();
-				int guiWidth = client.getWindow().getGuiScaledWidth();
-				int guiHeight = client.getWindow().getGuiScaledHeight();
-				int panelWidth = Math.min(PANEL_WIDTH, guiWidth - 8);
-				int panelHeight = Math.min(PANEL_HEIGHT, guiHeight - 8);
-				int left = (guiWidth - panelWidth) / 2;
-				int top = (guiHeight - panelHeight) / 2;
-				int areaTop = top + 30 + 10;
-				int areaHeight = top + panelHeight - 24 - areaTop;
-				float treeScale = Math.min(1.0F, Math.min((panelWidth - 20) / 416.0F, areaHeight / 174.0F));
-				float originX = left + (panelWidth - 416 * treeScale) / 2;
-				float originY = areaTop + Math.max(0, (areaHeight - 174 * treeScale) / 2);
-				return new double[] {(originX + 208 * treeScale) * scale, (originY + 87 * treeScale) * scale};
-			});
-			input.setCursorPos(ken[0], ken[1]);
-			context.waitTicks(2);
+			context.waitTicks(5);
+			context.takeScreenshot("nen_5b_tree_small");
+			input.resizeWindow(1920, 1080);
+			context.waitTicks(5);
+			hoverTree(context, input, Technique.KEN, null);
 			context.takeScreenshot("nen_5c_tree_ken");
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withActive(Set.of(Technique.TEN, Technique.REN)));
+			});
+			hoverTree(context, input, null, NenUpgrade.TEN_FLOW);
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(10);
+			singleplayer.getServer().runOnServer(server -> check(server.getPlayerList().getPlayers().getFirst()
+					.getAttachedOrCreate(ModAttachments.NEN).has(NenUpgrade.TEN_FLOW), "clicar na Fluidez da Aura deveria comprar"));
+			// Mostrar nomes e Resetar (o primeiro clique so pede confirmacao)
+			pointTree(context, input, 50, 22);
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(2);
+			context.takeScreenshot("nen_5d_tree_bought");
+			pointTree(context, input, 36, 287);
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(5);
+			singleplayer.getServer().runOnServer(server -> check(server.getPlayerList().getPlayers().getFirst()
+					.getAttachedOrCreate(ModAttachments.NEN).has(NenUpgrade.TEN_FLOW), "o primeiro clique no Resetar so deveria pedir confirmacao"));
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(10);
+			singleplayer.getServer().runOnServer(server -> check(!server.getPlayerList().getPlayers().getFirst()
+					.getAttachedOrCreate(ModAttachments.NEN).has(NenUpgrade.TEN_FLOW), "o segundo clique no Resetar deveria devolver a compra"));
+			input.resizeWindow(854, 480);
+			context.waitTicks(5);
 
 			input.pressKey(InputConstants.KEY_TAB);
 			context.waitTicks(10);
@@ -337,6 +350,36 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			context.waitTicks(10);
 			context.takeScreenshot("nen_10_creative_tab");
 		}
+	}
+
+	/** Poe o mouse num ponto da arvore, com a tela no tamanho atual. */
+	private static void pointTree(ClientGameTestContext context, TestInput input, int x, int y) {
+		double[] point = context.computeOnClient(client -> {
+			int scale = client.getWindow().getGuiScale();
+			float[] position = NenTreePage.screenPoint(x, y, 4 + 2, 4 + 30 + 3, client.getWindow().getGuiScaledWidth() - 8 - 4,
+					client.getWindow().getGuiScaledHeight() - 8 - 30 - 6);
+			return new double[] {position[0] * scale, position[1] * scale};
+		});
+		input.setCursorPos(point[0], point[1]);
+		context.waitTicks(2);
+	}
+
+	/** Poe o mouse em cima de um no da arvore, com a tela no tamanho atual. */
+	private static void hoverTree(ClientGameTestContext context, TestInput input, Technique technique, NenUpgrade upgrade) {
+		double[] point = context.computeOnClient(client -> {
+			int scale = client.getWindow().getGuiScale();
+			int guiWidth = client.getWindow().getGuiScaledWidth();
+			int guiHeight = client.getWindow().getGuiScaledHeight();
+			int areaLeft = 4 + 2;
+			int areaTop = 4 + 30 + 3;
+			int areaWidth = guiWidth - 8 - 4;
+			int areaHeight = guiHeight - 8 - 30 - 6;
+			float[] node = technique != null ? NenTreePage.screenPoint(technique, areaLeft, areaTop, areaWidth, areaHeight)
+					: NenTreePage.screenPoint(upgrade, areaLeft, areaTop, areaWidth, areaHeight);
+			return new double[] {node[0] * scale, node[1] * scale};
+		});
+		input.setCursorPos(point[0], point[1]);
+		context.waitTicks(2);
 	}
 
 	private static void check(boolean condition, String message) {

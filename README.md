@@ -25,7 +25,7 @@ Todos os itens do mod ficam na aba **Hunter x Hunter** do inventário do criativ
 |---|---|
 | **Nível** | Nível, pontos, XP para o próximo nível, distribuição de atributos (atual → novo) e status base |
 | **Técnicas** | Uma aba para cada técnica, com o que ela é, o que faz no jogo, proficiência ou requisitos, botão de ativar e funcionalidades para desbloquear |
-| **Árvore** | Como as técnicas se ligam, a proficiência de cada uma e quanto falta para aprender as próximas. Passe o mouse para ver os requisitos e clique para abrir a técnica |
+| **Árvore** | Ocupa a tela toda: emblema do Nen, técnicas e sub-habilidades ligadas pelos requisitos, com a proficiência de cada técnica (nas que faltam aprender, quanto dos requisitos já foi cumprido). Passe o mouse para ver os detalhes, clique numa sub-habilidade para comprar e numa técnica para abrir. Tem "Mostrar nomes" e "Resetar", que devolve os pontos das sub-habilidades compradas |
 | **Status** | Registro do treino: tipo, vidência, XP total, pontos e tempo treinado em cada técnica |
 
 Mouse: clique seleciona e aperta os botões, a rodinha em cima de um atributo põe pontos (Shift = 5), o botão direito tira 1 ponto e clique duplo numa técnica liga/desliga.
@@ -60,11 +60,29 @@ Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x
 | **In** (Ocultar) | Zetsu 50% | Invisibilidade e +15% de dano corpo a corpo |
 | **En** (Território) | Ten 40% + Ren 40% | Detecta toda criatura numa área de 5x5 (1%) até 20x20 (100%), mesmo invisível; só você vê o contorno |
 | **Shu** (Ciclo) | Ten 50% | Quebra blocos 60% mais rápido |
-| **Ken** (Fortificar) | Ten 60% + Ren 60% | -30% de dano recebido (-45% com Couraça de Ferro) |
+| **Ken** (Fortificar) | Ten 60% + Ren 60% | -30% de dano recebido (-45% com Densidade Protetora) |
 | **Ko** (Endurecimento) | Gyo, Ten, Zetsu, Ren e Hatsu 70% | +80% de dano, mas recebe +50% de dano e fica 15% mais lento |
 | **Ryu** (Fluxo) | Gyo 40% + Ken 40% | +35% de dano, -25% de dano recebido e +10% de velocidade |
 
 ![En detectando um porco invisível](docs/en-invisivel.png)
+
+### Sub-habilidades
+
+Compradas com pontos na aba Árvore, com os nomes do documento de design. "Em breve" aparece na árvore, mas ainda não pode ser comprada.
+
+| Técnica | Sub-habilidades |
+|---|---|
+| **Ten** | Fluidez da Aura, Corpo Jovem |
+| **Zetsu** | Supressão Refinada, Descanso Profundo, Passos Silenciosos |
+| **Ren** | Controle de Liberação, Potência Ofensiva |
+| **Hatsu** | Eficiência de Aura (-5% no gasto de aura), duas passivas exclusivas do tipo (em breve) |
+| **Gyo** | Concentração Precisa (em breve), Transferência Eficiente |
+| **In** | Controle de Ocultação, Ocultação Sustentada |
+| **En** | Expansão Territorial, Controle Territorial |
+| **Ken** | Fortificação Duradoura, Densidade Protetora |
+| **Shu** | Revestimento Eficiente, Reforço Estrutural |
+| **Ko** | Concentração Absoluta, Preparação Refinada |
+| **Ryu** | Transferência Rápida, Fluxo Eficiente |
 
 ### Comandos
 

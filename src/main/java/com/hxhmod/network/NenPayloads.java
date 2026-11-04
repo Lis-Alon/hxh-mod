@@ -58,6 +58,16 @@ public final class NenPayloads {
 	}
 
 	/** Painel aberto ou fechado: com ele aberto o personagem senta em posicao de meditacao. */
+	public record ResetUpgrades() implements CustomPacketPayload {
+		public static final Type<ResetUpgrades> TYPE = new Type<>(HxHMod.id("reset_upgrades"));
+		public static final StreamCodec<ByteBuf, ResetUpgrades> CODEC = StreamCodec.unit(new ResetUpgrades());
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	public record PanelOpen(boolean open) implements CustomPacketPayload {
 		public static final Type<PanelOpen> TYPE = new Type<>(HxHMod.id("panel_open"));
 		public static final StreamCodec<ByteBuf, PanelOpen> CODEC = ByteBufCodecs.BOOL.map(PanelOpen::new, PanelOpen::open);
@@ -72,6 +82,7 @@ public final class NenPayloads {
 		PayloadTypeRegistry.serverboundPlay().register(ToggleTechnique.TYPE, ToggleTechnique.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(BuyUpgrade.TYPE, BuyUpgrade.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(AllocateStats.TYPE, AllocateStats.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(ResetUpgrades.TYPE, ResetUpgrades.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PanelOpen.TYPE, PanelOpen.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(ToggleTechnique.TYPE,
@@ -80,6 +91,8 @@ public final class NenPayloads {
 				(payload, context) -> NenActions.buy(context.player(), payload.upgrade()));
 		ServerPlayNetworking.registerGlobalReceiver(AllocateStats.TYPE,
 				(payload, context) -> NenActions.allocate(context.player(), payload.points()));
+		ServerPlayNetworking.registerGlobalReceiver(ResetUpgrades.TYPE,
+				(payload, context) -> NenActions.resetUpgrades(context.player()));
 		ServerPlayNetworking.registerGlobalReceiver(PanelOpen.TYPE,
 				(payload, context) -> NenPose.setPanelOpen(context.player(), payload.open()));
 	}
