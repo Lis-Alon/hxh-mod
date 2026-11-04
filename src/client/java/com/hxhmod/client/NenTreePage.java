@@ -6,7 +6,6 @@ import com.hxhmod.nen.NenUpgrade;
 import com.hxhmod.nen.Technique;
 import com.hxhmod.network.NenPayloads;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -31,21 +30,25 @@ public final class NenTreePage {
 	private static final int ROOT_RADIUS = 24;
 	private static final int ROOT_X = 32;
 	private static final int ROOT_Y = 150;
-	private static final int ROOT_ELBOW_X = 66;
+	private static final int ROOT_ELBOW_X = 70;
 	private static final float MAX_SCALE = 2.0F;
 	private static final float LABEL_SCALE = 0.75F;
-	private static final float NAME_SCALE = 0.65F;
+	private static final float NAME_SCALE = 0.62F;
+	private static final int NAME_WRAP = 96;
+	private static final int NAME_WRAP_ARC = 70;
+	private static final int ARC_X = 132;
+	private static final int TOOLTIP_WIDTH = 170;
 
-	private static final int LINE_OFF = 0xFF5A5D66;
+	private static final int LINE_OFF = 0xFF7A7D86;
 	private static final int LINE_ON = 0xFFC4E254;
-	private static final int LINE_SUB = 0xFF70747E;
 	private static final int TEXT = 0xFFE9E4D4;
 	private static final int DIM = 0xFF9A968C;
 	private static final int GOLD = 0xFFD8B46A;
 	private static final int GREEN = 0xFFC4E254;
 	private static final int BAD = 0xFFD46A6A;
 	private static final int BOX = 0xD0101218;
-	private static final int BOX_EDGE = 0xFF4A4C54;
+	private static final int TOOLTIP = 0xF00C0D12;
+	private static final int TOOLTIP_EDGE = 0xFFB08A4A;
 	private static final int OPTIONS_HEADER = 0xFF2F6F96;
 	private static final int ICON_ON = 0xFFF4FAD8;
 	private static final int ICON_AVAILABLE = 0xFFFFFFFF;
@@ -54,6 +57,9 @@ public final class NenTreePage {
 
 	private static final Identifier BACKGROUND = texture("background");
 	private static final Identifier EMBLEM = texture("emblem");
+	private static final Identifier LINE_THIN = texture("line_off");
+	private static final Identifier LINE_GLOW = texture("line_on");
+	private static final Identifier DOT = texture("dot");
 	private static final Identifier RING_LOCKED = texture("ring_locked");
 	private static final Identifier RING_SOON = texture("ring_soon");
 	private static final Identifier RING_AVAILABLE = texture("ring_available");
@@ -79,54 +85,62 @@ public final class NenTreePage {
 	private record Band(String key, int textY) {
 	}
 
+	/** Ponto onde as sub-habilidades de uma tecnica se juntam de novo, fechando o losango. */
+	private record Junction(Technique technique, int x, int y) {
+	}
+
 	private static final List<Node> NODES = List.of(
-			technique(Technique.TEN, 92, 40), technique(Technique.ZETSU, 92, 110),
-			technique(Technique.REN, 92, 180), technique(Technique.HATSU, 92, 255),
-			upgrade(NenUpgrade.TEN_FLOW, 138, 25, "drop"), upgrade(NenUpgrade.TEN_YOUTH, 138, 55, "heart"),
-			upgrade(NenUpgrade.ZETSU_SUPPRESS, 138, 87, "eye_off"), upgrade(NenUpgrade.ZETSU_REST, 138, 110, "moon"),
-			upgrade(NenUpgrade.ZETSU_STEP, 138, 133, "step"),
-			upgrade(NenUpgrade.REN_CONTROL, 138, 165, "gauge"), upgrade(NenUpgrade.REN_SURGE, 138, 195, "fist"),
-			upgrade(NenUpgrade.HATSU_EFFICIENCY, 138, 232, "star"),
-			soon(Technique.HATSU, "exclusive_1", 138, 255, "rune"), soon(Technique.HATSU, "exclusive_2", 138, 278, "rune"),
+			technique(Technique.TEN, 100, 30), technique(Technique.ZETSU, 100, 100),
+			technique(Technique.REN, 100, 175), technique(Technique.HATSU, 100, 250),
+			upgrade(NenUpgrade.TEN_FLOW, 140, 15, "drop"), upgrade(NenUpgrade.TEN_YOUTH, 140, 45, "heart"),
+			upgrade(NenUpgrade.ZETSU_SUPPRESS, 132, 77, "eye_off"), upgrade(NenUpgrade.ZETSU_REST, 168, 100, "moon"),
+			upgrade(NenUpgrade.ZETSU_STEP, 132, 123, "step"),
+			upgrade(NenUpgrade.REN_CONTROL, 140, 160, "gauge"), upgrade(NenUpgrade.REN_SURGE, 140, 190, "fist"),
+			upgrade(NenUpgrade.HATSU_EFFICIENCY, 132, 227, "star"),
+			soon(Technique.HATSU, "exclusive_1", 168, 250, "rune"), soon(Technique.HATSU, "exclusive_2", 132, 273, "rune"),
 
-			technique(Technique.GYO, 245, 25), technique(Technique.IN, 245, 80),
-			technique(Technique.EN, 245, 140), technique(Technique.KEN, 245, 190), technique(Technique.SHU, 245, 255),
-			upgrade(NenUpgrade.GYO_PRECISE, 292, 10, "target"), upgrade(NenUpgrade.GYO_INSTINCT, 292, 40, "arrows"),
-			upgrade(NenUpgrade.IN_CONTROL, 292, 65, "mask"), upgrade(NenUpgrade.IN_SHADOW, 292, 95, "hourglass"),
-			upgrade(NenUpgrade.EN_WIDE, 292, 125, "expand"), upgrade(NenUpgrade.EN_CONTROL, 292, 155, "compass"),
-			upgrade(NenUpgrade.KEN_ENDURANCE, 292, 175, "shield"), upgrade(NenUpgrade.KEN_IRON, 292, 205, "shield_plus"),
-			upgrade(NenUpgrade.SHU_COAT, 292, 240, "coat"), upgrade(NenUpgrade.SHU_EDGE, 292, 270, "blade"),
+			technique(Technique.GYO, 225, 30), technique(Technique.IN, 225, 100),
+			technique(Technique.KEN, 225, 175), technique(Technique.SHU, 225, 250),
+			upgrade(NenUpgrade.GYO_PRECISE, 270, 15, "target"), upgrade(NenUpgrade.GYO_INSTINCT, 270, 45, "arrows"),
+			upgrade(NenUpgrade.IN_CONTROL, 270, 85, "mask"), upgrade(NenUpgrade.IN_SHADOW, 270, 115, "hourglass"),
+			upgrade(NenUpgrade.KEN_ENDURANCE, 270, 160, "shield"), upgrade(NenUpgrade.KEN_IRON, 270, 190, "shield_plus"),
+			upgrade(NenUpgrade.SHU_COAT, 270, 235, "coat"), upgrade(NenUpgrade.SHU_EDGE, 270, 265, "blade"),
 
-			technique(Technique.RYU, 400, 170), technique(Technique.KO, 400, 250),
-			upgrade(NenUpgrade.RYU_MASTER, 447, 155, "arrows"), upgrade(NenUpgrade.RYU_FLOW, 447, 185, "wave"),
-			upgrade(NenUpgrade.KO_ABSOLUTE, 447, 235, "burst"), upgrade(NenUpgrade.KO_FOCUS, 447, 265, "timer"));
+			technique(Technique.EN, 360, 72), technique(Technique.RYU, 360, 175), technique(Technique.KO, 360, 250),
+			upgrade(NenUpgrade.EN_WIDE, 405, 57, "expand"), upgrade(NenUpgrade.EN_CONTROL, 405, 87, "compass"),
+			upgrade(NenUpgrade.RYU_MASTER, 405, 160, "arrows"), upgrade(NenUpgrade.RYU_FLOW, 405, 190, "wave"),
+			upgrade(NenUpgrade.KO_ABSOLUTE, 405, 235, "burst"), upgrade(NenUpgrade.KO_FOCUS, 405, 265, "timer"));
 
-	// As linhas descem por colunas proprias e passam nos vaos entre as sub-habilidades
+	private static final List<Junction> JUNCTIONS = List.of(
+			new Junction(Technique.TEN, 190, 30), new Junction(Technique.ZETSU, 190, 100),
+			new Junction(Technique.REN, 190, 175), new Junction(Technique.HATSU, 190, 250),
+			new Junction(Technique.GYO, 315, 30), new Junction(Technique.IN, 315, 100),
+			new Junction(Technique.KEN, 315, 175), new Junction(Technique.SHU, 315, 250),
+			new Junction(Technique.EN, 450, 72), new Junction(Technique.RYU, 450, 175), new Junction(Technique.KO, 450, 250));
+
+	// Os requisitos saem da juncao da tecnica e correm por dois troncos verticais, em x = 190 e x = 335
 	private static final List<Edge> EDGES = List.of(
-			new Edge(Technique.TEN, Technique.GYO, 92, 40, 170, 40, 245, 25),
-			new Edge(Technique.TEN, Technique.EN, 92, 40, 170, 40, 170, 140, 245, 140),
-			new Edge(Technique.TEN, Technique.KEN, 92, 40, 170, 40, 170, 190, 245, 190),
-			new Edge(Technique.TEN, Technique.SHU, 92, 40, 170, 40, 170, 255, 245, 255),
-			new Edge(Technique.TEN, Technique.KO, 92, 40, 170, 40, 170, 222, 320, 222, 400, 250),
-			new Edge(Technique.ZETSU, Technique.IN, 92, 110, 122, 98, 170, 98, 245, 80),
-			new Edge(Technique.ZETSU, Technique.KO, 92, 110, 122, 98, 178, 98, 178, 222, 320, 222, 400, 250),
-			new Edge(Technique.REN, Technique.EN, 92, 180, 186, 180, 186, 140, 245, 140),
-			new Edge(Technique.REN, Technique.KEN, 92, 180, 186, 180, 245, 190),
-			new Edge(Technique.REN, Technique.KO, 92, 180, 186, 180, 186, 222, 320, 222, 400, 250),
-			new Edge(Technique.HATSU, Technique.KO, 92, 255, 122, 266, 170, 266, 194, 222, 320, 222, 400, 250),
-			new Edge(Technique.GYO, Technique.KO, 245, 25, 320, 25, 320, 222, 400, 250),
-			new Edge(Technique.GYO, Technique.RYU, 245, 25, 320, 25, 320, 170, 400, 170),
-			new Edge(Technique.KEN, Technique.RYU, 245, 190, 332, 190, 400, 170));
+			new Edge(Technique.TEN, Technique.GYO, 190, 30, 225, 30),
+			new Edge(Technique.TEN, Technique.EN, 190, 30, 190, 72, 360, 72),
+			new Edge(Technique.TEN, Technique.KEN, 190, 30, 190, 175, 225, 175),
+			new Edge(Technique.TEN, Technique.SHU, 190, 30, 190, 250, 225, 250),
+			new Edge(Technique.TEN, Technique.KO, 190, 30, 190, 218, 335, 218, 335, 250, 360, 250),
+			new Edge(Technique.ZETSU, Technique.IN, 190, 100, 225, 100),
+			new Edge(Technique.ZETSU, Technique.KO, 190, 100, 190, 218, 335, 218, 335, 250, 360, 250),
+			new Edge(Technique.REN, Technique.EN, 190, 175, 190, 72, 360, 72),
+			new Edge(Technique.REN, Technique.KEN, 190, 175, 225, 175),
+			new Edge(Technique.REN, Technique.KO, 190, 175, 190, 218, 335, 218, 335, 250, 360, 250),
+			new Edge(Technique.HATSU, Technique.KO, 190, 250, 190, 218, 335, 218, 335, 250, 360, 250),
+			new Edge(Technique.GYO, Technique.KO, 315, 30, 335, 30, 335, 250, 360, 250),
+			new Edge(Technique.GYO, Technique.RYU, 315, 30, 335, 30, 335, 175, 360, 175),
+			new Edge(Technique.KEN, Technique.RYU, 315, 175, 360, 175));
 
 	private static final List<Band> BANDS = List.of(
-			new Band("screen.hxh.nen.tree.band.ten_zetsu", 74),
-			new Band("screen.hxh.nen.tree.band.ren_ken", 174),
-			new Band("screen.hxh.nen.tree.band.ryu_shu", 276));
+			new Band("ten_zetsu", 62), new Band("ren_ken", 159), new Band("ryu_shu", 256));
 
 	private final NenScreen screen;
 	private boolean showNames;
 	private boolean resetArmed;
-	private Node selected;
 
 	NenTreePage(NenScreen screen) {
 		this.screen = screen;
@@ -211,9 +225,6 @@ public final class NenTreePage {
 				hovered = node;
 			}
 		}
-		if (hovered != null) {
-			selected = hovered;
-		}
 
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(originX, originY);
@@ -225,10 +236,16 @@ public final class NenTreePage {
 			drawNode(graphics, font, data, node, node == hovered);
 		}
 		drawRoot(graphics, font);
-		drawBands(graphics, font);
-		drawDetails(graphics, font, data);
-		boolean[] controls = drawControls(graphics, font, data, treeX, treeY);
+		drawOptions(graphics, font);
 		graphics.pose().popMatrix();
+
+		// Por cima, fora da escala: imagens pixel a pixel e texto nitido
+		drawBands(graphics, originX, originY, scale);
+		drawControls(graphics, font, data, originX, originY, scale, mouseX, mouseY);
+		if (hovered != null) {
+			drawTooltip(graphics, font, data, hovered, originX + hovered.x() * scale, originY + hovered.y() * scale,
+					hovered.radius() * scale, areaLeft, areaTop, areaWidth, areaHeight);
+		}
 
 		// Areas de clique na tela, sem a escala
 		for (Node node : nodes) {
@@ -238,7 +255,6 @@ public final class NenTreePage {
 			screen.addClickable(nodeX, nodeY, size, size, true, () -> click(data, node));
 		}
 		clickable(originX, originY, scale, 4, 16, 92, 13, () -> showNames = !showNames);
-		clickable(originX, originY, scale, 8, 280, 56, 15, () -> clickReset(controls[0]));
 	}
 
 	private void clickable(float originX, float originY, float scale, int x, int y, int width, int height, Runnable action) {
@@ -247,7 +263,6 @@ public final class NenTreePage {
 	}
 
 	private void click(NenData data, Node node) {
-		selected = node;
 		if (node.isTechnique()) {
 			screen.openTechnique(node.technique());
 		} else if (node.upgrade() != null && data.upgradeProblem(node.upgrade()) == null) {
@@ -275,29 +290,47 @@ public final class NenTreePage {
 	// ---------------------------------------------------------------- Linhas
 
 	private static void drawLines(GuiGraphicsExtractor graphics, NenData data) {
-		// Sub-habilidades ligadas a sua tecnica
-		for (Node node : nodes(data)) {
-			if (!node.isTechnique()) {
-				Node owner = nodeOf(node.technique());
-				boolean owned = node.upgrade() != null && data.has(node.upgrade());
-				line(graphics, owner.x(), owner.y(), node.x(), node.y(), owned ? LINE_ON : LINE_SUB);
-			}
-		}
 		// Principios saindo do emblema
 		for (Technique base : List.of(Technique.TEN, Technique.ZETSU, Technique.REN, Technique.HATSU)) {
 			Node node = nodeOf(base);
 			// Chega pela esquerda para nao passar por cima do nome da tecnica
-			polyline(graphics, new int[] {ROOT_X, ROOT_Y, ROOT_ELBOW_X, node.y(), node.x(), node.y()},
-					data.isUnlocked(base) ? LINE_ON : LINE_OFF);
+			polyline(graphics, new int[] {ROOT_X, ROOT_Y, ROOT_ELBOW_X, node.y(), node.x(), node.y()}, data.isUnlocked(base));
+		}
+		// Losangos: cada sub-habilidade liga a tecnica a sua juncao
+		for (boolean lit : new boolean[] {false, true}) {
+			for (Node node : nodes(data)) {
+				if (!node.isTechnique() && (node.upgrade() != null && data.has(node.upgrade())) == lit) {
+					Node owner = nodeOf(node.technique());
+					Junction junction = junctionOf(node.technique());
+					line(graphics, owner.x(), owner.y(), node.x(), node.y(), lit);
+					line(graphics, node.x(), node.y(), junction.x(), junction.y(), lit);
+				}
+			}
 		}
 		// Requisitos: primeiro os que faltam, depois os cumpridos por cima
 		for (boolean met : new boolean[] {false, true}) {
 			for (Edge edge : EDGES) {
 				if (requirementMet(data, edge) == met) {
-					polyline(graphics, edge.points(), met ? LINE_ON : LINE_OFF);
+					polyline(graphics, edge.points(), met);
 				}
 			}
 		}
+		// Ultimas tecnicas seguem ate as faixas da direita
+		for (Junction junction : JUNCTIONS) {
+			if (junction.x() == 450) {
+				line(graphics, junction.x(), junction.y(), 492, junction.y(), false);
+				dot(graphics, 492, junction.y(), 2, LINE_OFF);
+			}
+			dot(graphics, junction.x(), junction.y(), 3, LINE_OFF);
+		}
+	}
+
+	private static Junction junctionOf(Technique technique) {
+		return JUNCTIONS.stream().filter(junction -> junction.technique() == technique).findFirst().orElseThrow();
+	}
+
+	private static void dot(GuiGraphicsExtractor graphics, int x, int y, int radius, int color) {
+		image(graphics, DOT, x - radius, y - radius, radius * 2, 32, color);
 	}
 
 	private static boolean requirementMet(NenData data, Edge edge) {
@@ -305,18 +338,20 @@ public final class NenTreePage {
 				&& data.mastery(edge.parent()) >= requirement.mastery());
 	}
 
-	private static void polyline(GuiGraphicsExtractor graphics, int[] points, int color) {
+	private static void polyline(GuiGraphicsExtractor graphics, int[] points, boolean lit) {
 		for (int i = 0; i + 3 < points.length; i += 2) {
-			line(graphics, points[i], points[i + 1], points[i + 2], points[i + 3], color);
+			line(graphics, points[i], points[i + 1], points[i + 2], points[i + 3], lit);
 		}
 	}
 
-	/** Linha em qualquer angulo: um retangulo fino girado. */
-	private static void line(GuiGraphicsExtractor graphics, int x1, int y1, int x2, int y2, int color) {
+	/** Linha em qualquer angulo: uma faixa de textura com bordas suaves, girada. Acesa, ela brilha. */
+	private static void line(GuiGraphicsExtractor graphics, int x1, int y1, int x2, int y2, boolean lit) {
+		int thickness = 8;
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x1, y1);
 		graphics.pose().rotate((float) Math.atan2(y2 - y1, x2 - x1));
-		graphics.fill(0, -1, (int) Math.round(Math.hypot(x2 - x1, y2 - y1)), 1, color);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, lit ? LINE_GLOW : LINE_THIN, 0, -thickness / 2, 0, 0,
+				(int) Math.round(Math.hypot(x2 - x1, y2 - y1)), thickness, 8, 64, 8, 64, lit ? LINE_ON : LINE_OFF);
 		graphics.pose().popMatrix();
 	}
 
@@ -326,17 +361,17 @@ public final class NenTreePage {
 		Identifier ring = ring(data, node);
 		// O anel tem halo em volta: a textura e maior que o circulo
 		int size = node.radius() * 64 / 24;
-		image(graphics, ring, node.x() - size / 2, node.y() - size / 2, size, 64, 0xFFFFFFFF);
+		image(graphics, ring, node.x() - size / 2, node.y() - size / 2, size, 128, 0xFFFFFFFF);
 		if (hover) {
-			image(graphics, RING_AVAILABLE, node.x() - size / 2, node.y() - size / 2, size, 64, 0x60FFFFFF);
+			image(graphics, RING_AVAILABLE, node.x() - size / 2, node.y() - size / 2, size, 128, 0x60FFFFFF);
 		}
 
 		if (node.isTechnique()) {
 			boolean learned = data.isUnlocked(node.technique());
-			Component kanji = Component.translatable("nen.hxh.technique." + node.technique().getSerializedName() + ".kanji");
-			graphics.centeredText(font, kanji, node.x(), node.y() - 4, learned ? 0xFFFFFFFF : ICON_LOCKED);
+			image(graphics, texture("kanji/" + node.technique().getSerializedName()), node.x() - 10, node.y() - 10, 20, 96,
+					learned ? 0xFFFFFFFF : ICON_LOCKED);
 			int value = learned ? data.mastery(node.technique()) : data.requirementProgress(node.technique());
-			Component label = node.technique().displayName().copy().append(" " + value + "%");
+			Component label = screen.levelFont(node.technique().displayName().copy().append(" " + value + "%"));
 			small(graphics, font, label, node.x(), node.y() + node.radius() + 2, LABEL_SCALE, learned ? TEXT : DIM, true);
 			return;
 		}
@@ -344,7 +379,15 @@ public final class NenTreePage {
 		image(graphics, HxHMod.id("textures/gui/tree/icon/" + node.icon() + ".png"), node.x() - iconSize / 2, node.y() - iconSize / 2,
 				iconSize, 48, iconColor(data, node));
 		if (showNames) {
-			small(graphics, font, title(data, node), node.x() + node.radius() + 2, node.y() - 3, NAME_SCALE, TEXT, false);
+			// Nome embaixo do no, em ate duas linhas, como na referencia
+			List<FormattedCharSequence> lines = font.split(screen.levelFont(title(data, node)), node.x() == ARC_X ? NAME_WRAP_ARC : NAME_WRAP);
+			for (int i = 0; i < Math.min(2, lines.size()); i++) {
+				graphics.pose().pushMatrix();
+				graphics.pose().translate(node.x(), node.y() + node.radius() + 1 + i * 6.5F);
+				graphics.pose().scale(NAME_SCALE, NAME_SCALE);
+				graphics.text(font, lines.get(i), -font.width(lines.get(i)) / 2, 0, TEXT, true);
+				graphics.pose().popMatrix();
+			}
 		}
 	}
 
@@ -383,57 +426,58 @@ public final class NenTreePage {
 
 	// ---------------------------------------------------------------- Textos
 
-	private static void drawBands(GuiGraphicsExtractor graphics, Font font) {
+	/** Nome de cada grupo sobre a sua silhueta, encostado na direita. */
+	private static void drawBands(GuiGraphicsExtractor graphics, float originX, float originY, float scale) {
+		int right = (int) (originX + (WIDTH - 6) * scale);
 		for (Band band : BANDS) {
-			Component title = Component.translatable(band.key()).withStyle(ChatFormatting.BOLD);
-			Component subtitle = Component.translatable(band.key() + ".desc");
-			graphics.text(font, title, WIDTH - 6 - font.width(title), band.textY(), TEXT, true);
-			graphics.pose().pushMatrix();
-			graphics.pose().translate(WIDTH - 6, band.textY() + 11);
-			graphics.pose().scale(LABEL_SCALE, LABEL_SCALE);
-			graphics.text(font, subtitle, -font.width(subtitle), 0, DIM, true);
-			graphics.pose().popMatrix();
+			int y = (int) (originY + band.textY() * scale);
+			NenArt.text(graphics, "band_" + band.key(), right - NenArt.width("band_" + band.key(), 0), y);
+			NenArt.text(graphics, "band_" + band.key() + "_desc", right - NenArt.width("band_" + band.key() + "_desc", 0), y + 13);
 		}
 	}
 
-	/** Quadro no alto a direita com o no embaixo do mouse. */
-	private void drawDetails(GuiGraphicsExtractor graphics, Font font, NenData data) {
-		// Comeca depois dos nomes das sub-habilidades da coluna do meio
-		int x = 382;
-		int y = 6;
-		int width = 144;
-		int height = 132;
-		graphics.fill(x, y, x + width, y + height, BOX);
-		graphics.fill(x, y, x + width, y + 1, BOX_EDGE);
-		graphics.fill(x, y + height - 1, x + width, y + height, BOX_EDGE);
-		int textX = x + 6;
+	/** Descricao que aparece ao lado do no embaixo do mouse. */
+	private void drawTooltip(GuiGraphicsExtractor graphics, Font font, NenData data, Node node, float nodeX, float nodeY, float radius,
+			int areaLeft, int areaTop, int areaWidth, int areaHeight) {
+		int width = Math.min(TOOLTIP_WIDTH, areaWidth / 2);
 		int textWidth = width - 12;
-		int line = y + 6;
-		if (selected == null) {
-			paragraph(graphics, font, Component.translatable("screen.hxh.nen.tree.help"), textX, line, textWidth, DIM);
-			return;
+		List<FormattedCharSequence> lines = new ArrayList<>();
+		List<Integer> colors = new ArrayList<>();
+		addLines(font, screen.levelFont(title(data, node)), GOLD, textWidth, lines, colors);
+		addLines(font, screen.levelFont(subtitle(node)), DIM, textWidth, lines, colors);
+		for (Component text : details(data, node)) {
+			addLines(font, fancy(text), text.getStyle().getColor() != null ? text.getStyle().getColor().getValue() | 0xFF000000 : TEXT,
+					textWidth, lines, colors);
 		}
-		graphics.text(font, title(data, selected).copy().withStyle(ChatFormatting.BOLD), textX, line, GOLD, true);
-		line += 11;
-		small(graphics, font, subtitle(selected), textX, line, LABEL_SCALE, DIM, false);
-		line += 10;
-		for (Component text : details(data, selected)) {
-			line = paragraph(graphics, font, text, textX, line, textWidth, TEXT) + 3;
+		int height = lines.size() * (font.lineHeight + 1) + 11;
+		int x = (int) (nodeX + radius + 6);
+		if (x + width > areaLeft + areaWidth) {
+			x = (int) (nodeX - radius - 6) - width;
+		}
+		int y = Math.clamp((int) nodeY - height / 2, areaTop, Math.max(areaTop, areaTop + areaHeight - height));
+		graphics.nextStratum();
+		graphics.fill(x, y, x + width, y + height, TOOLTIP);
+		graphics.fill(x, y, x + width, y + 1, TOOLTIP_EDGE);
+		graphics.fill(x, y + height - 1, x + width, y + height, TOOLTIP_EDGE);
+		graphics.fill(x, y + 1, x + 1, y + height - 1, TOOLTIP_EDGE);
+		graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, TOOLTIP_EDGE);
+		int line = y + 6;
+		for (int i = 0; i < lines.size(); i++) {
+			graphics.text(font, lines.get(i), x + 6, line, colors.get(i), false);
+			line += font.lineHeight + 1;
 		}
 	}
 
-	private static int paragraph(GuiGraphicsExtractor graphics, Font font, Component text, int x, int y, int width, int color) {
-		List<FormattedCharSequence> lines = font.split(text, (int) (width / 0.85F));
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(x, y);
-		graphics.pose().scale(0.85F, 0.85F);
-		int lineY = 0;
-		for (FormattedCharSequence line : lines) {
-			graphics.text(font, line, 0, lineY, color, false);
-			lineY += font.lineHeight + 1;
+	private static void addLines(Font font, Component text, int color, int width, List<FormattedCharSequence> lines, List<Integer> colors) {
+		for (FormattedCharSequence line : font.split(text, width)) {
+			lines.add(line);
+			colors.add(color);
 		}
-		graphics.pose().popMatrix();
-		return y + (int) (lineY * 0.85F);
+	}
+
+	/** Texto de varias cores (como os requisitos) fica como esta; o resto ganha a fonte da pagina. */
+	private Component fancy(Component text) {
+		return text.getSiblings().isEmpty() ? screen.levelFont(text) : text;
 	}
 
 	private static Component title(NenData data, Node node) {
@@ -492,35 +536,45 @@ public final class NenTreePage {
 		return lines;
 	}
 
-	/** Opcoes, pontos e o botao de resetar. Devolve {pode resetar}. */
-	private boolean[] drawControls(GuiGraphicsExtractor graphics, Font font, NenData data, float treeX, float treeY) {
-		// Opcoes
-		graphics.fill(4, 4, 96, 16, OPTIONS_HEADER);
-		graphics.text(font, Component.translatable("screen.hxh.nen.tree.options"), 8, 6, 0xFFFFFFFF, false);
-		graphics.fill(4, 16, 96, 29, BOX);
+	private void drawOptions(GuiGraphicsExtractor graphics, Font font) {
+		graphics.fillGradient(4, 4, 80, 16, 0xFF3A7FA8, OPTIONS_HEADER);
+		graphics.text(font, screen.levelFont(Component.translatable("screen.hxh.nen.tree.options")), 8, 6, 0xFFFFFFFF, false);
+		graphics.fill(4, 16, 80, 29, BOX);
 		graphics.fill(7, 19, 14, 26, 0xFFFFFFFF);
 		graphics.fill(8, 20, 13, 25, showNames ? 0xFF2F6F96 : 0xFF20232A);
-		small(graphics, font, Component.translatable("screen.hxh.nen.tree.show_names"), 17, 19, 0.8F, TEXT, false);
+		small(graphics, font, screen.levelFont(Component.translatable("screen.hxh.nen.tree.show_names")), 17, 19, 0.8F, TEXT, false);
+	}
 
-		// Pontos
+	/** Pontos e o botao de resetar, em tamanho fixo na tela para o texto sempre caber na moldura. */
+	private void drawControls(GuiGraphicsExtractor graphics, Font font, NenData data, float originX, float originY, float scale,
+			int mouseX, int mouseY) {
+		int x = (int) (originX + 8 * scale);
+		int bottom = (int) (originY + 295 * scale);
+		int height = 14;
+		int y = bottom - height;
+		int pointsY = y - 31;
+		NenArt.shared(graphics, "points_icon", x, pointsY);
 		Component points = Component.literal(String.valueOf(data.pointsAvailable()));
+		// Numero grande so se nao encostar no Hatsu
+		int numberScale = x + 22 + font.width(points) * 2 < originX + 84 * scale ? 2 : 1;
 		graphics.pose().pushMatrix();
-		graphics.pose().translate(8, 248);
-		graphics.pose().scale(2.0F, 2.0F);
-		graphics.text(font, Component.literal("▲"), 0, 0, GOLD, true);
-		graphics.text(font, points, 10, 0, TEXT, true);
+		graphics.pose().translate(x + 22, pointsY);
+		graphics.pose().scale(numberScale, numberScale);
+		graphics.text(font, points, 0, 0, TEXT, false);
 		graphics.pose().popMatrix();
-		small(graphics, font, Component.translatable("screen.hxh.nen.tree.points"), 8, 268, LABEL_SCALE, DIM, false);
+		NenArt.text(graphics, "tree_points", x, pointsY + 17);
 
 		// Resetar: pede confirmacao antes
 		boolean canReset = data.upgrades().stream().anyMatch(upgrade -> !data.grantedUpgrades().contains(upgrade));
 		if (!canReset) {
 			resetArmed = false;
 		}
-		boolean hover = treeX >= 8 && treeX < 64 && treeY >= 280 && treeY < 295;
-		graphics.fill(8, 280, 64, 295, !canReset ? 0xFF2A2C32 : hover ? 0xFF6A6E78 : 0xFF4C4F58);
-		Component label = Component.translatable(resetArmed ? "screen.hxh.nen.tree.confirm" : "screen.hxh.nen.tree.reset");
-		graphics.centeredText(font, label, 36, 284, !canReset ? DIM : resetArmed ? BAD : 0xFFFFFFFF);
-		return new boolean[] {canReset};
+		String key = resetArmed ? "tree_confirm" : "tree_reset";
+		int width = NenArt.width(key, 40) + 16;
+		boolean hover = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+		String state = !canReset ? "_off" : hover || resetArmed ? "_on" : "";
+		NenArt.frame(graphics, "frame_button" + state, x, y, width, height, 5);
+		NenArt.text(graphics, key + state, x + 8, y + (height - 11) / 2);
+		screen.addClickable(x, y, width, height, true, () -> clickReset(canReset));
 	}
 }

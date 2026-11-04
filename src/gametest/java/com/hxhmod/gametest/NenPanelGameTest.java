@@ -165,6 +165,9 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			input.pressKey(InputConstants.KEY_TAB);
 			context.waitTicks(5);
 			context.takeScreenshot("nen_5b_tree_small");
+			input.resizeWindow(1366, 768);
+			context.waitTicks(5);
+			context.takeScreenshot("nen_5b2_tree_768");
 			input.resizeWindow(1920, 1080);
 			context.waitTicks(5);
 			hoverTree(context, input, Technique.KEN, null);

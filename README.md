@@ -171,4 +171,4 @@ Projeto de fã, sem fins lucrativos. Hunter x Hunter pertence a Yoshihiro Togash
 
 ## Fonte
 
-As imagens de títulos, abas e botões são geradas por `tools/gen_panel_art.py` e a página de Nível também usa a [Cinzel](https://github.com/NDISCOVER/Cinzel), sob a SIL Open Font License 1.1. A licença vai junto em `assets/hxh/font/cinzel_ofl.txt`.
+As texturas da árvore são geradas por `tools/gen_tree_textures.py` e depois `tools/gen_tree_art.py`, que usa as silhuetas de `tools/art/tree_reference.png` e desenha os kanjis com a Yu Gothic do Windows. As imagens de títulos, abas e botões são geradas por `tools/gen_panel_art.py` e a página de Nível também usa a [Cinzel](https://github.com/NDISCOVER/Cinzel), sob a SIL Open Font License 1.1. A licença vai junto em `assets/hxh/font/cinzel_ofl.txt`.

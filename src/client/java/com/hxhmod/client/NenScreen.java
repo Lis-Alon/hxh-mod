@@ -191,9 +191,9 @@ public class NenScreen extends Screen {
 		graphics.fill(left, top + panelHeight - 1, left + panelWidth, top + panelHeight, GOLD_DIM);
 	}
 
-	/** A pagina de Nivel fica direto sobre o ceu estrelado, sem o painel. */
+	/** As paginas de Nivel e Arvore ficam direto sobre o ceu estrelado, sem o painel. */
 	private boolean starry() {
-		return page == Page.LEVEL;
+		return page == Page.LEVEL || page == Page.TREE;
 	}
 
 	@Override
@@ -666,7 +666,7 @@ public class NenScreen extends Screen {
 	 * porque o 1 da Cinzel parece um I. Em escala 2 ou menor a Cinzel nao tem pixels para ficar
 	 * legivel nesse tamanho, entao tudo fica na fonte do jogo. Nas outras paginas nao muda nada.
 	 */
-	private Component levelFont(Component text) {
+	Component levelFont(Component text) {
 		if (!starry() || minecraft.getWindow().getGuiScale() <= 2) {
 			return text;
 		}

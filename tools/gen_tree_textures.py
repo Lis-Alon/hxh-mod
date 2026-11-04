@@ -133,19 +133,19 @@ def background():
 # ---------------------------------------------------------------- Aneis
 
 def ring(name, outer, inner, fill, glow=None):
-    size = 64 * SS
+    size = 128 * SS
     image = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     center = size / 2
     if glow:
         halo = Image.new('L', (size, size), 0)
-        ImageDraw.Draw(halo).ellipse((center - 25 * SS, center - 25 * SS, center + 25 * SS, center + 25 * SS), fill=255)
-        halo = halo.filter(ImageFilter.GaussianBlur(5 * SS))
+        ImageDraw.Draw(halo).ellipse((center - 25 * SS * 2, center - 25 * SS * 2, center + 25 * SS * 2, center + 25 * SS * 2), fill=255)
+        halo = halo.filter(ImageFilter.GaussianBlur(5 * SS * 2))
         image.paste(glow + (255,), (0, 0), halo)
     draw = ImageDraw.Draw(image)
-    draw.ellipse((center - 24 * SS, center - 24 * SS, center + 24 * SS, center + 24 * SS), fill=outer)
-    draw.ellipse((center - 20 * SS, center - 20 * SS, center + 20 * SS, center + 20 * SS), fill=inner)
-    draw.ellipse((center - 17 * SS, center - 17 * SS, center + 17 * SS, center + 17 * SS), fill=fill)
-    image.resize((64, 64), Image.LANCZOS).save(f'{OUT}/{name}.png')
+    draw.ellipse((center - 24 * SS * 2, center - 24 * SS * 2, center + 24 * SS * 2, center + 24 * SS * 2), fill=outer)
+    draw.ellipse((center - 20 * SS * 2, center - 20 * SS * 2, center + 20 * SS * 2, center + 20 * SS * 2), fill=inner)
+    draw.ellipse((center - 17 * SS * 2, center - 17 * SS * 2, center + 17 * SS * 2, center + 17 * SS * 2), fill=fill)
+    image.resize((128, 128), Image.LANCZOS).save(f'{OUT}/{name}.png')
 
 
 def emblem():

@@ -1,5 +1,29 @@
 {
 	"sizes": {
+		"en_us/band_ren_ken": [
+			70,
+			15
+		],
+		"en_us/band_ren_ken_desc": [
+			80,
+			11
+		],
+		"en_us/band_ryu_shu": [
+			71,
+			15
+		],
+		"en_us/band_ryu_shu_desc": [
+			77,
+			11
+		],
+		"en_us/band_ten_zetsu": [
+			82,
+			15
+		],
+		"en_us/band_ten_zetsu_desc": [
+			80,
+			11
+		],
 		"en_us/button_confirm": [
 			54,
 			14
@@ -83,6 +107,58 @@
 		"en_us/title_tree": [
 			45,
 			23
+		],
+		"en_us/tree_confirm": [
+			29,
+			11
+		],
+		"en_us/tree_confirm_off": [
+			29,
+			11
+		],
+		"en_us/tree_confirm_on": [
+			29,
+			11
+		],
+		"en_us/tree_points": [
+			31,
+			11
+		],
+		"en_us/tree_reset": [
+			29,
+			11
+		],
+		"en_us/tree_reset_off": [
+			29,
+			11
+		],
+		"en_us/tree_reset_on": [
+			29,
+			11
+		],
+		"pt_br/band_ren_ken": [
+			70,
+			15
+		],
+		"pt_br/band_ren_ken_desc": [
+			79,
+			11
+		],
+		"pt_br/band_ryu_shu": [
+			71,
+			15
+		],
+		"pt_br/band_ryu_shu_desc": [
+			77,
+			11
+		],
+		"pt_br/band_ten_zetsu": [
+			82,
+			15
+		],
+		"pt_br/band_ten_zetsu_desc": [
+			98,
+			11
 		],
 		"pt_br/button_confirm": [
 			69,
@@ -168,6 +244,34 @@
 			76,
 			23
 		],
+		"pt_br/tree_confirm": [
+			46,
+			11
+		],
+		"pt_br/tree_confirm_off": [
+			46,
+			11
+		],
+		"pt_br/tree_confirm_on": [
+			46,
+			11
+		],
+		"pt_br/tree_points": [
+			34,
+			11
+		],
+		"pt_br/tree_reset": [
+			41,
+			11
+		],
+		"pt_br/tree_reset_off": [
+			41,
+			11
+		],
+		"pt_br/tree_reset_on": [
+			41,
+			11
+		],
 		"shared/close": [
 			9,
 			9
@@ -203,6 +307,10 @@
 		"shared/frame_row_selected": [
 			24,
 			14
+		],
+		"shared/points_icon": [
+			18,
+			16
 		]
 	}
 }

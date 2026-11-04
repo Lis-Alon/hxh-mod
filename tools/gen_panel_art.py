@@ -154,6 +154,13 @@ def close_image(key, color):
     frame(key, 9, 9, paint)
 
 
+def points_icon(image, s):
+    draw = ImageDraw.Draw(image, 'RGBA')
+    for offset, color in ((0, (232, 196, 122, 255)), (6, (176, 138, 74, 255))):
+        y = offset * s
+        draw.polygon([(9 * s, 1 * s + y), (17 * s, 8 * s + y), (13 * s, 8 * s + y), (9 * s, 4.5 * s + y), (5 * s, 8 * s + y), (1 * s, 8 * s + y)], fill=color)
+
+
 def main():
     shutil.rmtree(OUT, ignore_errors=True)
     for lang in LANGS:
@@ -179,6 +186,22 @@ def main():
             text_image(lang, f'button_{key}_on', t(key), GOLD, 11, 14, 11, 600)
             text_image(lang, f'button_{key}_off', t(key), DIM, 11, 14, 11, 600)
 
+    for lang in LANGS:
+        with open(os.path.join(ROOT, 'lang', f'{lang}.json'), encoding='utf-8') as file:
+            texts = json.load(file)
+        soft = ((170, 166, 154), (138, 134, 124))
+        for band in ('ten_zetsu', 'ren_ken', 'ryu_shu'):
+            key = f'screen.hxh.nen.tree.band.{band}'
+            text_image(lang, f'band_{band}', texts[key], CREAM, 12, 15, 12, 600)
+            text_image(lang, f'band_{band}_desc', texts[key + '.desc'], soft, 8, 11, 8, 500)
+        text_image(lang, 'tree_points', texts['screen.hxh.nen.tree.points'], soft, 8, 11, 8, 500)
+        for key in ('reset', 'confirm'):
+            label = texts[f'screen.hxh.nen.tree.{key}']
+            text_image(lang, f'tree_{key}', label, CREAM, 9, 11, 9, 600)
+            text_image(lang, f'tree_{key}_on', label, GOLD, 9, 11, 9, 600)
+            text_image(lang, f'tree_{key}_off', label, DIM, 9, 11, 9, 600)
+
+    frame('points_icon', 18, 16, points_icon)
     frame('frame_button', 24, 16, button_frame((30, 30, 36, 225), (12, 12, 17, 225), (140, 112, 64, 255), (140, 112, 64, 110)))
     frame('frame_button_on', 24, 16, button_frame((56, 46, 28, 235), (28, 22, 14, 235), (228, 190, 118, 255), (228, 190, 118, 120)))
     frame('frame_button_off', 24, 16, button_frame((22, 22, 26, 200), (12, 12, 15, 200), (64, 62, 58, 255), (64, 62, 58, 110)))
