@@ -134,6 +134,12 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			context.waitTicks(2);
 			input.scroll(-1);
 			context.waitTicks(2);
+			// Na menor janela so cabem 3 linhas embaixo da lista
+			context.runOnClient(client -> {
+				for (NenStat stat : NenStat.values()) {
+					check(client.font.split(stat.description(), 226).size() <= 3, "a descricao de " + stat.getSerializedName() + " nao cabe em 3 linhas");
+				}
+			});
 			context.takeScreenshot("nen_2_level");
 			// O ceu da pagina de Nivel se mexe sozinho
 			context.waitTicks(100);
