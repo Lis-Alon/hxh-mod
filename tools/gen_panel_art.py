@@ -179,7 +179,7 @@ def main():
             text_image(lang, f'title_{page}', title, CREAM, size, 23, 18, 500)
             text_image(lang, f'tab_{page}', name, CREAM, 11, 14, 11, 600)
             text_image(lang, f'tab_{page}_on', name, GOLD, 11, 14, 11, 600)
-        for key in ('attributes', 'base_stats', 'aura_stats'):
+        for key in ('attributes', 'base_stats', 'aura_stats', 'records', 'training', 'dormant'):
             text_image(lang, f'section_{key}', t(key).upper(), GOLD, 10, 13, 10, 600, star=True)
         for key in ('confirm', 'reset'):
             text_image(lang, f'button_{key}', t(key), CREAM, 11, 14, 11, 600)
@@ -195,6 +195,8 @@ def main():
             text_image(lang, f'band_{band}', texts[key], CREAM, 12, 15, 12, 600)
             text_image(lang, f'band_{band}_desc', texts[key + '.desc'], soft, 8, 11, 8, 500)
         text_image(lang, 'tree_points', texts['screen.hxh.nen.tree.points'], soft, 8, 11, 8, 500)
+        text_image(lang, 'tree_techniques', texts['screen.hxh.nen.page.techniques'], CREAM, 9, 11, 9, 600)
+        text_image(lang, 'tree_techniques_on', texts['screen.hxh.nen.page.techniques'], GOLD, 9, 11, 9, 600)
         for key in ('reset', 'confirm'):
             label = texts[f'screen.hxh.nen.tree.{key}']
             text_image(lang, f'tree_{key}', label, CREAM, 9, 11, 9, 600)

@@ -24,7 +24,7 @@ Todos os itens do mod ficam na aba **Hunter x Hunter** do inventário do criativ
 | Aba | O que tem |
 |---|---|
 | **Nível** | Nível, pontos, XP para o próximo nível, distribuição de atributos (atual → novo) e status base |
-| **Técnicas** | Uma aba para cada técnica, com o que ela é, o que faz no jogo, proficiência ou requisitos, botão de ativar e funcionalidades para desbloquear |
+| **Técnicas** | Não é uma aba: abre pelo botão Técnicas da Árvore ou clicando numa técnica, e Tab volta para a Árvore. Mostra cada técnica, com o que ela é, o que faz no jogo, proficiência ou requisitos, botão de ativar e funcionalidades para desbloquear |
 | **Árvore** | Ocupa a tela toda: emblema do Nen, técnicas e sub-habilidades ligadas pelos requisitos, com a proficiência de cada técnica (nas que faltam aprender, quanto dos requisitos já foi cumprido). Passe o mouse para ver os detalhes, clique numa sub-habilidade para comprar e numa técnica para abrir. Tem "Mostrar nomes" e "Resetar", que devolve os pontos das sub-habilidades compradas |
 | **Status** | Registro do treino: tipo, vidência, XP total, pontos e tempo treinado em cada técnica |
 

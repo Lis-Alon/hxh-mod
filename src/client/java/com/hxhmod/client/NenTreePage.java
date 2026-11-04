@@ -38,6 +38,8 @@ public final class NenTreePage {
 	private static final int NAME_WRAP_ARC = 70;
 	private static final int ARC_X = 132;
 	private static final int TOOLTIP_WIDTH = 170;
+	private static final int TECHNIQUES_RIGHT = 495;
+	private static final int TECHNIQUES_TOP = 12;
 
 	private static final int LINE_OFF = 0xFF7A7D86;
 	private static final int LINE_ON = 0xFFC4E254;
@@ -57,6 +59,9 @@ public final class NenTreePage {
 
 	private static final Identifier BACKGROUND = texture("background");
 	private static final Identifier EMBLEM = texture("emblem");
+	private static final Identifier GLOW_AVAILABLE = texture("glow_available");
+	private static final Identifier GLOW_LEARNED = texture("glow_learned");
+	private static final Identifier GLOW_ACTIVE = texture("glow_active");
 	private static final Identifier LINE_THIN = texture("line_off");
 	private static final Identifier LINE_GLOW = texture("line_on");
 	private static final Identifier DOT = texture("dot");
@@ -231,6 +236,10 @@ public final class NenTreePage {
 		graphics.pose().scale(scale, scale);
 		graphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, 0, 0, 0, 0, WIDTH, HEIGHT, 1280, 600, 1280, 600);
 
+		// Brilho embaixo das linhas: elas chegam inteiras ate a borda de cada no
+		for (Node node : nodes) {
+			drawGlow(graphics, data, node, node == hovered);
+		}
 		drawLines(graphics, data);
 		for (Node node : nodes) {
 			drawNode(graphics, font, data, node, node == hovered);
@@ -315,12 +324,7 @@ public final class NenTreePage {
 				}
 			}
 		}
-		// Ultimas tecnicas seguem ate as faixas da direita
 		for (Junction junction : JUNCTIONS) {
-			if (junction.x() == 450) {
-				line(graphics, junction.x(), junction.y(), 492, junction.y(), false);
-				dot(graphics, 492, junction.y(), 2, LINE_OFF);
-			}
 			dot(graphics, junction.x(), junction.y(), 3, LINE_OFF);
 		}
 	}
@@ -341,7 +345,19 @@ public final class NenTreePage {
 	private static void polyline(GuiGraphicsExtractor graphics, int[] points, boolean lit) {
 		for (int i = 0; i + 3 < points.length; i += 2) {
 			line(graphics, points[i], points[i + 1], points[i + 2], points[i + 3], lit);
+			if (i > 0) {
+				joint(graphics, points[i], points[i + 1], lit);
+			}
 		}
+	}
+
+	/** Arredonda a curva onde dois trechos se encontram. */
+	private static void joint(GuiGraphicsExtractor graphics, int x, int y, boolean lit) {
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().scale(lit ? 0.05F : 0.03F, lit ? 0.05F : 0.03F);
+		image(graphics, DOT, -16, -16, 32, 32, lit ? LINE_ON : LINE_OFF);
+		graphics.pose().popMatrix();
 	}
 
 	/** Linha em qualquer angulo: uma faixa de textura com bordas suaves, girada. Acesa, ela brilha. */
@@ -356,6 +372,27 @@ public final class NenTreePage {
 	}
 
 	// ---------------------------------------------------------------- Nos
+
+	private static void drawGlow(GuiGraphicsExtractor graphics, NenData data, Node node, boolean hover) {
+		Identifier glow = glow(data, node);
+		if (hover && glow == null) {
+			glow = GLOW_AVAILABLE;
+		}
+		if (glow != null) {
+			int size = node.radius() * 64 / 24;
+			image(graphics, glow, node.x() - size / 2, node.y() - size / 2, size, 128, 0xFFFFFFFF);
+		}
+	}
+
+	private static Identifier glow(NenData data, Node node) {
+		if (node.isTechnique()) {
+			return data.isActive(node.technique()) ? GLOW_ACTIVE : data.isUnlocked(node.technique()) ? GLOW_LEARNED : null;
+		}
+		if (node.upgrade() == null) {
+			return null;
+		}
+		return data.has(node.upgrade()) ? GLOW_LEARNED : data.upgradeProblem(node.upgrade()) == null ? GLOW_AVAILABLE : null;
+	}
 
 	private void drawNode(GuiGraphicsExtractor graphics, Font font, NenData data, Node node, boolean hover) {
 		Identifier ring = ring(data, node);
@@ -576,5 +613,16 @@ public final class NenTreePage {
 		NenArt.frame(graphics, "frame_button" + state, x, y, width, height, 5);
 		NenArt.text(graphics, key + state, x + 8, y + (height - 11) / 2);
 		screen.addClickable(x, y, width, height, true, () -> clickReset(canReset));
+
+		// As tecnicas abrem por aqui: a arvore ja mostra todas, entao nao precisam de aba propria
+		String techniques = "tree_techniques";
+		int techniquesWidth = NenArt.width(techniques, 50) + 16;
+		int techniquesX = (int) (originX + TECHNIQUES_RIGHT * scale) - techniquesWidth;
+		int techniquesY = (int) (originY + TECHNIQUES_TOP * scale);
+		boolean techniquesHover = mouseX >= techniquesX && mouseX < techniquesX + techniquesWidth
+				&& mouseY >= techniquesY && mouseY < techniquesY + height;
+		NenArt.frame(graphics, "frame_button" + (techniquesHover ? "_on" : ""), techniquesX, techniquesY, techniquesWidth, height, 5);
+		NenArt.text(graphics, techniques + (techniquesHover ? "_on" : ""), techniquesX + 8, techniquesY + (height - 11) / 2);
+		screen.addClickable(techniquesX, techniquesY, techniquesWidth, height, true, screen::openTechniques);
 	}
 }

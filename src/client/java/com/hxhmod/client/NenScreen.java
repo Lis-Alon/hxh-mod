@@ -98,6 +98,9 @@ public class NenScreen extends Screen {
 
 	private final Map<NenStat, Integer> pending = new EnumMap<>(NenStat.class);
 	private final List<Clickable> clickables = new ArrayList<>();
+	/** Tecnicas nao tem aba: abrem pelo botao da arvore e pelos nos dela. */
+	private static final List<Page> TABS = List.of(Page.LEVEL, Page.TREE, Page.STATUS);
+
 	private final NenTreePage tree = new NenTreePage(this);
 	private Page page = Page.LEVEL;
 	private int selectedStat;
@@ -178,6 +181,10 @@ public class NenScreen extends Screen {
 	// Desenho
 	// ======================================================================
 
+	void openTechniques() {
+		setPage(Page.TECHNIQUES);
+	}
+
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		if (starry()) {
@@ -191,9 +198,9 @@ public class NenScreen extends Screen {
 		graphics.fill(left, top + panelHeight - 1, left + panelWidth, top + panelHeight, GOLD_DIM);
 	}
 
-	/** As paginas de Nivel e Arvore ficam direto sobre o ceu estrelado, sem o painel. */
+	/** So a pagina de Tecnicas ainda usa o painel; as outras ficam direto sobre o ceu estrelado. */
 	private boolean starry() {
-		return page == Page.LEVEL || page == Page.TREE;
+		return page != Page.TECHNIQUES;
 	}
 
 	@Override
@@ -235,13 +242,13 @@ public class NenScreen extends Screen {
 		int x = left + panelWidth - MARGIN - 10;
 		addClickable(x - 2, top + 8, 14, 14, true, this::onClose);
 		NenArt.shared(graphics, hovered(x - 2, top + 8, 14, 14, mouseX, mouseY) ? "close_on" : "close", x + 1, top + 10);
-		for (int i = Page.values().length - 1; i >= 0; i--) {
-			Page tab = Page.values()[i];
+		for (int i = TABS.size() - 1; i >= 0; i--) {
+			Page tab = TABS.get(i);
 			Component label = serif(tab.title());
 			String tabKey = "tab_" + tab.name().toLowerCase(Locale.ROOT);
 			int labelWidth = NenArt.width(tabKey, font.width(label));
 			x -= labelWidth + 16;
-			boolean current = tab == page;
+			boolean current = tab == page || (tab == Page.TREE && page == Page.TECHNIQUES);
 			boolean hover = hovered(x - 4, top + 6, labelWidth + 8, 18, mouseX, mouseY);
 			if (!NenArt.text(graphics, tabKey + (current || hover ? "_on" : ""), x, top + 8)) {
 				graphics.text(font, label, x, top + 11, current || hover ? GOLD : TEXT, false);
@@ -639,15 +646,18 @@ public class NenScreen extends Screen {
 
 	private int infoLine(GuiGraphicsExtractor graphics, Component name, Component value, int x, int y, int width) {
 		row(graphics, x, y, width, ROW_HEIGHT - 3, false);
-		graphics.text(font, name, x + 6, y + 3, TEXT, false);
-		graphics.text(font, value, x + width - 6 - font.width(value), y + 3, TEXT, false);
+		Component shownValue = levelFont(value);
+		graphics.text(font, levelFont(name), x + 6, y + 3, TEXT, false);
+		graphics.text(font, shownValue, x + width - 6 - font.width(shownValue), y + 3, TEXT, false);
 		return y + ROW_HEIGHT - 1;
 	}
 
 	/** O proprio personagem, sentado em meditacao, olhando para o mouse. */
 	private void renderPreview(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int mouseX, int mouseY) {
-		graphics.fillGradient(x, y, x + width, y + height, ROW_TOP, ROW_BOTTOM);
-		graphics.fill(x, y + height - 1, x + width, y + height, GOLD_DIM);
+		if (!starry()) {
+			graphics.fillGradient(x, y, x + width, y + height, ROW_TOP, ROW_BOTTOM);
+			graphics.fill(x, y + height - 1, x + width, y + height, GOLD_DIM);
+		}
 		if (minecraft.player != null) {
 			int size = Math.min(width * 3 / 5, height * 2 / 5);
 			InventoryScreen.extractEntityInInventoryFollowsMouse(graphics, x, y, x + width, y + height, size, 0.0625F,
@@ -910,8 +920,12 @@ public class NenScreen extends Screen {
 		}
 		int key = event.key();
 		if (key == InputConstants.KEY_TAB) {
-			int step = event.hasShiftDown() ? Page.values().length - 1 : 1;
-			setPage(Page.values()[(page.ordinal() + step) % Page.values().length]);
+			if (page == Page.TECHNIQUES) {
+				setPage(Page.TREE);
+				return true;
+			}
+			int step = event.hasShiftDown() ? TABS.size() - 1 : 1;
+			setPage(TABS.get((TABS.indexOf(page) + step) % TABS.size()));
 			return true;
 		}
 		if (page == Page.LEVEL && handleLevelKey(key, event.hasShiftDown())) {

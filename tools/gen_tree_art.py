@@ -102,7 +102,8 @@ line('line_off', 3, 0)
 line('line_on', 5, 3)
 dot()
 kanji()
-for name in ('ring_locked', 'ring_soon', 'ring_available', 'ring_learned', 'ring_active', 'emblem'):
+for name in ('ring_locked', 'ring_soon', 'ring_available', 'ring_learned', 'ring_active', 'emblem',
+             'glow_available', 'glow_learned', 'glow_active'):
     smooth(f'{OUT}/{name}.png')
 for name in os.listdir(OUT + '/icon'):
     if name.endswith('.png'):

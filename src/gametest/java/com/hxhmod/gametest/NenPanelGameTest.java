@@ -132,7 +132,11 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			input.resizeWindow(854, 480);
 			context.waitTicks(5);
 
+			// Tecnicas nao tem aba: abre pelo botao da arvore
 			input.pressKey(InputConstants.KEY_TAB);
+			context.waitTicks(5);
+			pointTree(context, input, 480, 20);
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
 			context.waitTicks(2);
 			context.takeScreenshot("nen_3_techniques_ten");
 
@@ -201,6 +205,11 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			input.pressKey(InputConstants.KEY_TAB);
 			context.waitTicks(10);
 			context.takeScreenshot("nen_6_status");
+			input.resizeWindow(1920, 1080);
+			context.waitTicks(5);
+			context.takeScreenshot("nen_6b_status_1080");
+			input.resizeWindow(854, 480);
+			context.waitTicks(5);
 
 			context.setScreen(() -> null);
 			context.waitTicks(5);
@@ -643,8 +652,6 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			input.resizeWindow(1920, 1080);
 			context.setScreen(NenScreen::new);
 			context.waitTicks(5);
-			input.pressKey(InputConstants.KEY_TAB);
-			context.waitTicks(2);
 			input.pressKey(InputConstants.KEY_TAB);
 			context.waitTicks(5);
 			hoverTree(context, input, null, NenUpgrade.HATSU_IMPACT);

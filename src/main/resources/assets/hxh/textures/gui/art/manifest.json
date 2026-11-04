@@ -60,6 +60,18 @@
 			72,
 			13
 		],
+		"en_us/section_dormant": [
+			95,
+			13
+		],
+		"en_us/section_records": [
+			64,
+			13
+		],
+		"en_us/section_training": [
+			168,
+			13
+		],
 		"en_us/tab_level": [
 			52,
 			14
@@ -136,6 +148,14 @@
 			29,
 			11
 		],
+		"en_us/tree_techniques": [
+			59,
+			11
+		],
+		"en_us/tree_techniques_on": [
+			59,
+			11
+		],
 		"pt_br/band_ren_ken": [
 			70,
 			15
@@ -194,6 +214,18 @@
 		],
 		"pt_br/section_base_stats": [
 			80,
+			13
+		],
+		"pt_br/section_dormant": [
+			114,
+			13
+		],
+		"pt_br/section_records": [
+			67,
+			13
+		],
+		"pt_br/section_training": [
+			142,
 			13
 		],
 		"pt_br/tab_level": [
@@ -270,6 +302,14 @@
 		],
 		"pt_br/tree_reset_on": [
 			41,
+			11
+		],
+		"pt_br/tree_techniques": [
+			46,
+			11
+		],
+		"pt_br/tree_techniques_on": [
+			46,
 			11
 		],
 		"shared/close": [
