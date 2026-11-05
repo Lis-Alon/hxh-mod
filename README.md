@@ -222,6 +222,12 @@ Compradas com pontos na aba Árvore, com os nomes do documento de design. "Em br
 | **Ko** | Concentração Absoluta (golpe mais forte), Preparação Refinada (carga mais rápida) |
 | **Ryu** | Transferência Rápida (troca mais rápida), Fluxo Eficiente (troca mais barata) |
 
+### LAN com quem não tem conta original
+
+O mundo aberto para LAN confere a conta de quem entra, e o Minecraft não tem opção para desligar isso. No arquivo `config/hxh-mod.properties` de quem abre o mundo, `lan-online-mode=false` desliga a verificação. O arquivo é lido sempre que o mundo abre, e o padrão é `true`.
+
+Sem a verificação, qualquer um que alcance a porta entra com o nome que quiser, então não deixe a porta aberta na internet. Quem entra precisa ter a mesma versão do Minecraft, o Fabric, o Fabric API e o mod, e o progresso de Nen fica salvo pelo nome do jogador.
+
 ### Comandos
 
 `/nen` mostra seu status. Os outros precisam de operador (no mundo single player, ative "Permitir comandos"). Aperte Tab para ver os nomes das técnicas e funcionalidades.

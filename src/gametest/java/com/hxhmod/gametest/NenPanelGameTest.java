@@ -1,5 +1,6 @@
 package com.hxhmod.gametest;
 
+import com.hxhmod.LanAccess;
 import com.hxhmod.block.ModBlocks;
 import com.hxhmod.client.DamageTrail;
 import com.hxhmod.client.EnSense;
@@ -18,6 +19,20 @@ import com.hxhmod.nen.HatsuState;
 import com.hxhmod.nen.KoStrike;
 import com.hxhmod.nen.NenAffinity;
 import com.hxhmod.nen.ShuCoat;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import net.minecraft.SharedConstants;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.HttpUtil;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
 import com.hxhmod.nen.ModAttachments;
@@ -70,6 +85,8 @@ import java.util.Set;
 public class NenPanelGameTest implements FabricClientGameTest {
 	// Golems que os testes dos Hatsus precisam reencontrar nos ticks seguintes
 	private static final IronGolem[] GOLEMS = new IronGolem[2];
+	// Primeiro pacote do login que pede a conta original (pedido de criptografia)
+	private static final int LOGIN_ASKS_ACCOUNT = 1;
 
 	private static final int TEST_XP = 2640;
 	private static final int RELOAD_TICKS = 100;
@@ -1260,6 +1277,20 @@ public class NenPanelGameTest implements FabricClientGameTest {
 						"Vitalidade Reforcada deveria aumentar a vida maxima, veio " + player.getMaxHealth());
 			});
 
+			// Mundo aberto para LAN: quem entra pela porta recebe o pedido de conta, a menos que a opcao desligue
+			int lanPort = HttpUtil.getAvailablePort();
+			check(context.computeOnClient(client -> client.getSingleplayerServer().publishServer(MinecraftServer.MultiplayerScope.LAN, false, lanPort)),
+					"o mundo deveria abrir para LAN");
+			context.waitTicks(5);
+			check(firstLoginPacket(context, lanPort) == LOGIN_ASKS_ACCOUNT, "por padrao a LAN deveria conferir a conta");
+			setLanOnlineMode(context, singleplayer, "lan-online-mode=false");
+			check(firstLoginPacket(context, lanPort) != LOGIN_ASKS_ACCOUNT, "com a opcao em false a LAN nao deveria pedir a conta");
+			setLanOnlineMode(context, singleplayer, "lan-online-mode=qualquer coisa");
+			check(firstLoginPacket(context, lanPort) == LOGIN_ASKS_ACCOUNT, "um valor estranho deveria manter a conta conferida");
+			setLanOnlineMode(context, singleplayer, "lan-online-mode=true");
+			context.runOnClient(client -> client.getSingleplayerServer().unpublishServer());
+			context.waitTicks(5);
+
 			// Aba do mod no criativo
 			singleplayer.getServer().runOnServer(server ->
 					server.getPlayerList().getPlayers().getFirst().setGameMode(GameType.CREATIVE));
@@ -1273,6 +1304,90 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			context.waitTicks(10);
 			context.takeScreenshot("nen_10_creative_tab");
 		}
+	}
+
+	/** Escreve a opcao e aplica no mundo aberto, como acontece ao abrir o mundo. */
+	private static void setLanOnlineMode(ClientGameTestContext context, TestSingleplayerContext singleplayer, String line) {
+		try {
+			Files.writeString(LanAccess.configFile(), line + "\n");
+		} catch (IOException exception) {
+			throw new UncheckedIOException(exception);
+		}
+		singleplayer.getServer().runOnServer(LanAccess::apply);
+		context.waitTicks(2);
+	}
+
+	/**
+	 * Entra na porta da LAN como um jogador de verdade, sem conta nenhuma, e devolve o primeiro pacote que o mundo responde.
+	 * Com a verificacao ligada ele e o pedido de criptografia, o passo que exige conta original.
+	 * Roda fora da linha do teste porque a resposta so sai com o mundo andando.
+	 */
+	private static int firstLoginPacket(ClientGameTestContext context, int port) {
+		CompletableFuture<Integer> packet = CompletableFuture.supplyAsync(() -> firstLoginPacket(port));
+		context.waitFor(client -> packet.isDone());
+		return packet.join();
+	}
+
+	private static int firstLoginPacket(int port) {
+		try (Socket socket = new Socket(InetAddress.getLoopbackAddress(), port)) {
+			socket.setSoTimeout(10000);
+			DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+			ByteArrayOutputStream handshake = new ByteArrayOutputStream();
+			DataOutputStream body = new DataOutputStream(handshake);
+			writeVarInt(body, 0);
+			writeVarInt(body, SharedConstants.getProtocolVersion());
+			writeString(body, "localhost");
+			body.writeShort(port);
+			writeVarInt(body, 2);
+			writeFramed(output, handshake.toByteArray());
+
+			ByteArrayOutputStream hello = new ByteArrayOutputStream();
+			body = new DataOutputStream(hello);
+			writeVarInt(body, 0);
+			writeString(body, "AmigoSemConta");
+			UUID id = UUID.randomUUID();
+			body.writeLong(id.getMostSignificantBits());
+			body.writeLong(id.getLeastSignificantBits());
+			writeFramed(output, hello.toByteArray());
+			output.flush();
+
+			DataInputStream input = new DataInputStream(socket.getInputStream());
+			readVarInt(input);
+			return readVarInt(input);
+		} catch (IOException exception) {
+			throw new UncheckedIOException(exception);
+		}
+	}
+
+	private static void writeFramed(DataOutputStream output, byte[] packet) throws IOException {
+		writeVarInt(output, packet.length);
+		output.write(packet);
+	}
+
+	private static void writeString(DataOutputStream output, String text) throws IOException {
+		byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+		writeVarInt(output, bytes.length);
+		output.write(bytes);
+	}
+
+	private static void writeVarInt(DataOutputStream output, int value) throws IOException {
+		while ((value & ~0x7F) != 0) {
+			output.writeByte(value & 0x7F | 0x80);
+			value >>>= 7;
+		}
+		output.writeByte(value);
+	}
+
+	private static int readVarInt(DataInputStream input) throws IOException {
+		int value = 0;
+		for (int shift = 0; shift < 35; shift += 7) {
+			int current = input.readUnsignedByte();
+			value |= (current & 0x7F) << shift;
+			if ((current & 0x80) == 0) {
+				return value;
+			}
+		}
+		throw new IOException("Numero grande demais no pacote");
 	}
 
 	/** Poe o mouse num ponto da arvore, com a tela no tamanho atual. */

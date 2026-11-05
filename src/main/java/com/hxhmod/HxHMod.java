@@ -21,6 +21,7 @@ public class HxHMod implements ModInitializer {
 		ModAttachments.register();
 		NenEvents.register();
 		NenPayloads.register();
+		LanAccess.register();
 		LOGGER.info("Hunter x Hunter Mod carregado!");
 	}
 
