@@ -143,7 +143,29 @@ public final class NenRules {
 	public static final double ZETSU_SUPPRESSION_VISIBILITY = 0.85;
 	// Eficiencia de Aura (Hatsu): desconto fixo no gasto de todas as tecnicas
 	public static final double HATSU_EFFICIENCY_DISCOUNT = 0.05;
-	// Passivas exclusivas do Reforco, conforme o dominio do Hatsu: vida maxima e dano corpo a corpo a mais
+	// Hatsus da aba Hatsu: gasto de aura, recarga (de 20 s a 8 s pelo dominio) e o treino de cada uso
+	public static final int HATSU_CAST_COST = 30;
+	public static final double HATSU_COOLDOWN_SLOWEST = 20;
+	public static final double HATSU_COOLDOWN_FASTEST = 8;
+	public static final int HATSU_CAST_TRAINING = 30;
+	// As passivas de cada galho aumentam em 50% a area, a duracao ou a resistencia do Hatsu ativo
+	public static final double HATSU_BOOST = 1.5;
+	public static final double HATSU_QUAKE_KNOCKBACK = 0.8;
+	public static final double HATSU_QUAKE_LIFT = 0.35;
+	public static final double HATSU_PROPERTY_DAMAGE_MIN = 0.25;
+	public static final double HATSU_PROPERTY_DAMAGE_MAX = 0.5;
+	public static final int HATSU_PROPERTY_SLOW_TICKS = 40;
+	public static final double HATSU_ADAPTATION_REDUCTION = 0.2;
+	public static final double HATSU_MARK_DAMAGE_MIN = 0.15;
+	public static final double HATSU_MARK_DAMAGE_MAX = 0.3;
+	// Projetil: blocos por tick e alcance; depois de 8 blocos perde ate metade do dano
+	public static final double HATSU_BLAST_SPEED = 1.2;
+	public static final double HATSU_BLAST_SWIFT = 1.6;
+	public static final double HATSU_BLAST_RANGE = 40;
+	public static final double HATSU_BLAST_FULL_RANGE = 8;
+	public static final double HATSU_BLAST_FALLOFF = 0.5;
+	public static final double HATSU_BLAST_COHESION = 0.25;
+	// Vitalidade Reforcada e Impacto Natural, conforme o dominio do Hatsu: vida maxima e dano corpo a corpo a mais
 	public static final double HATSU_VITALITY_BASE = 0.10;
 	public static final double HATSU_VITALITY_PER_MASTERY = 0.002;
 	public static final double HATSU_IMPACT_BASE = 0.10;

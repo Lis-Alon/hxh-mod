@@ -3,11 +3,13 @@ package com.hxhmod.network;
 import com.hxhmod.HxHMod;
 import com.hxhmod.nen.AuraColors;
 import com.hxhmod.nen.GyoApplications;
+import com.hxhmod.nen.HatsuActions;
 import com.hxhmod.nen.KoStrike;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenActions;
 import com.hxhmod.nen.RyuFlow;
 import com.hxhmod.nen.NenPose;
+import com.hxhmod.nen.NenType;
 import com.hxhmod.nen.NenUpgrade;
 import com.hxhmod.nen.Technique;
 import io.netty.buffer.ByteBuf;
@@ -140,6 +142,29 @@ public final class NenPayloads {
 		}
 	}
 
+	/** Tecla do Hatsu: lanca o que estiver equipado. */
+	public record UseHatsu() implements CustomPacketPayload {
+		public static final Type<UseHatsu> TYPE = new Type<>(HxHMod.id("use_hatsu"));
+		public static final StreamCodec<ByteBuf, UseHatsu> CODEC = StreamCodec.unit(new UseHatsu());
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
+	/** Clique num Hatsu aprendido da aba Hatsu. */
+	public record EquipHatsu(NenType branch) implements CustomPacketPayload {
+		public static final Type<EquipHatsu> TYPE = new Type<>(HxHMod.id("equip_hatsu"));
+		public static final StreamCodec<ByteBuf, EquipHatsu> CODEC =
+				ByteBufCodecs.VAR_INT.map(i -> new EquipHatsu(NenType.values()[i]), payload -> payload.branch().ordinal());
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	public static void register() {
 		PayloadTypeRegistry.serverboundPlay().register(ToggleTechnique.TYPE, ToggleTechnique.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(BuyUpgrade.TYPE, BuyUpgrade.CODEC);
@@ -151,6 +176,8 @@ public final class NenPayloads {
 		PayloadTypeRegistry.serverboundPlay().register(ResetUpgrades.TYPE, ResetUpgrades.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PanelOpen.TYPE, PanelOpen.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(SetAuraColors.TYPE, SetAuraColors.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(UseHatsu.TYPE, UseHatsu.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(EquipHatsu.TYPE, EquipHatsu.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(ToggleTechnique.TYPE,
 				(payload, context) -> NenActions.toggle(context.player(), payload.technique()));
@@ -169,6 +196,8 @@ public final class NenPayloads {
 				(payload, context) -> NenActions.resetUpgrades(context.player()));
 		ServerPlayNetworking.registerGlobalReceiver(SetAuraColors.TYPE, (payload, context) -> context.player().setAttached(
 				ModAttachments.AURA_COLORS, new AuraColors(payload.primary(), payload.secondary()).sanitized()));
+		ServerPlayNetworking.registerGlobalReceiver(UseHatsu.TYPE, (payload, context) -> HatsuActions.use(context.player()));
+		ServerPlayNetworking.registerGlobalReceiver(EquipHatsu.TYPE, (payload, context) -> HatsuActions.equip(context.player(), payload.branch()));
 		ServerPlayNetworking.registerGlobalReceiver(PanelOpen.TYPE,
 				(payload, context) -> NenPose.setPanelOpen(context.player(), payload.open()));
 	}

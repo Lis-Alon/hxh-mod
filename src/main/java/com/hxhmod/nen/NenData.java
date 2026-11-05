@@ -103,7 +103,7 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 
 	public int pointsSpent() {
 		// Os pontos so compram funcionalidades: atributos e tecnicas vem do treino, e o que foi liberado por comando e de graca
-		return upgrades.stream().filter(upgrade -> !grantedUpgrades.contains(upgrade)).mapToInt(NenUpgrade::cost).sum();
+		return upgrades.stream().filter(upgrade -> !grantedUpgrades.contains(upgrade)).mapToInt(upgrade -> upgrade.costFor(type)).sum();
 	}
 
 	public int pointsAvailable() {
@@ -273,18 +273,23 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		return has(upgrade) ? base + perMastery * mastery(upgrade.technique()) : 0;
 	}
 
-	// ---- Passivas exclusivas do Hatsu ----
+	// ---- Hatsus dos galhos do hexagono ----
+
+	/** Multiplicador dos Hatsus deste galho: a afinidade do tipo inato com ele. */
+	public double hatsuPower(NenType branch) {
+		return NenAffinity.power(type, branch);
+	}
 
 	/** Vitalidade Reforcada: vida maxima a mais (fracao). */
 	public double hatsuVitality() {
-		return NenUpgrade.HATSU_VITALITY.appliesTo(this)
-				? NenRules.HATSU_VITALITY_BASE + NenRules.HATSU_VITALITY_PER_MASTERY * mastery(Technique.HATSU) : 0;
+		return has(NenUpgrade.HATSU_VITALITY)
+				? (NenRules.HATSU_VITALITY_BASE + NenRules.HATSU_VITALITY_PER_MASTERY * mastery(Technique.HATSU)) * hatsuPower(NenType.ENHANCEMENT) : 0;
 	}
 
 	/** Impacto Natural: dano corpo a corpo a mais (fracao). */
 	public double hatsuImpact() {
-		return NenUpgrade.HATSU_IMPACT.appliesTo(this)
-				? NenRules.HATSU_IMPACT_BASE + NenRules.HATSU_IMPACT_PER_MASTERY * mastery(Technique.HATSU) : 0;
+		return has(NenUpgrade.HATSU_IMPACT)
+				? (NenRules.HATSU_IMPACT_BASE + NenRules.HATSU_IMPACT_PER_MASTERY * mastery(Technique.HATSU)) * hatsuPower(NenType.ENHANCEMENT) : 0;
 	}
 
 	// ---- Ren e Ken ----
@@ -506,10 +511,13 @@ public record NenData(boolean awakened, NenType type, boolean revealed, int aura
 		if (!upgrade.availableTo(this)) {
 			return UnlockProblem.TYPE;
 		}
+		if (upgrade.requires() != null && !has(upgrade.requires())) {
+			return UnlockProblem.PREREQUISITES;
+		}
 		if (level() < upgrade.minLevel()) {
 			return UnlockProblem.LEVEL;
 		}
-		if (pointsAvailable() < upgrade.cost()) {
+		if (pointsAvailable() < upgrade.costFor(type)) {
 			return UnlockProblem.POINTS;
 		}
 		return null;

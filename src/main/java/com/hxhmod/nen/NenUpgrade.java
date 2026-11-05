@@ -36,9 +36,25 @@ public enum NenUpgrade implements StringRepresentable {
 	EN_WIDE("en_wide", Technique.EN, 3, 35),
 	EN_CONTROL("en_control", Technique.EN, 3, 45),
 	HATSU_EFFICIENCY("hatsu_efficiency", Technique.HATSU, 3, 15),
-	// Passivas exclusivas: so para quem ja revelou este tipo de Nen
-	HATSU_VITALITY("hatsu_vitality", Technique.HATSU, 4, 25, NenType.ENHANCEMENT),
-	HATSU_IMPACT("hatsu_impact", Technique.HATSU, 4, 25, NenType.ENHANCEMENT);
+	// Aba Hatsu: um Hatsu ativo e duas passivas em cada galho do hexagono, comprados em ordem
+	HATSU_QUAKE("hatsu_quake", NenType.ENHANCEMENT, null, 6, 20),
+	HATSU_VITALITY("hatsu_vitality", NenType.ENHANCEMENT, HATSU_QUAKE, 4, 30),
+	HATSU_IMPACT("hatsu_impact", NenType.ENHANCEMENT, HATSU_VITALITY, 4, 40),
+	HATSU_PROPERTY("hatsu_property", NenType.TRANSMUTATION, null, 6, 20),
+	HATSU_PERSISTENT("hatsu_persistent", NenType.TRANSMUTATION, HATSU_PROPERTY, 4, 30),
+	HATSU_ADAPTATION("hatsu_adaptation", NenType.TRANSMUTATION, HATSU_PERSISTENT, 4, 40),
+	HATSU_ARMOR("hatsu_armor", NenType.CONJURATION, null, 6, 20),
+	HATSU_STRUCTURE("hatsu_structure", NenType.CONJURATION, HATSU_ARMOR, 4, 30),
+	HATSU_MANIFEST("hatsu_manifest", NenType.CONJURATION, HATSU_STRUCTURE, 4, 40),
+	HATSU_MARK("hatsu_mark", NenType.SPECIALIZATION, null, 6, 20),
+	HATSU_READING("hatsu_reading", NenType.SPECIALIZATION, HATSU_MARK, 4, 30),
+	HATSU_MEMORY("hatsu_memory", NenType.SPECIALIZATION, HATSU_READING, 4, 40),
+	HATSU_COMMAND("hatsu_command", NenType.MANIPULATION, null, 6, 20),
+	HATSU_BOND("hatsu_bond", NenType.MANIPULATION, HATSU_COMMAND, 4, 30),
+	HATSU_ORDER("hatsu_order", NenType.MANIPULATION, HATSU_BOND, 4, 40),
+	HATSU_BLAST("hatsu_blast", NenType.EMISSION, null, 6, 20),
+	HATSU_COHESION("hatsu_cohesion", NenType.EMISSION, HATSU_BLAST, 4, 30),
+	HATSU_SWIFT("hatsu_swift", NenType.EMISSION, HATSU_COHESION, 4, 40);
 
 	// Nomes antigos: "ten_calm" virou Fluidez da Aura e "en_vast" virou Controle Territorial;
 	// mundos salvos antes continuam carregando
@@ -54,16 +70,23 @@ public enum NenUpgrade implements StringRepresentable {
 	private final Technique technique;
 	private final int cost;
 	private final int minLevel;
-	private final NenType exclusiveType;
+	private final NenType branch;
+	private final NenUpgrade requires;
 
 	NenUpgrade(String name, Technique technique, int cost, int minLevel) {
-		this(name, technique, cost, minLevel, NenType.NONE);
-	}
-
-	NenUpgrade(String name, Technique technique, int cost, int minLevel, NenType exclusiveType) {
-		this.exclusiveType = exclusiveType;
+		this.branch = NenType.NONE;
+		this.requires = null;
 		this.name = name;
 		this.technique = technique;
+		this.cost = cost;
+		this.minLevel = minLevel;
+	}
+
+	NenUpgrade(String name, NenType branch, NenUpgrade requires, int cost, int minLevel) {
+		this.branch = branch;
+		this.requires = requires;
+		this.name = name;
+		this.technique = Technique.HATSU;
 		this.cost = cost;
 		this.minLevel = minLevel;
 	}
@@ -81,18 +104,33 @@ public enum NenUpgrade implements StringRepresentable {
 		return name;
 	}
 
-	/** A passiva nao e exclusiva, ou e do tipo que este jogador ja revelou. */
-	public boolean availableTo(NenData data) {
-		return exclusiveType == NenType.NONE || (data.revealed() && data.type() == exclusiveType);
+	/** Os nos de um galho da aba Hatsu, do centro para a ponta. */
+	public static List<NenUpgrade> ofBranch(NenType branch) {
+		return Arrays.stream(values()).filter(upgrade -> upgrade.branch == branch).toList();
 	}
 
-	/** O efeito da passiva exclusiva so vale no tipo dela, mesmo se tiver sido liberada por comando. */
-	boolean appliesTo(NenData data) {
-		return data.has(this) && (exclusiveType == NenType.NONE || data.type() == exclusiveType);
+	/** Nao e da aba Hatsu, ou o tipo ja foi revelado e tem alguma afinidade com o galho. */
+	public boolean availableTo(NenData data) {
+		return branch == NenType.NONE || (data.revealed() && !NenAffinity.blocked(data.type(), branch));
 	}
 
 	public Technique technique() {
 		return technique;
+	}
+
+	/** Galho do hexagono; NONE para as funcionalidades da arvore de tecnicas. */
+	public NenType branch() {
+		return branch;
+	}
+
+	/** O no anterior do galho, ou null. */
+	public NenUpgrade requires() {
+		return requires;
+	}
+
+	/** Preco para quem nasceu com este tipo: quanto menor a afinidade com o galho, mais caro. */
+	public int costFor(NenType innate) {
+		return branch == NenType.NONE ? cost : NenAffinity.cost(cost, NenAffinity.percent(innate, branch));
 	}
 
 	public int cost() {

@@ -53,6 +53,8 @@ public final class NenActions {
 		}
 		player.setAttached(ModAttachments.NEN, data.buy(upgrade));
 		player.sendSystemMessage(Component.translatable("nen.hxh.upgrade_bought", upgrade.displayName()));
+		// O Hatsu recem-aprendido ja vai para a tecla
+		HatsuAbility.of(upgrade).ifPresent(ability -> HatsuActions.equip(player, ability.branch()));
 		celebrate(player);
 	}
 

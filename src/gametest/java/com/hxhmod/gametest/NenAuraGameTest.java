@@ -170,7 +170,7 @@ public class NenAuraGameTest implements FabricClientGameTest {
 			context.setScreen(NenScreen::new);
 			context.waitTicks(5);
 			TestInput input = context.getInput();
-			for (int i = 0; i < 3; i++) {
+			for (int i = 0; i < 4; i++) {
 				input.pressKey(InputConstants.KEY_TAB);
 				context.waitTicks(2);
 			}

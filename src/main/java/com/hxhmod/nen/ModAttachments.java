@@ -43,6 +43,14 @@ public final class ModAttachments {
 					.copyOnDeath()
 					.syncWith(GyoCooldowns.STREAM_CODEC, AttachmentSyncPredicate.targetOnly()));
 
+	// Hatsu equipado na tecla e recarga dele; salvo no mundo e enviado so para o proprio jogador
+	public static final AttachmentType<HatsuState> HATSU_STATE = AttachmentRegistry.create(HxHMod.id("hatsu_state"),
+			builder -> builder
+					.initializer(() -> HatsuState.NONE)
+					.persistent(HatsuState.CODEC)
+					.copyOnDeath()
+					.syncWith(HatsuState.STREAM_CODEC, AttachmentSyncPredicate.targetOnly()));
+
 	private ModAttachments() {
 	}
 

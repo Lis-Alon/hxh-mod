@@ -55,7 +55,6 @@ public final class NenTreePage {
 	private static final int ICON_ON = 0xFFF4FAD8;
 	private static final int ICON_AVAILABLE = 0xFFFFFFFF;
 	private static final int ICON_LOCKED = 0xFF9DA0A8;
-	private static final int ICON_SOON = 0xFF62656C;
 
 	private static final Identifier BACKGROUND = texture("background");
 	private static final Identifier EMBLEM = texture("emblem");
@@ -66,15 +65,14 @@ public final class NenTreePage {
 	private static final Identifier LINE_GLOW = texture("line_on");
 	private static final Identifier DOT = texture("dot");
 	private static final Identifier RING_LOCKED = texture("ring_locked");
-	private static final Identifier RING_SOON = texture("ring_soon");
 	private static final Identifier RING_AVAILABLE = texture("ring_available");
 	private static final Identifier RING_LEARNED = texture("ring_learned");
 	private static final Identifier RING_ACTIVE = texture("ring_active");
 
-	/** Um ponto da arvore: tecnica, sub-habilidade comprada com pontos ou passiva que ainda nao existe no jogo. */
-	public record Node(Technique technique, NenUpgrade upgrade, String soonKey, int x, int y, String icon) {
+	/** Um ponto da arvore: tecnica ou sub-habilidade comprada com pontos. */
+	public record Node(Technique technique, NenUpgrade upgrade, int x, int y, String icon) {
 		boolean isTechnique() {
-			return upgrade == null && soonKey == null;
+			return upgrade == null;
 		}
 
 		int radius() {
@@ -101,8 +99,7 @@ public final class NenTreePage {
 			upgrade(NenUpgrade.ZETSU_SUPPRESS, 132, 77, "eye_off"), upgrade(NenUpgrade.ZETSU_REST, 168, 100, "moon"),
 			upgrade(NenUpgrade.ZETSU_STEP, 132, 123, "step"),
 			upgrade(NenUpgrade.REN_CONTROL, 140, 160, "gauge"), upgrade(NenUpgrade.REN_SURGE, 140, 190, "fist"),
-			upgrade(NenUpgrade.HATSU_EFFICIENCY, 132, 227, "star"),
-			soon(Technique.HATSU, "exclusive_1", 168, 250, "rune"), soon(Technique.HATSU, "exclusive_2", 132, 273, "rune"),
+			upgrade(NenUpgrade.HATSU_EFFICIENCY, 145, 250, "star"),
 
 			technique(Technique.GYO, 225, 30), technique(Technique.IN, 225, 100),
 			technique(Technique.KEN, 225, 175), technique(Technique.SHU, 225, 250),
@@ -151,20 +148,16 @@ public final class NenTreePage {
 		this.screen = screen;
 	}
 
-	private static Identifier texture(String name) {
+	static Identifier texture(String name) {
 		return HxHMod.id("textures/gui/tree/" + name + ".png");
 	}
 
 	private static Node technique(Technique technique, int x, int y) {
-		return new Node(technique, null, null, x, y, null);
+		return new Node(technique, null, x, y, null);
 	}
 
 	private static Node upgrade(NenUpgrade upgrade, int x, int y, String icon) {
-		return new Node(upgrade.technique(), upgrade, null, x, y, icon);
-	}
-
-	private static Node soon(Technique technique, String key, int x, int y, String icon) {
-		return new Node(technique, null, key, x, y, icon);
+		return new Node(upgrade.technique(), upgrade, x, y, icon);
 	}
 
 	private static Node nodeOf(Technique technique) {
@@ -188,30 +181,8 @@ public final class NenTreePage {
 		return screenPoint(node.x(), node.y(), areaLeft, areaTop, areaWidth, areaHeight);
 	}
 
-	/** Passiva que este ponto vira para quem revelou o Reforco; os outros tipos seguem em pausa. */
-	private static NenUpgrade exclusiveOf(Node node) {
-		if ("exclusive_1".equals(node.soonKey())) {
-			return NenUpgrade.HATSU_VITALITY;
-		}
-		return "exclusive_2".equals(node.soonKey()) ? NenUpgrade.HATSU_IMPACT : null;
-	}
-
-	/** O ponto como este jogador deve ver: a passiva exclusiva do tipo dele, se ja existir no jogo. */
-	private static Node resolve(NenData data, Node node) {
-		NenUpgrade exclusive = exclusiveOf(node);
-		if (exclusive == null || !exclusive.availableTo(data)) {
-			return node;
-		}
-		return new Node(node.technique(), exclusive, null, node.x(), node.y(), exclusive == NenUpgrade.HATSU_VITALITY ? "heart" : "fist");
-	}
-
-	private static List<Node> nodes(NenData data) {
-		return NODES.stream().map(node -> resolve(data, node)).toList();
-	}
-
 	public static float[] screenPoint(NenUpgrade upgrade, int areaLeft, int areaTop, int areaWidth, int areaHeight) {
-		Node node = NODES.stream().filter(candidate -> candidate.upgrade() == upgrade || exclusiveOf(candidate) == upgrade)
-				.findFirst().orElseThrow();
+		Node node = NODES.stream().filter(candidate -> candidate.upgrade() == upgrade).findFirst().orElseThrow();
 		return screenPoint(node.x(), node.y(), areaLeft, areaTop, areaWidth, areaHeight);
 	}
 
@@ -223,9 +194,8 @@ public final class NenTreePage {
 		float treeX = (mouseX - originX) / scale;
 		float treeY = (mouseY - originY) / scale;
 
-		List<Node> nodes = nodes(data);
 		Node hovered = null;
-		for (Node node : nodes) {
+		for (Node node : NODES) {
 			if (Math.hypot(treeX - node.x(), treeY - node.y()) <= node.radius() + 1) {
 				hovered = node;
 			}
@@ -237,11 +207,11 @@ public final class NenTreePage {
 		graphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, 0, 0, 0, 0, WIDTH, HEIGHT, 1280, 600, 1280, 600);
 
 		// Brilho embaixo das linhas: elas chegam inteiras ate a borda de cada no
-		for (Node node : nodes) {
+		for (Node node : NODES) {
 			drawGlow(graphics, data, node, node == hovered);
 		}
 		drawLines(graphics, data);
-		for (Node node : nodes) {
+		for (Node node : NODES) {
 			drawNode(graphics, font, data, node, node == hovered);
 		}
 		drawRoot(graphics, font);
@@ -257,7 +227,7 @@ public final class NenTreePage {
 		}
 
 		// Areas de clique na tela, sem a escala
-		for (Node node : nodes) {
+		for (Node node : NODES) {
 			int size = (int) ((node.radius() * 2 + 2) * scale);
 			int nodeX = (int) (originX + node.x() * scale) - size / 2;
 			int nodeY = (int) (originY + node.y() * scale) - size / 2;
@@ -274,7 +244,7 @@ public final class NenTreePage {
 	private void click(NenData data, Node node) {
 		if (node.isTechnique()) {
 			screen.openTechnique(node.technique());
-		} else if (node.upgrade() != null && data.upgradeProblem(node.upgrade()) == null) {
+		} else if (data.upgradeProblem(node.upgrade()) == null) {
 			ClientPlayNetworking.send(new NenPayloads.BuyUpgrade(node.upgrade()));
 		}
 	}
@@ -307,8 +277,8 @@ public final class NenTreePage {
 		}
 		// Losangos: cada sub-habilidade liga a tecnica a sua juncao
 		for (boolean lit : new boolean[] {false, true}) {
-			for (Node node : nodes(data)) {
-				if (!node.isTechnique() && (node.upgrade() != null && data.has(node.upgrade())) == lit) {
+			for (Node node : NODES) {
+				if (!node.isTechnique() && data.has(node.upgrade()) == lit) {
 					Node owner = nodeOf(node.technique());
 					Junction junction = junctionOf(node.technique());
 					line(graphics, owner.x(), owner.y(), node.x(), node.y(), lit);
@@ -388,9 +358,6 @@ public final class NenTreePage {
 		if (node.isTechnique()) {
 			return data.isActive(node.technique()) ? GLOW_ACTIVE : data.isUnlocked(node.technique()) ? GLOW_LEARNED : null;
 		}
-		if (node.upgrade() == null) {
-			return null;
-		}
 		return data.has(node.upgrade()) ? GLOW_LEARNED : data.upgradeProblem(node.upgrade()) == null ? GLOW_AVAILABLE : null;
 	}
 
@@ -432,16 +399,10 @@ public final class NenTreePage {
 		if (node.isTechnique()) {
 			return data.isActive(node.technique()) ? RING_ACTIVE : data.isUnlocked(node.technique()) ? RING_LEARNED : RING_LOCKED;
 		}
-		if (node.upgrade() == null) {
-			return RING_SOON;
-		}
 		return data.has(node.upgrade()) ? RING_LEARNED : data.upgradeProblem(node.upgrade()) == null ? RING_AVAILABLE : RING_LOCKED;
 	}
 
 	private static int iconColor(NenData data, Node node) {
-		if (node.upgrade() == null) {
-			return ICON_SOON;
-		}
 		return data.has(node.upgrade()) ? ICON_ON : data.upgradeProblem(node.upgrade()) == null ? ICON_AVAILABLE : ICON_LOCKED;
 	}
 
@@ -449,11 +410,11 @@ public final class NenTreePage {
 		image(graphics, EMBLEM, ROOT_X - ROOT_RADIUS - 2, ROOT_Y - ROOT_RADIUS - 2, ROOT_RADIUS * 2 + 4, 128, 0xFFFFFFFF);
 	}
 
-	private static void image(GuiGraphicsExtractor graphics, Identifier texture, int x, int y, int size, int textureSize, int color) {
+	static void image(GuiGraphicsExtractor graphics, Identifier texture, int x, int y, int size, int textureSize, int color) {
 		graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, 0, 0, size, size, textureSize, textureSize, textureSize, textureSize, color);
 	}
 
-	private static void small(GuiGraphicsExtractor graphics, Font font, Component text, int x, int y, float scale, int color, boolean centered) {
+	static void small(GuiGraphicsExtractor graphics, Font font, Component text, int x, int y, float scale, int color, boolean centered) {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(scale, scale);
@@ -486,6 +447,12 @@ public final class NenTreePage {
 			addLines(font, screen.panelFont(text), text.getStyle().getColor() != null ? text.getStyle().getColor().getValue() | 0xFF000000 : TEXT,
 					textWidth, lines, colors);
 		}
+		tooltipBox(graphics, font, lines, colors, width, nodeX, nodeY, radius, areaLeft, areaTop, areaWidth, areaHeight);
+	}
+
+	/** A caixa da descricao ao lado de um ponto, do lado que couber na area. */
+	static void tooltipBox(GuiGraphicsExtractor graphics, Font font, List<FormattedCharSequence> lines, List<Integer> colors, int width,
+			float nodeX, float nodeY, float radius, int areaLeft, int areaTop, int areaWidth, int areaHeight) {
 		int height = lines.size() * (font.lineHeight + 1) + 11;
 		int x = (int) (nodeX + radius + 6);
 		if (x + width > areaLeft + areaWidth) {
@@ -505,7 +472,7 @@ public final class NenTreePage {
 		}
 	}
 
-	private static void addLines(Font font, Component text, int color, int width, List<FormattedCharSequence> lines, List<Integer> colors) {
+	static void addLines(Font font, Component text, int color, int width, List<FormattedCharSequence> lines, List<Integer> colors) {
 		for (FormattedCharSequence line : font.split(text, width)) {
 			lines.add(line);
 			colors.add(color);
@@ -516,11 +483,7 @@ public final class NenTreePage {
 		if (node.isTechnique()) {
 			return node.technique().displayName();
 		}
-		node = resolve(data, node);
-		if (node.upgrade() != null) {
-			return node.upgrade().displayName();
-		}
-		return Component.translatable(soonKey(data, node));
+		return node.upgrade().displayName();
 	}
 
 	private static Component subtitle(Node node) {
@@ -530,16 +493,7 @@ public final class NenTreePage {
 		return Component.translatable("screen.hxh.nen.tree.sub_of", node.technique().displayName());
 	}
 
-	/** Passivas exclusivas mudam com o tipo de Nen; antes de revelar o tipo elas ficam genericas. */
-	private static String soonKey(NenData data, Node node) {
-		if (node.soonKey().startsWith("exclusive") && data.revealed()) {
-			return "nen.hxh.tree." + node.soonKey() + "." + data.type().getSerializedName();
-		}
-		return "nen.hxh.tree." + node.soonKey();
-	}
-
-	private List<Component> details(NenData data, Node original) {
-		Node node = resolve(data, original);
+	private List<Component> details(NenData data, Node node) {
 		List<Component> lines = new ArrayList<>();
 		if (node.isTechnique()) {
 			Technique technique = node.technique();
@@ -550,7 +504,7 @@ public final class NenTreePage {
 			}
 			lines.add(technique.effect());
 			lines.add(Component.translatable("screen.hxh.nen.tree.open").withColor(DIM));
-		} else if (node.upgrade() != null) {
+		} else {
 			NenUpgrade upgrade = node.upgrade();
 			lines.add(upgrade.description());
 			if (data.has(upgrade)) {
@@ -561,9 +515,6 @@ public final class NenTreePage {
 				lines.add(Component.translatable(data.upgradeProblem(upgrade) == null
 						? "screen.hxh.nen.tree.buy" : "screen.hxh.nen.tree.cannot_buy").withColor(DIM));
 			}
-		} else {
-			lines.add(Component.translatable(soonKey(data, node) + ".desc"));
-			lines.add(Component.translatable("screen.hxh.nen.tree.soon").withColor(DIM));
 		}
 		return lines;
 	}

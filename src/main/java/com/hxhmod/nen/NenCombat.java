@@ -2,6 +2,7 @@ package com.hxhmod.nen;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
@@ -39,14 +40,18 @@ public final class NenCombat {
 				// Atacar denuncia a posicao
 				EXPOSED_UNTIL.put(attacker, attacker.tickCount + NenRules.ZETSU_EXPOSED_SECONDS * 20);
 			}
-			if (source.getDirectEntity() == attacker) {
+			// A marca vale para todo dano de quem marcou, inclusive os outros Hatsus
+			amount = (float) (amount * (1 + HatsuActions.markBonus(attacker, attackerData, victim)));
+			// O dano dos Hatsus ja vem pronto: nao soma os bonus de golpe nem gasta o Ko ou o super soco
+			if (source.getDirectEntity() == attacker && !source.is(DamageTypes.INDIRECT_MAGIC)) {
 				NenBonuses bonuses = NenBonuses.of(attackerData);
 				LAST_ATTACK.put(attacker, attacker.tickCount);
 				// Tudo soma, para Ren, Shu, Gyo, Ko e Ryu nao se multiplicarem
 				double shu = ShuCoat.damageBonus(attacker, attackerData);
 				double punch = GyoApplications.punch(attacker);
 				double ko = KoStrike.strike(attacker);
-				double bonus = bonuses.damageBonus() + shu + RyuFlow.damageBonus(attacker) + punch + ko;
+				double property = HatsuActions.propertyHit(attacker, attackerData, victim);
+				double bonus = bonuses.damageBonus() + shu + RyuFlow.damageBonus(attacker) + punch + ko + property;
 				amount = (float) ((amount + bonuses.flatDamage()) * (1 + bonus) * GyoApplications.damageDealt(attacker));
 				NenTraining.landedHit(attacker, victim, amount, attackerData.isActive(Technique.REN) || shu > 0 || punch > 0 || ko > 0, ko > 0);
 			} else if (source.getDirectEntity() instanceof AbstractArrow) {
@@ -66,7 +71,7 @@ public final class NenCombat {
 		float raw = amount;
 		// A super defesa soma com as outras defesas, mas o piso continua valendo
 		double taken = NenBonuses.of(data).damageTaken() * GyoApplications.damageTaken(player)
-				* RyuFlow.damageTaken(player) * ShuCoat.damageTaken(player, data);
+				* RyuFlow.damageTaken(player) * ShuCoat.damageTaken(player, data) * HatsuActions.damageTaken(player, data);
 		amount = (float) (amount * Math.max(NenRules.MIN_DAMAGE_TAKEN, taken));
 		NenTraining.absorbed(player, data, raw - amount);
 		if (data.isActive(Technique.ZETSU) && releasingAura(source)) {

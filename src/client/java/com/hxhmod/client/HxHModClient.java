@@ -25,6 +25,10 @@ public class HxHModClient implements ClientModInitializer {
 	// Uma tecla para ligar/desligar cada tecnica; todas podem ser trocadas em Controles
 	private static final Map<Technique, KeyMapping> TECHNIQUE_KEYS = new EnumMap<>(Technique.class);
 
+	// Lanca o Hatsu equipado na aba Hatsu
+	public static final KeyMapping USE_HATSU = KeyMappingHelper.registerKeyMapping(
+			new KeyMapping("key.hxh.hatsu", InputConstants.KEY_O, CATEGORY));
+
 	static {
 		technique(Technique.TEN, InputConstants.KEY_Z);
 		technique(Technique.ZETSU, InputConstants.KEY_V);
@@ -61,6 +65,11 @@ public class HxHModClient implements ClientModInitializer {
 			while (OPEN_NEN_PANEL.consumeClick()) {
 				if (client.player != null && client.gui.screen() == null) {
 					client.gui.setScreen(new NenScreen());
+				}
+			}
+			while (USE_HATSU.consumeClick()) {
+				if (client.player != null && ClientPlayNetworking.canSend(NenPayloads.UseHatsu.TYPE)) {
+					ClientPlayNetworking.send(new NenPayloads.UseHatsu());
 				}
 			}
 			TECHNIQUE_KEYS.forEach((technique, key) -> {

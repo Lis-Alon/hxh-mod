@@ -67,3 +67,7 @@ Fontes: [Hunterpedia — Nen](https://hunterxhunter.fandom.com/wiki/Nen) e [Hunt
 | Vidência | Texto + % | Efeito visível no copo | Copo no chão mostra o efeito (água sobe, muda cor, folha gira, impurezas, folha seca); depois vira treino de Hatsu |
 | Proficiência | Nível 1-100 | Hábil/Excelente/Natural/Extremo | Títulos nos níveis 25/50/75/100 |
 | Talento | Igual para todos | Inato, muda a velocidade | Talento sorteado no despertar (multiplicador de XP), revelado pelo exercício dos dedos |
+
+## Afinidade no jogo
+
+A tabela da aba Hatsu (`NenAffinity`) segue o pedido do projeto, e nao a wiki: a wiki da 100/80/60/40 pela distancia no hexagono e 100% para especialistas em tudo; no jogo, Especializacao tem 0% ou 1% para os outros tipos, e o especialista tem de 40% a 80% fora do proprio galho.

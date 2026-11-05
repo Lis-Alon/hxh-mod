@@ -2,6 +2,8 @@ package com.hxhmod.client;
 
 import com.hxhmod.HxHMod;
 import com.hxhmod.nen.GyoApplications;
+import com.hxhmod.nen.HatsuAbility;
+import com.hxhmod.nen.HatsuActions;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenData;
 import com.hxhmod.nen.NenRules;
@@ -20,6 +22,7 @@ import net.minecraft.world.effect.MobEffects;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * HUD de combate no canto superior esquerdo: retrato, vida, Nen e tecnicas aprendidas. As pecas vem de
@@ -251,6 +254,14 @@ public final class NenHud {
 				Component name = Component.translatable("nen.hxh.gyo.name." + action.name().toLowerCase(Locale.ROOT));
 				graphics.text(minecraft.font, Component.translatable("nen.hxh.gyo.cooldown", name, (ticks + 19) / 20), x, nextY, COOLDOWN_COLOR, true);
 				nextY += minecraft.font.lineHeight + 1;
+			}
+		}
+		int hatsuTicks = HatsuActions.remaining(player);
+		if (hatsuTicks > 0) {
+			Optional<HatsuAbility> equipped = HatsuAbility.of(player.getAttachedOrCreate(ModAttachments.HATSU_STATE).equipped());
+			if (equipped.isPresent()) {
+				graphics.text(minecraft.font, Component.translatable("nen.hxh.gyo.cooldown", equipped.get().upgrade().displayName(), (hatsuTicks + 19) / 20),
+						x, nextY, COOLDOWN_COLOR, true);
 			}
 		}
 	}

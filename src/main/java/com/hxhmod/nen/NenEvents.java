@@ -52,6 +52,7 @@ public final class NenEvents {
 		ShuCoat.tick(player, data);
 		KoStrike.tick(player, data);
 		RyuFlow.tick(player, data);
+		HatsuActions.tick(player, data);
 		AuraVisuals.publish(player, player.getAttachedOrCreate(ModAttachments.NEN));
 	}
 

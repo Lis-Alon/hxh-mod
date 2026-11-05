@@ -19,6 +19,36 @@ Todos os itens do mod ficam na aba **Hunter x Hunter** do inventário do criativ
 |---|---|---|
 | ![Pose de meditação](docs/meditacao.png) | ![Copo d'água com folha](docs/copo-no-chao.png) | ![Aba Hunter x Hunter](docs/aba-criativo.png) |
 
+### Aba Hatsu: as habilidades finais de cada tipo
+
+A aba Hatsu do painel é um hexágono com um galho para cada tipo de Nen. Começa no centro e segue no sentido horário: Reforço (topo), Transformação, Materialização, Especialização (embaixo), Manipulação e Emissão. Todo mundo nasce com um tipo inato fixo: o galho dele brilha forte e pulsa, os outros apagam conforme a afinidade, e os de 0% ficam escuros e não respondem ao clique. Antes de revelar o tipo com o copo, nada acende e nada pode ser comprado.
+
+| Tipo inato | Reforço | Transformação | Materialização | Especialização | Manipulação | Emissão |
+|---|---|---|---|---|---|---|
+| **Reforço** | 100 | 80 | 60 | 0 | 60 | 80 |
+| **Transformação** | 80 | 100 | 80 | 0 | 40 | 60 |
+| **Materialização** | 60 | 80 | 100 | 1 | 60 | 40 |
+| **Especialização** | 40 | 60 | 80 | 100 | 80 | 60 |
+| **Manipulação** | 60 | 40 | 60 | 1 | 100 | 80 |
+| **Emissão** | 80 | 60 | 40 | 0 | 80 | 100 |
+
+- **Preço:** preço base × 100 ÷ afinidade, arredondado para cima. O Hatsu ativo de 6 pontos custa 6 em 100%, 8 em 80%, 10 em 60%, 15 em 40% e 600 em 1%.
+- **Poder:** dano, duração e área saem multiplicados pela afinidade. As passivas de vida, dano e defesa também.
+- **Bloqueio:** 0% de afinidade não compra, nem no painel nem pelo servidor. Mesmo liberado por comando, não tem efeito.
+
+Cada galho tem três nós, comprados em ordem: o Hatsu ativo no nível 20 e as duas passivas nos níveis 30 e 40. Os números dos ativos sobem com o domínio do Hatsu.
+
+| Galho | Hatsu ativo | Passivas |
+|---|---|---|
+| **Reforço** | Golpe Sísmico: dano de 8 a 20 e empurrão numa área de 4 a 6 blocos | Vitalidade Reforçada (+10% a +30% de vida), Impacto Natural (+10% a +30% de dano corpo a corpo) |
+| **Transformação** | Aura Elétrica: por 10 a 20 s, +25% a +50% de dano nos golpes, que deixam o alvo lento | Propriedade Persistente (+50% de duração), Adaptação Corporal (até -20% de dano recebido com ela ligada) |
+| **Materialização** | Armadura Materializada: 8 a 24 de vida extra por 20 a 40 s | Estrutura Resistente (+50% de vida extra), Manifestação Duradoura (+50% de duração) |
+| **Especialização** | Marca de Aura: quem está a 10 a 20 blocos brilha por 15 a 30 s e leva +15% a +30% de dano de você | Leitura Residual (+50% de área), Memória de Aura (+50% de duração) |
+| **Manipulação** | Comando de Aura: por 8 a 16 s, mobs a 6 a 10 blocos largam você e atacam os inimigos por perto; jogadores só ficam lentos, e criaturas com mais de 100 de vida resistem | Vínculo Estendido (+50% de área), Comando Persistente (+50% de duração) |
+| **Emissão** | Projétil de Aura: dano de 10 a 24, alcance de 40 blocos; depois de 8 blocos perde até metade do dano | Coesão à Distância (perde bem menos dano), Projeção Veloz (voa 60% mais rápido) |
+
+A tecla **O** (configurável) lança o Hatsu equipado. O último aprendido vai para a tecla sozinho, e clicar num Hatsu aprendido troca o equipado. Cada uso gasta 30 de aura (menos com Eficiência de Aura), não funciona em Zetsu e entra numa recarga de 20 s a 8 s conforme o domínio, que aparece em texto embaixo da HUD. O hexágono é gerado por `tools/gen_hatsu_art.py`.
+
 ### HUD de combate
 
 No canto superior esquerdo, no lugar dos corações e da armadura do Minecraft (a comida e o ar continuam onde sempre estiveram):
@@ -90,7 +120,7 @@ Os quatro princípios e as aplicações avançadas, seguindo a [wiki de Hunter x
 | **Ten** (Envoltura) | despertar | Reduz o dano de 10% a 25% conforme a proficiência |
 | **Zetsu** (Corte) | despertar | Mobs percebem menos você, aura volta mais rápido (mais ainda parado), mas sem defesa de Nen |
 | **Ren** (Prática) | despertar | Três intensidades: +15/25/40% de dano e -3/5/8% de dano recebido, gastando 2/3/5 de aura por segundo |
-| **Hatsu** (Liberação) | despertar | Treina a aura do seu tipo. Eficiência de Aura é a passiva geral. Quem revelou o Reforço tem também duas passivas exclusivas; as dos outros tipos seguem em pausa, como no documento |
+| **Hatsu** (Liberação) | despertar | Treina a aura do seu tipo. Eficiência de Aura é a passiva geral. As habilidades finais de cada tipo ficam na aba Hatsu (veja abaixo) |
 | **Gyo** (Coagular) | Ten 20% | A tecla liga o Gyo, e outras quatro teclas usam super soco, super defesa, super pulo e super dash, com recarga (veja abaixo) |
 | **In** (Ocultar) | Zetsu 50% | Esconde dos outros jogadores a aura das suas técnicas. Quem usa Gyo por perto ainda vê; liberar além da capacidade deixa parte à mostra |
 | **En** (Território) | Ten 40% + Ren 40% | Detecta toda criatura numa esfera de 5 (1%) até 20 blocos de diâmetro (100%), através de paredes e mesmo invisível; só você vê o contorno. Dá para escolher uma área menor, que gasta menos |
@@ -183,7 +213,7 @@ Compradas com pontos na aba Árvore, com os nomes do documento de design. "Em br
 | **Ten** | Fluidez da Aura, Corpo Jovem |
 | **Zetsu** | Supressão Refinada, Descanso Profundo, Passos Silenciosos (passos sem som) |
 | **Ren** | Controle de Liberação (menos gasto), Potência Ofensiva (mais dano) |
-| **Hatsu** | Eficiência de Aura (-5% no gasto de aura). Só para o Reforço já revelado: Vitalidade Reforçada (+10% a +30% de vida máxima) e Impacto Natural (+10% a +30% de dano corpo a corpo), conforme o domínio do Hatsu e sem precisar ligá-lo. Os outros tipos: em breve |
+| **Hatsu** | Eficiência de Aura (-5% no gasto de aura). O resto fica na aba Hatsu |
 | **Gyo** | Concentração Precisa (aplicações 25% a 50% mais fortes), Transferência Eficiente (custam 25% a 50% menos aura) |
 | **In** | Controle de Ocultação (menos gasto), Ocultação Sustentada (esconde mais aura) |
 | **En** | Expansão Territorial (esfera maior), Controle Territorial (menos gasto) |

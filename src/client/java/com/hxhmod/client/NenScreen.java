@@ -6,6 +6,7 @@ import com.hxhmod.nen.NenBonuses;
 import com.hxhmod.nen.NenData;
 import com.hxhmod.nen.NenRules;
 import com.hxhmod.nen.NenStat;
+import com.hxhmod.nen.NenType;
 import com.hxhmod.nen.NenUpgrade;
 import com.hxhmod.nen.Technique;
 import com.hxhmod.network.NenPayloads;
@@ -70,6 +71,7 @@ public class NenScreen extends Screen {
 		LEVEL("screen.hxh.nen.page.level"),
 		TECHNIQUES("screen.hxh.nen.page.techniques"),
 		TREE("screen.hxh.nen.page.tree"),
+		HATSU("screen.hxh.nen.page.hatsu"),
 		STATUS("screen.hxh.nen.page.status"),
 		AURA("screen.hxh.nen.page.aura");
 
@@ -93,10 +95,11 @@ public class NenScreen extends Screen {
 
 	private final List<Clickable> clickables = new ArrayList<>();
 	/** Tecnicas nao tem aba: abrem pelo botao da arvore e pelos nos dela. */
-	private static final List<Page> TABS = List.of(Page.LEVEL, Page.TREE, Page.STATUS, Page.AURA);
+	private static final List<Page> TABS = List.of(Page.LEVEL, Page.TREE, Page.HATSU, Page.STATUS, Page.AURA);
 
 	private final NenTreePage tree = new NenTreePage(this);
 	private final NenAuraPage aura = new NenAuraPage(this);
+	private final NenHatsuPage hatsu = new NenHatsuPage(this);
 	private Page page = Page.LEVEL;
 	private int selectedStat;
 	private int selectedTechnique;
@@ -128,8 +131,9 @@ public class NenScreen extends Screen {
 
 	/** A arvore usa a tela toda; as outras abas ficam num painel menor no centro. */
 	private void layoutPanel() {
-		panelWidth = page == Page.TREE ? width - 8 : Math.min(MAX_WIDTH, width - 8);
-		panelHeight = page == Page.TREE ? height - 8 : Math.min(MAX_HEIGHT, height - 8);
+		boolean fullScreen = page == Page.TREE || page == Page.HATSU;
+		panelWidth = fullScreen ? width - 8 : Math.min(MAX_WIDTH, width - 8);
+		panelHeight = fullScreen ? height - 8 : Math.min(MAX_HEIGHT, height - 8);
 		left = (width - panelWidth) / 2;
 		top = (height - panelHeight) / 2;
 	}
@@ -204,6 +208,8 @@ public class NenScreen extends Screen {
 			case LEVEL -> renderLevelPage(graphics, data, mouseX, mouseY);
 			case TECHNIQUES -> renderTechniquesPage(graphics, data, mouseX, mouseY);
 			case TREE -> tree.render(graphics, font, data, left + 2, top + HEADER_HEIGHT + 3, panelWidth - 4,
+					panelHeight - HEADER_HEIGHT - 6, mouseX, mouseY);
+			case HATSU -> hatsu.render(graphics, font, data, left + 2, top + HEADER_HEIGHT + 3, panelWidth - 4,
 					panelHeight - HEADER_HEIGHT - 6, mouseX, mouseY);
 			case STATUS -> renderStatusPage(graphics, data, mouseX, mouseY);
 			case AURA -> aura.render(graphics, font, left + MARGIN, top + HEADER_HEIGHT + 8, panelWidth - 2 * MARGIN,
@@ -491,9 +497,9 @@ public class NenScreen extends Screen {
 		}
 
 		// Funcionalidades
-		// Passivas exclusivas de outro tipo (ou de um tipo ainda nao revelado) ficam escondidas
+		// Os galhos do hexagono ficam na aba Hatsu
 		List<NenUpgrade> upgrades = NenUpgrade.of(technique).stream()
-				.filter(upgrade -> upgrade.availableTo(data) || data.has(upgrade)).toList();
+				.filter(upgrade -> upgrade.branch() == NenType.NONE).toList();
 		if (upgrades.isEmpty()) {
 			return y;
 		}

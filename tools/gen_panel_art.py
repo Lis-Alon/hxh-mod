@@ -170,7 +170,7 @@ def main():
         def t(key):
             return texts[f'screen.hxh.nen.{key}']
 
-        for page in ('level', 'techniques', 'tree', 'status', 'aura'):
+        for page in ('level', 'techniques', 'tree', 'hatsu', 'status', 'aura'):
             name = t(f'page.{page}')
             # Titulo longo encolhe para nao encostar nas abas na menor tela (854x480)
             title = name.upper()

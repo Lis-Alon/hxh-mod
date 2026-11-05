@@ -128,6 +128,14 @@
 			33,
 			14
 		],
+		"en_us/tab_hatsu": [
+			39,
+			14
+		],
+		"en_us/tab_hatsu_on": [
+			39,
+			14
+		],
 		"en_us/tab_level": [
 			52,
 			14
@@ -162,6 +170,10 @@
 		],
 		"en_us/title_aura": [
 			53,
+			23
+		],
+		"en_us/title_hatsu": [
+			62,
 			23
 		],
 		"en_us/title_level": [
@@ -344,6 +356,14 @@
 			33,
 			14
 		],
+		"pt_br/tab_hatsu": [
+			39,
+			14
+		],
+		"pt_br/tab_hatsu_on": [
+			39,
+			14
+		],
 		"pt_br/tab_level": [
 			35,
 			14
@@ -378,6 +398,10 @@
 		],
 		"pt_br/title_aura": [
 			53,
+			23
+		],
+		"pt_br/title_hatsu": [
+			62,
 			23
 		],
 		"pt_br/title_level": [

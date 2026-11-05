@@ -4,6 +4,7 @@ import com.hxhmod.block.ModBlocks;
 import com.hxhmod.client.DamageTrail;
 import com.hxhmod.client.EnSense;
 import com.hxhmod.client.GyoControl;
+import com.hxhmod.client.NenHatsuPage;
 import com.hxhmod.client.NenHud;
 import com.hxhmod.client.NenScreen;
 import com.hxhmod.client.NenTreePage;
@@ -11,8 +12,13 @@ import com.hxhmod.item.ModItems;
 import com.hxhmod.nen.AuraVisuals;
 import com.hxhmod.nen.GyoApplications;
 import com.hxhmod.nen.GyoCooldowns;
+import com.hxhmod.nen.HatsuAbility;
+import com.hxhmod.nen.HatsuActions;
+import com.hxhmod.nen.HatsuState;
 import com.hxhmod.nen.KoStrike;
+import com.hxhmod.nen.NenAffinity;
 import com.hxhmod.nen.ShuCoat;
+import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
 import com.hxhmod.nen.ModAttachments;
 import com.hxhmod.nen.NenBonuses;
@@ -62,6 +68,9 @@ import java.util.Set;
 
 /** Abre o painel do Nen em varios estados e tira prints de cada aba, para conferir o visual. */
 public class NenPanelGameTest implements FabricClientGameTest {
+	// Golems que os testes dos Hatsus precisam reencontrar nos ticks seguintes
+	private static final IronGolem[] GOLEMS = new IronGolem[2];
+
 	private static final int TEST_XP = 2640;
 	private static final int RELOAD_TICKS = 100;
 	// Mesmas medidas do NenScreen, para achar a primeira linha de atributo com o mouse
@@ -328,6 +337,8 @@ public class NenPanelGameTest implements FabricClientGameTest {
 			input.resizeWindow(854, 480);
 			context.waitTicks(5);
 
+			input.pressKey(InputConstants.KEY_TAB);
+			context.waitTicks(5);
 			input.pressKey(InputConstants.KEY_TAB);
 			context.waitTicks(10);
 			context.takeScreenshot("nen_6_status");
@@ -972,45 +983,282 @@ public class NenPanelGameTest implements FabricClientGameTest {
 				player.getInventory().setSelectedSlot((player.getInventory().getSelectedSlot() + 8) % 9);
 			});
 
-			// Passivas do Reforco: so para quem revelou o tipo; compra pela arvore
+			// Aba Hatsu: afinidade, preco e poder de cada galho, sempre pelo tipo revelado
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				player.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-				NenData hidden = NenData.DEFAULT.awaken(NenType.ENHANCEMENT).withXp(NenData.xpForLevel(30));
-				check(hidden.upgradeProblem(NenUpgrade.HATSU_IMPACT) == NenData.UnlockProblem.TYPE, "o tipo escondido nao deveria comprar a passiva");
+				checkAffinityTable();
+				NenData hidden = NenData.DEFAULT.awaken(NenType.ENHANCEMENT).withXp(NenData.xpForLevel(50));
+				check(hidden.upgradeProblem(NenUpgrade.HATSU_QUAKE) == NenData.UnlockProblem.TYPE, "o tipo escondido nao deveria comprar Hatsu");
 				NenData revealed = hidden.withDivination(100);
-				check(revealed.upgradeProblem(NenUpgrade.HATSU_IMPACT) == null, "o Reforco revelado deveria poder comprar");
-				check(revealed.withType(NenType.EMISSION).upgradeProblem(NenUpgrade.HATSU_IMPACT) == NenData.UnlockProblem.TYPE,
-						"outro tipo nao deveria comprar a passiva do Reforco");
-				NenData other = revealed.withType(NenType.EMISSION).grant(NenUpgrade.HATSU_IMPACT).grant(NenUpgrade.HATSU_VITALITY);
-				check(other.hatsuImpact() == 0 && other.hatsuVitality() == 0, "liberada por comando em outro tipo, a passiva nao deveria valer");
-				player.setAttached(ModAttachments.NEN, revealed);
+				check(revealed.upgradeProblem(NenUpgrade.HATSU_QUAKE) == null, "o Reforco revelado deveria poder comprar o Golpe Sismico");
+				check(revealed.upgradeProblem(NenUpgrade.HATSU_VITALITY) == NenData.UnlockProblem.PREREQUISITES, "as passivas vem depois do Hatsu ativo");
+				check(revealed.upgradeProblem(NenUpgrade.HATSU_MARK) == NenData.UnlockProblem.TYPE, "afinidade 0% deveria bloquear a compra");
+				check(!NenUpgrade.HATSU_MARK.availableTo(revealed), "afinidade 0% nao deveria estar disponivel");
+
+				// Preco: 100% paga o preco base, e quanto menos afinidade, mais caro
+				NenData specialist = revealed.withType(NenType.SPECIALIZATION);
+				int base = NenUpgrade.HATSU_QUAKE.cost();
+				check(NenUpgrade.HATSU_QUAKE.costFor(NenType.ENHANCEMENT) == base, "no tipo inato o preco deveria ser o base");
+				check(NenUpgrade.HATSU_QUAKE.costFor(NenType.EMISSION) == 8, "80% deveria custar 8 pontos");
+				check(NenUpgrade.HATSU_QUAKE.costFor(NenType.CONJURATION) == 10, "60% deveria custar 10 pontos");
+				check(NenUpgrade.HATSU_QUAKE.costFor(NenType.SPECIALIZATION) == 15, "40% deveria custar 15 pontos");
+				check(NenUpgrade.HATSU_MARK.costFor(NenType.CONJURATION) == 600, "1% deveria custar 100 vezes o preco base");
+				check(specialist.buy(NenUpgrade.HATSU_QUAKE).pointsSpent() == 15, "os pontos gastos deveriam seguir a afinidade");
+				check(specialist.buy(NenUpgrade.HATSU_QUAKE).resetUpgrades().pointsSpent() == 0, "resetar deveria devolver o preco pago");
+				NenData conjurer = revealed.withType(NenType.CONJURATION);
+				check(conjurer.upgradeProblem(NenUpgrade.HATSU_MARK) == NenData.UnlockProblem.POINTS, "1% nao bloqueia: so falta ponto");
+
+				// Poder: dano, duracao e area saem multiplicados pela afinidade
+				NenData full = revealed.withType(NenType.ENHANCEMENT).grant(NenUpgrade.HATSU_IMPACT).grant(NenUpgrade.HATSU_VITALITY);
+				NenData emitter = full.withType(NenType.EMISSION);
+				check(Math.abs(emitter.hatsuImpact() - 0.8 * full.hatsuImpact()) < 1.0E-6, "80% de afinidade deveria dar 80% do Impacto Natural");
+				check(Math.abs(emitter.hatsuVitality() - 0.8 * full.hatsuVitality()) < 1.0E-6, "80% de afinidade deveria dar 80% da Vitalidade");
+				check(full.withType(NenType.NONE).hatsuImpact() == 0, "sem tipo a passiva nao deveria valer");
+				check(Math.abs(HatsuAbility.QUAKE.damage(specialist) - 0.4 * HatsuAbility.QUAKE.damage(revealed)) < 1.0E-6, "40% deveria dar 40% do dano");
+				check(Math.abs(HatsuAbility.QUAKE.radius(specialist) - 0.4 * HatsuAbility.QUAKE.radius(revealed)) < 1.0E-6, "40% deveria dar 40% da area");
+				NenData transmuter = revealed.withType(NenType.TRANSMUTATION);
+				check(HatsuAbility.MARK.damage(transmuter) == 0 && HatsuAbility.MARK.durationTicks(transmuter) == 0, "0% nao deveria dar poder nenhum");
+				NenData armored = conjurer.grant(NenUpgrade.HATSU_ARMOR);
+				check(Math.abs(HatsuAbility.ARMOR.damage(armored.grant(NenUpgrade.HATSU_STRUCTURE)) - 1.5 * HatsuAbility.ARMOR.damage(armored)) < 1.0E-6,
+						"Estrutura Resistente deveria aumentar 50%");
+				check(HatsuAbility.ARMOR.durationTicks(armored.grant(NenUpgrade.HATSU_MANIFEST)) == Math.round(1.5 * HatsuAbility.ARMOR.durationTicks(armored)),
+						"Manifestacao Duradoura deveria aumentar 50%");
+				check(NenHatsuPage.glow(100) > NenHatsuPage.glow(80) && NenHatsuPage.glow(80) > NenHatsuPage.glow(60)
+						&& NenHatsuPage.glow(60) > NenHatsuPage.glow(40) && NenHatsuPage.glow(40) > NenHatsuPage.glow(1), "o brilho deveria cair com a afinidade");
+				player.setAttached(ModAttachments.NEN, hidden);
 				start[0] = player.getMaxHealth();
 			});
-			input.resizeWindow(1920, 1080);
+
+			// Antes de revelar o tipo nada acende
 			context.setScreen(NenScreen::new);
 			context.waitTicks(5);
 			input.pressKey(InputConstants.KEY_TAB);
+			context.waitTicks(2);
+			input.pressKey(InputConstants.KEY_TAB);
 			context.waitTicks(5);
-			hoverTree(context, input, null, NenUpgrade.HATSU_IMPACT);
-			context.takeScreenshot("nen_12_tree_enhancement");
+			context.takeScreenshot("nen_13_hatsu_hidden");
+			hoverHatsu(context, input, NenUpgrade.HATSU_QUAKE);
 			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
 			context.waitTicks(10);
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
 				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
-				check(data.has(NenUpgrade.HATSU_IMPACT), "clicar em Impacto Natural deveria comprar");
-				check(Math.abs(NenBonuses.of(data).damageBonus() - data.hatsuImpact()) < 0.001 && data.hatsuImpact() >= 0.10,
-						"Impacto Natural deveria dar dano sem o Hatsu ligado");
-				NenData vital = data.grant(NenUpgrade.HATSU_VITALITY);
-				player.setAttached(ModAttachments.NEN, vital);
-				check(Math.abs(player.getMaxHealth() - start[0] * (1 + vital.hatsuVitality())) < 0.01,
-						"Vitalidade Reforcada deveria aumentar a vida maxima, veio " + player.getMaxHealth());
-				player.setAttached(ModAttachments.NEN, data);
+				check(!data.has(NenUpgrade.HATSU_QUAKE), "clicar com o tipo escondido nao deveria comprar");
+				player.setAttached(ModAttachments.NEN, data.withDivination(100));
+			});
+			context.waitTicks(5);
+
+			// Reforco na menor janela
+			context.takeScreenshot("nen_14_hatsu_enhancement_small");
+			hoverHatsu(context, input, NenUpgrade.HATSU_QUAKE);
+			context.takeScreenshot("nen_15_hatsu_hover_small");
+
+			// Na Full HD: comprar pelo clique, e o no de 0% nao responde
+			input.resizeWindow(1920, 1080);
+			context.waitTicks(5);
+			hoverHatsu(context, input, NenUpgrade.HATSU_VITALITY);
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(10);
+			singleplayer.getServer().runOnServer(server -> check(!server.getPlayerList().getPlayers().getFirst().getAttachedOrCreate(ModAttachments.NEN)
+					.has(NenUpgrade.HATSU_VITALITY), "sem o Hatsu ativo a passiva nao deveria ser comprada"));
+			hoverHatsu(context, input, NenUpgrade.HATSU_QUAKE);
+			context.takeScreenshot("nen_16_hatsu_hover");
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(10);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				check(player.getAttachedOrCreate(ModAttachments.NEN).has(NenUpgrade.HATSU_QUAKE), "clicar no Golpe Sismico deveria comprar");
+				check(player.getAttachedOrCreate(ModAttachments.HATSU_STATE).equipped() == NenType.ENHANCEMENT, "o Hatsu novo deveria ir para a tecla");
+			});
+			hoverHatsu(context, input, NenUpgrade.HATSU_MARK);
+			context.takeScreenshot("nen_17_hatsu_blocked");
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(10);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(!data.has(NenUpgrade.HATSU_MARK), "o no de 0% nao deveria responder ao clique");
+				// O servidor tambem recusa, mesmo que o pedido chegue
+				NenActions.buy(player, NenUpgrade.HATSU_MARK);
+				check(!player.getAttachedOrCreate(ModAttachments.NEN).has(NenUpgrade.HATSU_MARK), "o servidor deveria recusar a compra de 0%");
+				player.setAttached(ModAttachments.NEN, data.withType(NenType.CONJURATION).grant(NenUpgrade.HATSU_ARMOR));
+			});
+			context.waitTicks(5);
+			hoverHatsu(context, input, NenUpgrade.HATSU_MARK);
+			context.takeScreenshot("nen_18_hatsu_conjuration_one_percent");
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setAttached(ModAttachments.NEN, player.getAttachedOrCreate(ModAttachments.NEN).withType(NenType.SPECIALIZATION));
+			});
+			context.waitTicks(5);
+			context.takeScreenshot("nen_19_hatsu_specialization");
+
+			// Clicar num Hatsu aprendido coloca ele na tecla
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				player.setAttached(ModAttachments.HATSU_STATE, HatsuState.NONE);
+			});
+			hoverHatsu(context, input, NenUpgrade.HATSU_ARMOR);
+			input.pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+			context.waitTicks(10);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				check(player.getAttachedOrCreate(ModAttachments.HATSU_STATE).equipped() == NenType.CONJURATION, "o clique deveria equipar o Hatsu aprendido");
 			});
 			context.setScreen(() -> null);
 			input.resizeWindow(854, 480);
 			context.waitTicks(5);
+
+			// Os Hatsus de verdade, no mundo, com a afinidade no resultado
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData enhancer = NenData.DEFAULT.awaken(NenType.ENHANCEMENT).withXp(NenData.xpForLevel(50)).withDivination(100)
+						.withMastery(Technique.HATSU, 50).withAura(100).withActive(Technique.NONE);
+				player.setAttached(ModAttachments.NEN, enhancer.grant(NenUpgrade.HATSU_QUAKE).withAura(100));
+
+				// Sem nada na tecla, nada acontece
+				player.setAttached(ModAttachments.HATSU_STATE, HatsuState.NONE);
+				HatsuActions.use(player);
+				check(player.getAttachedOrCreate(ModAttachments.NEN).aura() == 100, "sem Hatsu na tecla nao deveria gastar aura");
+				HatsuActions.equip(player, NenType.SPECIALIZATION);
+				check(player.getAttachedOrCreate(ModAttachments.HATSU_STATE).equipped() == NenType.NONE, "nao deveria equipar o que nao aprendeu");
+
+				// Golpe Sismico em 100%: dano exato, aura e recarga
+				HatsuActions.equip(player, NenType.ENHANCEMENT);
+				IronGolem golem = golem(player, 2);
+				NenData before = player.getAttachedOrCreate(ModAttachments.NEN);
+				double hit = HatsuAbility.QUAKE.damage(before);
+				float life = golem.getHealth();
+				HatsuActions.use(player);
+				check(Math.abs(life - golem.getHealth() - hit) < 0.01, "o Golpe Sismico deveria tirar " + hit + ", tirou " + (life - golem.getHealth()));
+				check(player.getAttachedOrCreate(ModAttachments.NEN).aura() == 100 - HatsuAbility.cost(before), "o Hatsu deveria gastar aura");
+				check(HatsuActions.remaining(player) > 0, "o Hatsu deveria entrar em recarga");
+				int aura = player.getAttachedOrCreate(ModAttachments.NEN).aura();
+				HatsuActions.use(player);
+				check(player.getAttachedOrCreate(ModAttachments.NEN).aura() == aura, "em recarga nao deveria lancar de novo");
+				golem.discard();
+
+				// O mesmo Hatsu em quem tem 40%: 40% do dano
+				NenData specialist = enhancer.withType(NenType.SPECIALIZATION).grant(NenUpgrade.HATSU_QUAKE).withAura(100);
+				player.setAttached(ModAttachments.NEN, specialist);
+				player.setAttached(ModAttachments.HATSU_STATE, new HatsuState(NenType.ENHANCEMENT, 0));
+				IronGolem near = golem(player, 1);
+				life = near.getHealth();
+				HatsuActions.use(player);
+				check(Math.abs(life - near.getHealth() - 0.4 * hit) < 0.01, "em 40% deveria tirar " + 0.4 * hit + ", tirou " + (life - near.getHealth()));
+				near.discard();
+
+				// Em Zetsu os nos estao fechados
+				player.setAttached(ModAttachments.NEN, specialist.withActive(Technique.ZETSU));
+				player.setAttached(ModAttachments.HATSU_STATE, new HatsuState(NenType.ENHANCEMENT, 0));
+				HatsuActions.use(player);
+				check(HatsuActions.remaining(player) == 0, "em Zetsu nao deveria lancar");
+
+				// Galho bloqueado liberado por comando continua sem efeito
+				NenData blocked = enhancer.grant(NenUpgrade.HATSU_MARK).withAura(100);
+				player.setAttached(ModAttachments.NEN, blocked);
+				player.setAttached(ModAttachments.HATSU_STATE, new HatsuState(NenType.SPECIALIZATION, 0));
+				HatsuActions.use(player);
+				check(player.getAttachedOrCreate(ModAttachments.NEN).aura() == 100, "o galho de 0% nao deveria lancar nem por comando");
+
+				// Armadura: vida extra exata
+				NenData conjurer = enhancer.withType(NenType.CONJURATION).grant(NenUpgrade.HATSU_ARMOR).withAura(100);
+				player.setAttached(ModAttachments.NEN, conjurer);
+				player.setAttached(ModAttachments.HATSU_STATE, new HatsuState(NenType.CONJURATION, 0));
+				HatsuActions.use(player);
+				check(Math.abs(player.getAbsorptionAmount() - HatsuAbility.ARMOR.damage(conjurer)) < 0.01, "a Armadura deveria dar vida extra, deu " + player.getAbsorptionAmount());
+				check(player.hasEffect(MobEffects.ABSORPTION), "a Armadura deveria durar pelo efeito");
+				player.removeEffect(MobEffects.ABSORPTION);
+
+				// Marca: brilha e leva mais dano so de quem marcou
+				NenData reader = enhancer.withType(NenType.SPECIALIZATION).grant(NenUpgrade.HATSU_MARK).withAura(100);
+				player.setAttached(ModAttachments.NEN, reader);
+				player.setAttached(ModAttachments.HATSU_STATE, new HatsuState(NenType.SPECIALIZATION, 0));
+				IronGolem marked = golem(player, 3);
+				float plain = NenCombat.incomingDamage(marked, player.damageSources().playerAttack(player), 10.0F);
+				HatsuActions.use(player);
+				check(HatsuActions.marked(player, marked) && marked.hasEffect(MobEffects.GLOWING), "a Marca deveria pegar quem esta em volta");
+				float boosted = NenCombat.incomingDamage(marked, player.damageSources().playerAttack(player), 10.0F);
+				check(Math.abs(boosted - plain * (1 + HatsuAbility.markBonus(reader))) < 0.01, "a Marca deveria aumentar o dano, veio " + boosted + " contra " + plain);
+				marked.discard();
+
+				// Comando: o mob entra no controle
+				NenData manipulator = enhancer.withType(NenType.MANIPULATION).grant(NenUpgrade.HATSU_COMMAND).withAura(100);
+				player.setAttached(ModAttachments.NEN, manipulator);
+				player.setAttached(ModAttachments.HATSU_STATE, new HatsuState(NenType.MANIPULATION, 0));
+				IronGolem commanded = golem(player, 3);
+				commanded.setTarget(player);
+				HatsuActions.use(player);
+				check(HatsuActions.controlling(player, commanded), "o Comando deveria pegar o mob em volta");
+				GOLEMS[0] = commanded;
+
+				// Propriedade: mais dano e menos dano recebido enquanto durar
+				NenData transmuter = enhancer.withType(NenType.TRANSMUTATION).grant(NenUpgrade.HATSU_PROPERTY).grant(NenUpgrade.HATSU_ADAPTATION).withAura(100);
+				player.setAttached(ModAttachments.NEN, transmuter);
+				player.setAttached(ModAttachments.HATSU_STATE, new HatsuState(NenType.TRANSMUTATION, 0));
+				IronGolem shocked = golem(player, 3);
+				float normal = NenCombat.incomingDamage(shocked, player.damageSources().playerAttack(player), 10.0F);
+				float takenBefore = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+				HatsuActions.use(player);
+				check(HatsuActions.propertyActive(player), "a Aura Eletrica deveria ligar");
+				float charged = NenCombat.incomingDamage(shocked, player.damageSources().playerAttack(player), 10.0F);
+				check(charged > normal && shocked.hasEffect(MobEffects.SLOWNESS), "a Aura Eletrica deveria dar dano e deixar lento");
+				float takenAfter = NenCombat.incomingDamage(player, player.damageSources().generic(), 10.0F);
+				check(Math.abs(takenAfter - takenBefore * (1 - HatsuAbility.adaptation(transmuter))) < 0.01, "a Adaptacao deveria reduzir o dano recebido");
+				shocked.discard();
+
+				// Projetil: voa pelos ticks seguintes e acerta
+				NenData emitter = enhancer.withType(NenType.EMISSION).grant(NenUpgrade.HATSU_BLAST).withAura(100);
+				player.setAttached(ModAttachments.NEN, emitter);
+				player.setAttached(ModAttachments.HATSU_STATE, new HatsuState(NenType.EMISSION, 0));
+				player.setXRot(0);
+				Vec3 ahead = player.getEyePosition().add(player.getLookAngle().scale(6));
+				IronGolem shot = golem(player, 0);
+				shot.setPos(ahead.x, ahead.y - 1.3, ahead.z);
+				start[1] = shot.getHealth();
+				HatsuActions.use(player);
+				check(shot.getHealth() == start[1], "o projetil nao deveria acertar na hora");
+				GOLEMS[1] = shot;
+			});
+			context.waitTicks(30);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData emitter = player.getAttachedOrCreate(ModAttachments.NEN);
+				IronGolem shot = GOLEMS[1];
+				check(Math.abs(start[1] - shot.getHealth() - HatsuAbility.BLAST.damage(emitter)) < 0.5,
+						"o projetil deveria tirar " + HatsuAbility.BLAST.damage(emitter) + ", tirou " + (start[1] - shot.getHealth()));
+				check(HatsuAbility.blastFalloff(emitter, 8) == 1 && HatsuAbility.blastFalloff(emitter, HatsuAbility.blastRange(emitter)) == 0.5,
+						"o projetil deveria perder ate metade do dano longe do corpo");
+				check(HatsuAbility.blastFalloff(emitter.grant(NenUpgrade.HATSU_COHESION), HatsuAbility.blastRange(emitter)) > 0.5, "a Coesao deveria perder menos dano");
+				shot.discard();
+				GOLEMS[0].discard();
+				player.setAttached(ModAttachments.HATSU_STATE, new HatsuState(NenType.EMISSION, player.level().getGameTime() + 200));
+			});
+			context.waitTicks(5);
+			context.takeScreenshot("nen_20_hatsu_cooldown_hud");
+
+			// As passivas de vida e dano valem sem o Hatsu ligado
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData data = NenData.DEFAULT.awaken(NenType.ENHANCEMENT).withXp(NenData.xpForLevel(50)).withDivination(100)
+						.grant(NenUpgrade.HATSU_IMPACT).withAura(100);
+				player.setAttached(ModAttachments.HATSU_STATE, HatsuState.NONE);
+				player.setAttached(ModAttachments.NEN, data);
+				check(Math.abs(NenBonuses.of(data).damageBonus() - data.hatsuImpact()) < 0.001 && data.hatsuImpact() >= 0.10,
+						"Impacto Natural deveria dar dano sem o Hatsu ligado");
+				float life = player.getMaxHealth();
+				NenData vital = data.grant(NenUpgrade.HATSU_VITALITY);
+				player.setAttached(ModAttachments.NEN, vital);
+				start[0] = life;
+			});
+			context.waitTicks(5);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+				NenData vital = player.getAttachedOrCreate(ModAttachments.NEN);
+				check(Math.abs(player.getMaxHealth() - start[0] * (1 + vital.hatsuVitality())) < 0.01,
+						"Vitalidade Reforcada deveria aumentar a vida maxima, veio " + player.getMaxHealth());
+			});
 
 			// Aba do mod no criativo
 			singleplayer.getServer().runOnServer(server ->
@@ -1037,6 +1285,51 @@ public class NenPanelGameTest implements FabricClientGameTest {
 		});
 		input.setCursorPos(point[0], point[1]);
 		context.waitTicks(2);
+	}
+
+	/** Poe o mouse em cima de um no da aba Hatsu, com a tela no tamanho atual. */
+	private static void hoverHatsu(ClientGameTestContext context, TestInput input, NenUpgrade upgrade) {
+		double[] point = context.computeOnClient(client -> {
+			int scale = client.getWindow().getGuiScale();
+			float[] node = NenHatsuPage.screenPoint(upgrade, 4 + 2, 4 + 30 + 3, client.getWindow().getGuiScaledWidth() - 8 - 4,
+					client.getWindow().getGuiScaledHeight() - 8 - 30 - 6);
+			return new double[] {node[0] * scale, node[1] * scale};
+		});
+		input.setCursorPos(point[0], point[1]);
+		context.waitTicks(2);
+	}
+
+	/** Golem de ferro a esta distancia, para os Hatsus terem em quem bater: tem vida de sobra. */
+	private static IronGolem golem(ServerPlayer player, double distance) {
+		IronGolem golem = EntityTypes.IRON_GOLEM.create(player.level(), EntitySpawnReason.COMMAND);
+		golem.setPos(player.getX() + distance, player.getY(), player.getZ());
+		player.level().addFreshEntity(golem);
+		return golem;
+	}
+
+	/** A tabela de afinidade inteira, na ordem do hexagono: Reforco, Transformacao, Materializacao, Especializacao, Manipulacao e Emissao. */
+	private static void checkAffinityTable() {
+		Map<NenType, int[]> table = Map.of(
+				NenType.ENHANCEMENT, new int[] {100, 80, 60, 0, 60, 80},
+				NenType.TRANSMUTATION, new int[] {80, 100, 80, 0, 40, 60},
+				NenType.CONJURATION, new int[] {60, 80, 100, 1, 60, 40},
+				NenType.EMISSION, new int[] {80, 60, 40, 0, 80, 100},
+				NenType.MANIPULATION, new int[] {60, 40, 60, 1, 100, 80},
+				NenType.SPECIALIZATION, new int[] {40, 60, 80, 100, 80, 60});
+		check(NenAffinity.HEXAGON.equals(List.of(NenType.ENHANCEMENT, NenType.TRANSMUTATION, NenType.CONJURATION,
+				NenType.SPECIALIZATION, NenType.MANIPULATION, NenType.EMISSION)), "o hexagono deveria seguir a ordem pedida");
+		table.forEach((innate, row) -> {
+			for (int i = 0; i < row.length; i++) {
+				NenType branch = NenAffinity.HEXAGON.get(i);
+				check(NenAffinity.percent(innate, branch) == row[i], innate + " em " + branch + " deveria ser " + row[i] + "%");
+			}
+		});
+		check(NenAffinity.percent(NenType.NONE, NenType.ENHANCEMENT) == 0, "sem tipo nao ha afinidade");
+		check(NenUpgrade.ofBranch(NenType.EMISSION).size() == 3, "cada galho deveria ter 3 nos");
+		for (NenType branch : NenAffinity.HEXAGON) {
+			check(HatsuAbility.of(branch).isPresent() && HatsuAbility.of(branch).get().upgrade() == NenUpgrade.ofBranch(branch).getFirst(),
+					"o primeiro no de cada galho deveria ser o Hatsu ativo");
+		}
 	}
 
 	/** Poe o mouse em cima de um no da arvore, com a tela no tamanho atual. */
